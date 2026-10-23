@@ -126,7 +126,7 @@ button{font:inherit;cursor:pointer}
 .job-time{font-family:var(--f-mono);font-size:11px;letter-spacing:.16em;color:var(--sodium)}
 .job-time.day{color:#8fd0ff}
 .job-time.club{color:#ff7ad9}
-.job.club,.job.manor,.job.casino,.job.port,.job.tower,.job.jewel{grid-column:1/-1}
+.job.club,.job.manor,.job.casino,.job.port,.job.tower,.job.jewel,.job.jewelDay{grid-column:1/-1}
 .job-time.port{color:#7fd0ff}
 .job-time.tower{color:#c9a8ff}
 .job-time.jewel{color:#7fe0c0}
@@ -233,6 +233,12 @@ details.help .keys{margin-bottom:14px}
         <span class="job-name">Brilliant Cut</span>
         <span class="job-place">Lindqvist &amp; Döttrar, jewellers</span>
         <span class="job-meta">Small jeweller's with a basement · in through the café cellar wall, the skylight or the stockroom window · work out the alarm code from a calendar and a UV torch · motion sensors, wired cases and door contacts with an entry delay · lift the strongroom key from behind the watchman · crack the safe by ear · you can't leave without the Nordstjärnan · 4 guards · 3 cameras · 4 bags</span>
+      </button>
+      <button class="job jewelDay" type="button" role="radio" aria-checked="false" data-map="jewelDay">
+        <span class="job-time day">DAY · 14:30 · OPEN · SMALL, TRICKY</span>
+        <span class="job-name">Window Shopping</span>
+        <span class="job-place">Lindqvist &amp; Döttrar, jewellers</span>
+        <span class="job-meta">The same jeweller's, open for business · walk in with the customers · the back rooms and the basement are staff only · the owner, the shop assistant and a jeweller at work downstairs · the cases and the strongroom are still on the alarm · you can't leave without the Nordstjärnan · 3 guards · 7 civilians · 3 cameras · 4 bags</span>
       </button>
     </div>
     <label class="dev" for="devToggle"><input type="checkbox" id="devToggle"><span>Dev mode<small>Press V during a job for noclip: fly through walls, invisible to guards and cameras. SPACE up, CTRL or C down, SHIFT faster. Shows your position.</small></span></label>
@@ -3160,14 +3166,15 @@ const MAP_JEWEL={
     for(const q of rectMinus([-30,-24,30,26],[[-20,-8,13,8]]))floor(q[0],q[1],q[2],q[3],fm.ground,0);
     floor(-30,8,30,12,fm.walk,0.035);floor(-20,-16,13,-8,fm.cob,0.035);floor(10,-8,13,8,fm.cob,0.035);
     for(let x=-28;x<30;x+=6)addBox(x,15.9,x+3,16.1,0.02,phong(0xd9d2b0),{collide:false});
-    const nb=phong(0x2a2420),nbWin=new THREE.MeshBasicMaterial({map:tex(128,128,(g,w,h)=>{g.fillStyle="#17130f";g.fillRect(0,0,w,h);for(let y=8;y<h;y+=32)for(let x=8;x<w;x+=24){const r=Math.random();g.fillStyle=r<.15?"#d8b56a":r<.2?"#7a8fb0":"#0b0d10";g.fillRect(x,y,12,20);}})});
+    const day=LV.day;
+    const nb=phong(day?0x6a5a4c:0x2a2420),nbWin=new THREE.MeshBasicMaterial({map:tex(128,128,(g,w,h)=>{g.fillStyle=day?"#8a7a68":"#17130f";g.fillRect(0,0,w,h);for(let y=8;y<h;y+=32)for(let x=8;x<w;x+=24){const r=Math.random();g.fillStyle=day?(r<.5?"#9fb6c8":"#7f96aa"):r<.15?"#d8b56a":r<.2?"#7a8fb0":"#0b0d10";g.fillRect(x,y,12,20);}})});
     nbWin.map.repeat.set(3,2);
     const block=(x1,z1,x2,z2,h,face)=>{addBox(x1,z1,x2,z2,h,nb);if(!face)return;const p=new THREE.Mesh(new THREE.PlaneGeometry(face==="s"||face==="n"?x2-x1:z2-z1,h-1),nbWin);p.userData.noHit=true;lvAdd(p);
       if(face==="s")p.position.set((x1+x2)/2,h/2+0.5,z2+0.02);if(face==="n"){p.position.set((x1+x2)/2,h/2+0.5,z1-0.02);p.rotation.y=Math.PI;}
       if(face==="w"){p.position.set(x1-0.02,h/2+0.5,(z1+z2)/2);p.rotation.y=-Math.PI/2;}if(face==="e"){p.position.set(x2+0.02,h/2+0.5,(z1+z2)/2);p.rotation.y=Math.PI/2;}};
     block(13,-16,30,8,11,"s");block(-30,-24,30,-16,12,"s");block(-30,-16,-20,8,10,"s");block(-30,26,30,34,12,"n");
     // the café next door (closed): a solid building with a lit window
-    addBox(-20,-8,-10,8,7.2,phong(0x3a332c));{const w=new THREE.Mesh(new THREE.PlaneGeometry(6,2.2),new THREE.MeshBasicMaterial({color:0x6a4a2a}));w.position.set(-15,1.6,8.02);lvAdd(w);}
+    addBox(-20,-8,-10,8,7.2,phong(day?0x8a7460:0x3a332c));{const w=new THREE.Mesh(new THREE.PlaneGeometry(6,2.2),new THREE.MeshBasicMaterial({color:day?0x9fb6c8:0x6a4a2a}));w.position.set(-15,1.6,8.02);lvAdd(w);}
     plaque(signTex("KAFÉ SOLROS",512,96,"#f2e2b8","#3a1e12","bold 54px Georgia"),4,0.7,-15,3.4,8.03);
     colliders.push({minX:-20,maxX:-10,minZ:-8,maxZ:8,h:7.2,lvl:0});
     for(const x of [-22,-4,16])lamp(x,11.4,0xffc070);lamp(2,-12,0xffd9a0);
@@ -3180,7 +3187,18 @@ const MAP_JEWEL={
     wX(0,-8,-10,0.6,Y,wall);const swin=makeWindowAt(1.6,-8,2.0,false,Y,wall,"stockroom window",0);segX(0,-8,2.6,10,[[6,7.6,2.4]],Y,wall);
     makeDoor(6,7.6,-8,2.38,{mat:phong(0x3a4a3a),pick:true,name:"back door"});
     // front: the shutter
-    addBox(-10,7.9,10,8.3,Y,dark,{collide:false});addBox(-9.8,8.25,9.8,8.45,3.3,shutterM);
+    if(!day){addBox(-10,7.9,10,8.3,Y,dark,{collide:false});addBox(-9.8,8.25,9.8,8.45,3.3,shutterM);}
+    else{
+      for(const [a,b] of [[-10,-1.2],[1.2,10]]){addBox(a,7.8,b,8.2,0.5,greenW);
+        const g=new THREE.Mesh(new THREE.PlaneGeometry(b-a,2.6),winGlass);g.position.set((a+b)/2,1.8,8);lvAdd(g);
+        colliders.push({minX:a,maxX:b,minZ:7.95,maxZ:8.05,h:3.1,see:true,lvl:0});fixedWindow(g,colliders[colliders.length-1]);
+        addBox(a,7.8,b,8.2,3.3,greenW,{y0:3.1,collide:false});}
+      addBox(-1.2,7.8,1.2,8.2,3.3,greenW,{y0:2.6,collide:false});
+      makeDoor(-1.2,1.2,8,2.6,{glass:true,dayOpen:true,name:"shop door"});
+      plaque(openTex(),0.9,0.5,2.2,1.6,8.22);
+      // shoppers' pavement: a café table or two, a bike rack
+      for(const x of [-17,-13]){const t=new THREE.Mesh(new THREE.CylinderGeometry(0.4,0.4,0.75,12),wood);t.position.set(x,0.375,9.4);lvAdd(t);colliders.push({minX:x-0.4,maxX:x+0.4,minZ:9,maxZ:9.8,h:0.75,lvl:0});}
+    }
     addBox(-10,8.2,10,8.7,4.0,greenW,{y0:3.3,collide:false});
     plaque(signTex("LINDQVIST & DÖTTRAR",512,80,"#e2c27a","#1f3a32","bold 46px Georgia"),6,0.7,0,3.65,8.72);
     plaque(signTex("GULDSMEDER SEDAN 1911",512,48,"#e2c27a","#1f3a32","bold 28px Georgia"),3,0.25,0,3.15,8.47);
@@ -3297,10 +3315,21 @@ const MAP_JEWEL={
     makeCam(9.5,3.4,-8.4,-Math.PI*0.7,0.6,11,0.2,18,0.45,0);                   // courtyard
     // ---------- people ----------
     new Guard([[-8.3,-5,-Math.PI/2,0]],0,{security:true,seated:true,name:"Lars",flashShadow:false});
-    new Guard([[-7,4.2,null,3],[7.2,4.2],[5.75,1.4],[5.75,-1.5],[7.6,-5.6,null,4],[5.75,-1.5],[5.75,1.4],[7.2,4.2]],1.0,{name:"Holm",flashShadow:false});
-    new Guard([[-27,12.4,null,3],[24,12.4,null,3]],1.0,{name:"Berg"});
+    if(!day)new Guard([[-7,4.2,null,3],[7.2,4.2],[5.75,1.4],[5.75,-1.5],[7.6,-5.6,null,4],[5.75,-1.5],[5.75,1.4],[7.2,4.2]],1.0,{name:"Holm",flashShadow:false});
+    else new Guard([[-6.5,7.0,Math.PI,5],[4.5,7.0,Math.PI,5]],1.0,{name:"Holm",flashShadow:false});
+    if(!day)new Guard([[-27,12.4,null,3],[24,12.4,null,3]],1.0,{name:"Berg"});
     new Guard([[-17,-12,null,3],[11.5,-12,null,2],[11.5,4,null,3],[11.5,-12]],1.0,{name:"Nyström",flashShadow:false});
-    new Civilian([[-11.7,11.15,Math.PI/2,0]],0,{asleep:true,label:"A man asleep on the bench",bedY:0.62});
+    if(!day)new Civilian([[-11.7,11.15,Math.PI/2,0]],0,{asleep:true,label:"A man asleep on the bench",bedY:0.62});
+    else{
+      // open for business: customers, the assistant, the owner, the jeweller downstairs, a pedestrian outside
+      new Civilian([[-5.2,3.9,null,6],[-1.8,4.0,Math.PI,5],[-5.6,1.3,0,4]],2,{label:"A customer"});
+      new Civilian([[-1.6,6.9,0,7],[-6.8,6.9,0,6]],2,{label:"A customer"});
+      new Civilian([[2.2,3.6,Math.PI/2,0]],0,{label:"A customer"});
+      new Civilian([[7.7,3.2,Math.PI/2,0]],0,{worker:true,label:"The shop assistant"});
+      new Civilian([[-6,-3.4,null,6],[-3,-7.2],[1.2,-7.2],[2.2,-2.3],[7.2,-4.6,null,6],[2.2,-2.3],[1.2,-7.2],[-3,-7.2]],1.5,{worker:true,label:"Fru Lindqvist"});
+      new Civilian([[-7.6,-6.3,Math.PI,0]],0,{seated:true,worker:true,label:"The jeweller",level:-1});
+      new Civilian([[-26,10.2,null,4],[24,10.2,null,4]],1,{label:"A pedestrian"});
+    }
     Object.assign(self,{X:{cases,swin,skyPiv,rope,hatchPiv,keyM,uv,cutter,plug,drillCol,necklace,nGlint,panelScr,pirs,srDoor,dial}});
   },
   reset(){
@@ -3329,11 +3358,11 @@ const MAP_JEWEL={
     if(G.alarm){j.delay=0;return;}
     if(!j.armed)return;
     // door contacts: the back door and the strongroom door start the entry delay
-    for(const d of doors){if((d.name==="back door"||d.sr)&&d.open&&!j.tripped.has(d)){j.tripped.add(d);if(j.delay<=0){j.delay=30;toast("Beep… beep… Entry delay: type the alarm code at the panel in the back hallway within 30 seconds","warn",3600);}}}
+    for(const d of doors){if(((d.name==="back door"&&!LV.day)||d.sr)&&d.open&&!j.tripped.has(d)){j.tripped.add(d);if(j.delay<=0){j.delay=30;toast("Beep… beep… Entry delay: type the alarm code at the panel in the back hallway within 30 seconds","warn",3600);}}}
     if(j.delay>0){j.delay-=dt;j.beep-=dt;if(j.beep<=0){j.beep=j.delay<10?0.25:0.5;const s=spatial(9.7,-4,24,0);tone({type:"square",f0:2600,dur:.06,vol:.05*(s?s.vol:0.25)+.01});}
       if(j.delay<=0)triggerAlarm("Nobody typed the code. The alarm went off!");}
     // motion sensors on the shop floor
-    if(!DEV.ghost&&P.level===0&&inR(P.x,P.z,JW_FLOOR)){
+    if(!LV.day&&!DEV.ghost&&P.level===0&&inR(P.x,P.z,JW_FLOOR)){
       if(!j.sensorTip){j.sensorTip=true;toast("Motion sensors in here. Crouch-walk and keep your distance, or disarm the alarm first","warn",3000);}
       const moving=keys.KeyW||keys.KeyA||keys.KeyS||keys.KeyD;let seen=false;
       for(const p of X.pirs){const dx=P.x-p.x,dz=P.z-p.z,d=Math.hypot(dx,dz);const reach=P.crouch?2.6:9;
@@ -3475,6 +3504,16 @@ const MAP_JEWEL={
   }
 };
 
+const MAP_JEWEL_DAY=Object.assign({},MAP_JEWEL,{
+  id:"jewelDay",job:"Window Shopping",time:"14:30",day:true,zipTies:6,
+  spawn:{x:-24,z:10,yaw:-Math.PI/2},
+  restricted(x,z,lvl){return lvl!==0||(inR(x,z,JW_SHOP)&&!inR(x,z,[-10,0,8.4,8]))||inR(x,z,JW_COURT)||inR(x,z,JW_PASS)&&z<7.8;},
+  trespassMsg(){return P.level===1?"You're on the roof. Don't let anyone see you up here":P.level===-1?"You're downstairs. Staff only":inR(P.x,P.z,JW_SHOP)?"Staff only. Don't let anyone see you back here":"You're in the courtyard behind the shops. Don't let anyone see you";},
+  text:{
+    case:"Lindqvist & Döttrar is open. Walk in like any customer and look at the cases. Behind the counter, the back rooms and the basement are staff only, and the Nordstjärnan is in the strongroom safe downstairs. In the daytime the shop's motion sensors and the back door are off the alarm, but the display cases and the strongroom door stay on it until someone types the code. Hold G to put on your mask when you're ready.",
+    vault:"",van:MAP_JEWEL.text.van,bins:MAP_JEWEL.text.bins
+  }
+});
 function X_vane(){return MAP_TOWER.X&&MAP_TOWER.X.vane;}
 
 /* ================= MAP 9 · Glass Ceiling · Halcyon Tower ================= */
@@ -4180,7 +4219,7 @@ const MAP_TOWER={
   }
 };
 
-const MAPS={harbor:MAP_HARBOR,meridian:MAP_MERIDIAN,harborDay:MAP_HARBOR_DAY,meridianDay:MAP_MERIDIAN_DAY,club:MAP_CLUB,manor:MAP_MANOR,casino:MAP_CASINO,port:MAP_PORT,tower:MAP_TOWER,jewel:MAP_JEWEL};
+const MAPS={harbor:MAP_HARBOR,meridian:MAP_MERIDIAN,harborDay:MAP_HARBOR_DAY,meridianDay:MAP_MERIDIAN_DAY,club:MAP_CLUB,manor:MAP_MANOR,casino:MAP_CASINO,port:MAP_PORT,tower:MAP_TOWER,jewel:MAP_JEWEL,jewelDay:MAP_JEWEL_DAY};
 
 // night: moonlight and sodium lamps. day: sun, blue sky, light haze
 function setSky(day){
