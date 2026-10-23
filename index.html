@@ -126,7 +126,8 @@ button{font:inherit;cursor:pointer}
 .job-time{font-family:var(--f-mono);font-size:11px;letter-spacing:.16em;color:var(--sodium)}
 .job-time.day{color:#8fd0ff}
 .job-time.club{color:#ff7ad9}
-.job.club,.job.manor,.job.casino{grid-column:1/-1}
+.job.club,.job.manor,.job.casino,.job.port{grid-column:1/-1}
+.job-time.port{color:#7fd0ff}
 .job-time.casino{color:#f4d27a}
 .job-time.manor{color:#9fc4ff}
 .job-name{font-family:var(--f-display);font-size:28px;line-height:1}
@@ -212,6 +213,12 @@ details.help .keys{margin-bottom:14px}
         <span class="job-name">House Edge</span>
         <span class="job-place">The Golden Lotus casino</span>
         <span class="job-meta">Busy casino on four levels · walk in with the gamblers · steal a staff uniform · pickpocket the manager's override key · crawl through a vent into surveillance · a time-locked vault you have to hold for 75 s · fire escape to the roof · 10 guards · 23 guests and staff · 6 cameras · 10 bags</span>
+      </button>
+      <button class="job port" type="button" role="radio" aria-checked="false" data-map="port">
+        <span class="job-time port">NIGHT · 01:10 · LONG JOB</span>
+        <span class="job-name">Dead Reckoning</span>
+        <span class="job-place">Port Halvard · MV Kestrel</span>
+        <span class="job-meta">Container port and a cargo ship · crawl under the fence · read the manifest · open the hold from the bridge · climb and run the dock crane (loud) · open the right container · escape by speedboat · 9 guards · 6 cameras incl. the ship's searchlight · 7 bags</span>
       </button>
     </div>
     <label class="dev" for="devToggle"><input type="checkbox" id="devToggle"><span>Dev mode<small>Press V during a job for noclip: fly through walls, invisible to guards and cameras. SPACE up, CTRL or C down, SHIFT faster. Shows your position.</small></span></label>
@@ -352,6 +359,7 @@ const minLevel=()=>(LV.def.levels||[0,0])[0],maxLevel=()=>(LV.def.levels||[0,0])
 const onRoof=()=>!LV.def.multi&&P.level===1;
 const levelOfY=y=>Math.floor((y+0.5)/ROOF_Y);
 function npcs(){return civs.length?guards.concat(civs):guards;}
+let VAN_Y=0.82;
 let secGuard=null,VAULT=null,SECURE={x:0,z:0},VAN_SLOTS=[],BAG_SPOTS=[],DRILL_POS={x:0,z:0},ring=null;
 const DRILL_NOISE=6;
 function lvAdd(o){LV.group.add(o);return o;}
@@ -2583,7 +2591,472 @@ const MAP_CASINO={
     return "For the vault you need: "+need.join("; ")+".";
   }
 };
-const MAPS={harbor:MAP_HARBOR,meridian:MAP_MERIDIAN,harborDay:MAP_HARBOR_DAY,meridianDay:MAP_MERIDIAN_DAY,club:MAP_CLUB,manor:MAP_MANOR,casino:MAP_CASINO};
+
+/* ================= MAP 8 · Dead Reckoning · Port Halvard ================= */
+const corrTex=tex(128,64,(g,w,h)=>{g.fillStyle="#fff";g.fillRect(0,0,w,h);for(let x=0;x<w;x+=8){g.fillStyle="rgba(0,0,0,.18)";g.fillRect(x,0,3,h);g.fillStyle="rgba(255,255,255,.25)";g.fillRect(x+4,0,1,h);}g.fillStyle="rgba(0,0,0,.25)";g.fillRect(0,0,w,3);g.fillRect(0,h-3,w,3);noise(g,w,h,600,.1);});
+const chainTex=tex(64,64,(g,w,h)=>{g.clearRect(0,0,w,h);g.strokeStyle="#9aa0a6";g.lineWidth=2;for(let i=-64;i<64;i+=10){g.beginPath();g.moveTo(i,0);g.lineTo(i+64,64);g.stroke();g.beginPath();g.moveTo(i+64,0);g.lineTo(i,64);g.stroke();}});
+const PORT_HOLD=[-34,24.4,18,37.6],PORT_DECK=[-34,24,18,38],PORT_SUP=[10,25,18,37],PORT_CAB=[-10.9,14,-7.4,18.6],PORT_CULV=[-30.6,-22,-29.4,-18],PORT_OFF=[-44,-14,-30,-2],PORT_HATCH=[-11,26,-3.5,36];
+const PORT_ROWS=[27.2,31,34.8],PORT_DROP=[6,9.5,13];
+const MAP_PORT={
+  id:"port",job:"Dead Reckoning",place:"Port Halvard",time:"01:10",multi:true,levels:[0,3],codeLen:6,zipTies:5,
+  spawn:{x:0,z:-26,yaw:Math.PI},moon:60,getaway:"boat",leaveVerb:"cast off",
+  bagValue:[30000,55000],goldValue:[100000,150000],cashValue:[300,2200],jewelValue:[3000,10000],
+  bagSpots:[
+    {x:-14.8,z:0,y:0.34,ry:0,box:"vault",gold:true},{x:-12.6,z:0,y:0.34,ry:0,box:"vault",gold:true},
+    {x:-14.8,z:0,y:0.22,ry:0,box:"vault"},{x:-12.6,z:0,y:0.22,ry:0,box:"vault"},
+    {x:32,z:-12.6,y:0.22,ry:0.4,box:"cage"},{x:34.2,z:-12.6,y:0.22,ry:-0.3,box:"cage"},
+    {x:-42.6,z:-13.2,y:0.3,ry:0,lvl:1,box:"hsafe"}
+  ],
+  cash:[[6.7,0.81,-18.5],[-42.2,4.81,-9.4],[-40,4.04,-4.2],[24,0.96,-13.4],[33,0.81,-9.4,"jewel"],
+        [12,4.81,35.6],[11.2,8.61,27.9,"jewel"],[12.0,8.81,36.0],[16.5,13.01,36.3]],
+  isInside:(x,z)=>inR(x,z,PORT_OFF)||inR(x,z,PORT_HOLD),
+  restricted(x,z,lvl){return lvl!==0||z>-20||inR(x,z,PORT_CULV);},
+  trespassMsg(){return P.level===0&&!inR(P.x,P.z,PORT_HOLD)?"You're inside the terminal fence. Don't let anyone see you":"You're on board the Kestrel. Don't let anyone see you";},
+  hasFloor(x,z,lvl){
+    if(lvl===0)return z<=20.2||inR(x,z,PORT_HOLD);
+    if(lvl===1)return inR(x,z,PORT_OFF)||(inR(x,z,PORT_DECK)&&!(G.p&&G.p.hatchOpen&&inR(x,z,PORT_HATCH)));
+    if(lvl===2)return inR(x,z,PORT_SUP);
+    if(lvl===3)return inR(x,z,PORT_SUP)||inR(x,z,PORT_CAB);
+    return false;
+  },
+  forceCrouch(x,z,lvl){return lvl===0&&inR(x,z,PORT_CULV);},
+  ceil(x,z,lvl){
+    if(lvl===0&&inR(x,z,PORT_CULV))return 1.2;
+    if((lvl===0||lvl===1)&&inR(x,z,PORT_OFF))return 3.55;
+    if(lvl===0&&inR(x,z,PORT_HOLD))return (G.p&&G.p.hatchOpen&&inR(x,z,PORT_HATCH))?null:3.55;
+    if(lvl>=1&&inR(x,z,PORT_SUP))return 3.55;
+    return null;
+  },
+  surface(x,z,lvl){
+    if(lvl===0&&inR(x,z,PORT_HOLD))return "steel";
+    if(lvl===1&&inR(x,z,PORT_DECK)&&!inR(x,z,PORT_SUP))return "steel";
+    if(lvl===3&&inR(x,z,PORT_CAB))return "steel";
+    if(inR(x,z,PORT_OFF)||inR(x,z,PORT_SUP))return "tile";
+    return lvl===0&&inR(x,z,PORT_CULV)?"steel":"asphalt";
+  },
+  fly(a){camera.position.set(Math.sin(a)*40-4,22,-30+Math.cos(a)*6);camera.lookAt(-4,4,12);},
+  text:{
+    case:"Port Halvard after midnight. The MV Kestrel is docked with a container nobody declared. Everything behind the fence is off limits. The gates are locked (hold E to pick them), and a drainage culvert runs under the fence on the west side. Hold G to put on your mask when you're ready.",
+    vault:"",
+    van:"Carry the bag to the speedboat at the east end of the quay.",
+    bins:"Dump the body in one of the dumpsters on the quay. Q drops it."
+  },
+  build(){
+    const self=this;
+    const fm={
+      ground:floorMat(drawAsphalt,30,20,{polygonOffset:true,polygonOffsetFactor:4,polygonOffsetUnits:4}),
+      deck:floorMat(drawPlate,24,6,{shininess:40,specular:0x222222}),hold:floorMat(drawPlate,24,6,{shininess:30}),tile:floorMat(drawTiles,6,4,{shininess:30}),
+      carpet:floorMat(drawCarpet,4,3),conc:floorMat(drawConcrete,4,3)
+    };
+    const hullM=phong(0x5a1e1a,{shininess:30}),white=phong(0xd8d6cf,{shininess:30}),steel=M.steel,office=phong(0x6a6d70),yellow=phong(0xd9a724,{shininess:40});
+    const OH=4.0,IH=3.6;
+    const wX=(l,z,a,b,h,m,o)=>addBox(a,z-0.2,b,z+0.2,h,m,Object.assign({lvl:l},o||{}));
+    const wZ=(l,x,a,b,h,m,o)=>addBox(x-0.2,a,x+0.2,b,h,m,Object.assign({lvl:l},o||{}));
+    const segX=(l,z,a,b,gaps,h,m)=>{let x=a;for(const [g0,g1,top] of gaps){if(g0>x)wX(l,z,x,g0,h,m);addBox(g0,z-0.2,g1,z+0.2,h,m,{lvl:l,y0:top,collide:false});x=g1;}if(b>x)wX(l,z,x,b,h,m);};
+    const segZ=(l,x,a,b,gaps,h,m)=>{let z=a;for(const [g0,g1,top] of gaps){if(g0>z)wZ(l,x,z,g0,h,m);addBox(x-0.2,g0,x+0.2,g1,h,m,{lvl:l,y0:top,collide:false});z=g1;}if(b>z)wZ(l,x,z,b,h,m);};
+    const winX=(l,z,a,b,h,m)=>{addBox(a,z-0.2,b,z+0.2,1.0,m,{lvl:l});addBox(a,z-0.2,b,z+0.2,h,m,{lvl:l,y0:2.4,collide:false});
+      const g=new THREE.Mesh(new THREE.PlaneGeometry(b-a,1.4),winGlass);g.position.set((a+b)/2,l*ROOF_Y+1.7,z);g.userData.noHit=true;lvAdd(g);colliders.push({minX:a,maxX:b,minZ:z-0.05,maxZ:z+0.05,h:2.4,see:true,lvl:l});};
+    const winZ=(l,x,a,b,h,m)=>{addBox(x-0.2,a,x+0.2,b,1.0,m,{lvl:l});addBox(x-0.2,a,x+0.2,b,h,m,{lvl:l,y0:2.4,collide:false});
+      const g=new THREE.Mesh(new THREE.PlaneGeometry(b-a,1.4),winGlass);g.position.set(x,l*ROOF_Y+1.7,(a+b)/2);g.rotation.y=Math.PI/2;g.userData.noHit=true;lvAdd(g);colliders.push({minX:x-0.05,maxX:x+0.05,minZ:a,maxZ:b,h:2.4,see:true,lvl:l});};
+    const holesAt=l=>STAIRS.filter(s=>s.hi===l).map(s=>[s.minX,s.minZ,s.maxX,s.maxZ]);
+    const fl=(l,r,mat,extra)=>{for(const q of rectMinus(r,holesAt(l).concat(extra||[])))floor(q[0],q[1],q[2],q[3],mat,l*ROOF_Y+0.03);};
+    const slab=(l,r,m,extra)=>{for(const q of rectMinus(r,holesAt(l).concat(extra||[])))addBox(q[0],q[1],q[2],q[3],l*ROOF_Y,m||M.ceil,{y0:l*ROOF_Y-0.38,collide:false});};
+    const rail=(l,x1,z1,x2,z2,m)=>{colliders.push({minX:Math.min(x1,x2)-0.05,maxX:Math.max(x1,x2)+0.05,minZ:Math.min(z1,z2)-0.05,maxZ:Math.max(z1,z2)+0.05,h:1.1,lvl:l});
+      addBox(Math.min(x1,x2)-0.04,Math.min(z1,z2)-0.04,Math.max(x1,x2)+0.04,Math.max(z1,z2)+0.04,1.1,m||yellow,{lvl:l,y0:1.02,collide:false});
+      const n=Math.max(1,Math.round(Math.hypot(x2-x1,z2-z1)/1.5));for(let i=0;i<=n;i++){const px=x1+(x2-x1)*i/n,pz=z1+(z2-z1)*i/n;addBox(px-0.03,pz-0.03,px+0.03,pz+0.03,1.02,m||yellow,{lvl:l,collide:false});}};
+    // a shipping container: hollow, doors at one end; returns the parts
+    const CCOL=[0x8a3a2a,0x2a4a7a,0x3a6a3a,0x8a6a2a,0x5a5f66,0x6a2a4a,0xa04a1a];
+    const container=(x1,z1,x2,z2,y0,lvl,col,code,o)=>{
+      o=o||{};const m=phong(col,{map:corrTex,shininess:20});const H=2.6,t=0.06,along=Math.abs(x2-x1)>Math.abs(z2-z1);
+      if(o.solid){addBox(x1,z1,x2,z2,y0+H,m,{lvl,y0,collide:y0<0.5});}
+      else{
+        if(along){addBox(x1,z1,x2,z1+t,y0+H,m,{lvl,y0});addBox(x1,z2-t,x2,z2,y0+H,m,{lvl,y0});addBox(o.doorAtMax?x1:x2-t,z1,o.doorAtMax?x1+t:x2,z2,y0+H,m,{lvl,y0});}
+        addBox(x1,z1,x2,z2,y0+H,m,{lvl,y0:y0+H-t,collide:false});addBox(x1,z1,x2,z2,y0+t,m,{lvl,y0,collide:false});
+      }
+      if(code){const p=plaque(signTex(code,256,48,"#f0eee6","rgba(0,0,0,0)","bold 28px monospace"),1.6,0.3,along?(o.doorAtMax?x2+0.01:x1-0.01):(x1+x2)/2,lvl*ROOF_Y+y0+2.25,(z1+z2)/2,along?(o.doorAtMax?Math.PI/2:-Math.PI/2):0);p.material.transparent=true;}
+      return {m};
+    };
+
+    // ---------- stairs ----------
+    makeStairs({minX:4,maxX:6,minZ:18.5,maxZ:24.5,axis:"z",up:1,lo:0,mat:steel,railMat:yellow,noEndRail:true});            // gangway
+    makeStairs({minX:-36.6,maxX:-34.4,minZ:-13,maxZ:-6.5,axis:"z",up:-1,lo:0,mat:M.cabinet,railMat:M.trim,open:["minX"]});      // harbor office stairs
+    makeStairs({minX:16.2,maxX:17.8,minZ:26,maxZ:32,axis:"z",up:1,lo:1,mat:steel,railMat:M.trim,open:["maxX"]});             // ship: deck -> cabins
+    makeStairs({minX:16.2,maxX:17.8,minZ:26,maxZ:32,axis:"z",up:1,lo:2,mat:steel,railMat:M.trim,open:["maxX"]});             // cabins -> bridge
+    makeStairs({minX:10.4,maxX:12,minZ:26,maxZ:32,axis:"z",up:1,lo:0,mat:steel,railMat:M.trim,open:["minX"]});               // deck -> hold (crew stairs)
+
+    // ---------- ground, water, walls, fence ----------
+    for(const q of rectMinus([-50,-30,50,20.2],[]))floor(q[0],q[1],q[2],q[3],fm.ground,0);
+    {const w=new THREE.Mesh(new THREE.PlaneGeometry(140,60),new THREE.MeshPhongMaterial({color:0x0b1a26,shininess:120,specular:0x557799}));w.rotation.x=-Math.PI/2;w.position.set(0,-1.2,50);lvAdd(w);self.water=w;}
+    addBox(-50,20.0,50,20.4,0.02,phong(0x4a4c4c),{y0:-1.2,collide:false});
+    for(let x=-46;x<=46;x+=6){if(Math.abs(x-5)<2)continue;addBox(x-0.3,19.3,x+0.3,19.9,0.6,phong(0x2a2c2e),{collide:false});}
+    rail(0,-50,20,3.9,20,M.pole);rail(0,6.1,20,50,20,M.pole);
+    wZ(0,-50,-30,20.4,2.6,M.brick);wZ(0,50,-30,20.4,2.6,M.brick);wX(0,-30,-50,50,2.6,M.brick);
+    // the fence: chain link you can see through; gates; the culvert gap
+    const fenceM=new THREE.MeshPhongMaterial({map:chainTex,transparent:true,alphaTest:.4,side:THREE.DoubleSide});
+    chainTex.repeat.set(20,1);
+    const fence=(a,b,y0)=>{const p=new THREE.Mesh(new THREE.PlaneGeometry(b-a,3.0-(y0||0)),fenceM.clone());p.material.map=chainTex.clone();p.material.map.repeat.set((b-a)/1.2,1);p.material.map.needsUpdate=true;p.position.set((a+b)/2,(3.0+(y0||0))/2,-20);p.userData.noHit=true;lvAdd(p);
+      if(!y0)colliders.push({minX:a,maxX:b,minZ:-20.06,maxZ:-19.94,h:3.2,see:true,lvl:0});
+      addBox(a,-20.04,b,-19.96,3.05,M.pole,{y0:2.97,collide:false});for(let x=a;x<=b+0.01;x+=3)addBox(x-0.05,-20.05,x+0.05,-19.95,3.05,M.pole,{collide:false});};
+    fence(-50,-30.7);fence(-30.7,-29.3,1.3);fence(-29.3,-3);fence(5.6,50);
+    makeDoor(-3,3,-20,2.8,{gate:true,pick:true,name:"vehicle gate"});addBox(3,-20.1,4,-19.9,3.0,M.pole);
+    makeDoor(4,5.6,-20,2.3,{gate:true,pick:true,name:"pedestrian gate"});
+    // the culvert: a concrete pipe under the fence, grate on the street side
+    addBox(-30.8,-22,-30.6,-18,1.25,M.cabinet);addBox(-29.4,-22,-29.2,-18,1.25,M.cabinet);addBox(-30.8,-22,-29.2,-18,1.35,M.cabinet,{y0:1.2,collide:false});
+    const culvG=new THREE.Mesh(new THREE.PlaneGeometry(1.2,1.2),new THREE.MeshPhongMaterial({map:tex(64,64,(g,w,h)=>{g.fillStyle="#2a2e32";g.fillRect(0,0,w,h);g.fillStyle="#0c0e10";for(let x=5;x<w;x+=9)g.fillRect(x,4,4,h-8);}),side:THREE.DoubleSide}));
+    culvG.position.set(-30,0.62,-22.02);culvG.userData.noHit=true;lvAdd(culvG);const culvCol={minX:-30.6,maxX:-29.4,minZ:-22.1,maxZ:-21.95,h:1.3,lvl:0};colliders.push(culvCol);
+    addBox(-31.5,-23.5,-28.5,-22.1,0.15,M.cabinet,{collide:false});
+    // guard booth by the gates
+    winX(0,-19,6,9,3.0,white);winX(0,-16,6,7.4,3.0,white);addBox(7.4,-16.2,8.2,-15.8,3.0,white,{y0:2.4,collide:false});wX(0,-16,8.2,9,3.0,white);
+    wZ(0,6,-19,-16,3.0,white);winZ(0,9,-19,-16,3.0,white);addBox(5.8,-19.2,9.2,-15.8,3.2,white,{y0:3.0,collide:false});
+    addBox(6.4,-18.8,8.6,-18.2,0.8,M.desk);pointLight(7.5,2.6,-17.5,0xf0f4ff,0.5,7);
+    lamp(-14,-23,0xffb050);lamp(14,-23,0xffb050);
+
+    // ---------- the yard: rows of containers, floodlights ----------
+    let ci=0;const code=()=>["TRDU","MSKU","CMAU","HLXU","OOLU"][ci%5]+" "+(100000+((ci*7919)%899999))+"-"+(ci%9);
+    for(const z of [-12,-8.4,-4.8,4.4,8.0,11.6])for(const [a,b] of [[-26,-19.9],[-19.4,-13.3]]){ci++;container(a,z-1.22,b,z+1.22,0,0,CCOL[ci%7],code(),{solid:true});if(ci%3===0)container(a,z-1.22,b,z+1.22,2.6,0,CCOL[(ci+3)%7],null,{solid:true});}
+    for(const z of [-2,2.4,6.8,11.2])for(const [a,b] of [[14,20.1],[20.6,26.7],[27.2,33.3]]){ci++;container(a,z-1.22,b,z+1.22,0,0,CCOL[ci%7],code(),{solid:true});if(ci%2===0)container(a,z-1.22,b,z+1.22,2.6,0,CCOL[(ci+2)%7],null,{solid:true});}
+    for(const [x,z] of [[-30,-14],[-30,14],[0,-12],[0,14],[38,-16],[38,14]]){addBox(x-0.2,z-0.2,x+0.2,z+0.2,9,M.pole);const h=new THREE.Mesh(new THREE.BoxGeometry(1.4,0.3,0.6),M.lamp);h.position.set(x,9,z);lvAdd(h);pointLight(x,8.4,z,0xffe0b0,0.85,22);}
+    makeBin(-2,17.6,1.8,1.2,1.3,M.dumpster,lidMat,"WASTE");makeBin(30,17.6,1.8,1.2,1.3,M.dumpster,lidMat,"WASTE");makeBin(-28,-17.2,1.8,1.2,1.3,M.dumpster,lidMat,"WASTE");
+    // forklift
+    addBox(10,-6,11.4,-3.8,1.3,yellow);addBox(10.2,-6,11.2,-5.2,2.1,yellow,{y0:1.3,collide:false});
+
+    // ---------- harbor master's office (two floors) ----------
+    wX(0,-14,-44.2,-29.8,OH,office);wZ(0,-44,-14,-2,OH,office);
+    segZ(0,-30,-14,-2,[[-9,-7,2.4]],OH,office);winX(0,-2,-44.2,-37,OH,office);wX(0,-2,-37,-29.8,OH,office);
+    wX(1,-14,-44.2,-29.8,OH,office);winZ(1,-44,-14,-8,OH,office);wZ(1,-44,-8,-2,OH,office);winZ(1,-30,-14,-8,OH,office);wZ(1,-30,-8,-2,OH,office);wX(1,-2,-44.2,-29.8,OH,office);
+    makeDoorZ(-30,-9,-7,2.38,{name:"office door"});
+    segZ(0,-37,-14,-2,[[-12,-10,2.4],[-5,-3,2.4]],IH,phong(0x9a9488));wX(0,-8,-44,-37,IH,phong(0x9a9488));
+    makeDoorZ(-37,-12,-10,2.38,{mat:staffDoorMat,name:"security room door"});makeDoorZ(-37,-5,-3,2.38,{name:"break room door"});
+    segZ(1,-37,-14,-2,[[-12,-10,2.4],[-5,-3,2.4]],IH,phong(0x9a9488));wX(1,-6,-44,-37,IH,phong(0x9a9488));
+    makeDoorZ(-37,-12,-10,2.38,{lvl:1,mat:phong(0x4a3424),name:"harbor master's door",pick:true});makeDoorZ(-37,-5,-3,2.38,{lvl:1,name:"records room door"});
+    slab(0,PORT_OFF);slab(1,PORT_OFF);addBox(-44.2,-14.2,-29.8,-1.8,2*ROOF_Y,office,{y0:2*ROOF_Y-0.3,collide:false});
+    fl(0,PORT_OFF,fm.tile);fl(1,[-44,-14,-37,-6],fm.carpet);fl(1,[-37,-14,-30,-2],fm.tile);fl(1,[-44,-6,-37,-2],fm.tile);
+    plaque(signTex("HARBOR MASTER",512,80,"#e8e4d8","#1c2a3a","bold 44px Arial"),3.2,0.5,-29.78,3.3,-8,Math.PI/2);
+    // security room: monitors on the west wall, the operator
+    addBox(-43.6,-13.6,-42.8,-8.4,0.8,M.desk);
+    const monTex=signTex("YARD 1  YARD 2  GATE  QUAY  GANGWAY  DECK",512,64,"#9fc4ff","#0d1a2c","bold 22px monospace");
+    for(let i=0;i<3;i++){const sc=new THREE.Mesh(new THREE.PlaneGeometry(1.4,0.8),new THREE.MeshBasicMaterial({map:monTex}));sc.position.set(-43.76,1.6,-13+i*1.6);sc.rotation.y=Math.PI/2;sc.userData.noHit=true;lvAdd(sc);}
+    addBox(-41.75,-11.25,-41.25,-10.75,0.45,M.cabinet,{collide:false});addBox(-41.25,-11.25,-41.17,-10.75,1.15,M.cabinet,{y0:0.45,collide:false});
+    addBox(-41,-13.5,-40,-12.3,0.8,M.desk);
+    pointLight(-40.5,3.0,-11,0x9fb8e8,0.5,8);
+    // break room: the crane driver asleep on a cot
+    addBox(-43.6,-7.6,-41.4,-6.6,0.45,phong(0x5a6a50));addBox(-39.6,-4,-38.2,-2.6,0.78,M.desk);
+    pointLight(-40.5,3.0,-5,0xffd9a0,0.35,7);pointLight(-33.5,3.0,-8,0xf0f4ff,0.55,10,true);
+    // upstairs: manifest terminal, key cabinet, safe
+    addBox(-42.5,-10,-39.5,-9,0.8,phong(0x4a3424),{lvl:1});
+    const term=new THREE.Mesh(new THREE.BoxGeometry(0.5,0.4,0.06),[M.cabinet,M.cabinet,M.cabinet,M.cabinet,new THREE.MeshBasicMaterial({map:signTex("MANIFEST · MV KESTREL",256,64,"#9fe8b0","#06140a","bold 22px monospace")}),M.cabinet]);term.position.set(-41,ROOF_Y+1.06,-9.4);lvAdd(term);
+    const cab=new THREE.Mesh(new THREE.BoxGeometry(0.9,1.1,0.25),phong(0x5a6066,{shininess:40}));cab.position.set(-38.2,ROOF_Y+1.6,-13.85);lvAdd(cab);
+    plaque(signTex("KEYS",128,48,"#0b0d10","#f4ab3d","bold 28px Arial"),0.4,0.15,-38.2,ROOF_Y+2.25,-13.72);
+    const hs={pickT:0,open:false,t:0,pivot:null};
+    {const x=-42.6,z=-12.9,W=1.2,D=0.7,Hh=1.4,t=0.07;
+      addBox(x-W/2,z-D,x+W/2,z-D+t,Hh,safeMat,{lvl:1,collide:false});addBox(x-W/2,z-D,x-W/2+t,z,Hh,safeMat,{lvl:1,collide:false});addBox(x+W/2-t,z-D,x+W/2,z,Hh,safeMat,{lvl:1,collide:false});
+      addBox(x-W/2,z-D,x+W/2,z,t,safeIn,{lvl:1,collide:false});addBox(x-W/2,z-D,x+W/2,z,Hh,safeMat,{lvl:1,y0:Hh-t,collide:false});
+      colliders.push({minX:x-W/2,maxX:x+W/2,minZ:z-D,maxZ:z+0.12,h:Hh,lvl:1});
+      hs.pivot=new THREE.Group();hs.pivot.position.set(x-W/2,ROOF_Y,z+0.06);lvAdd(hs.pivot);
+      const dm=new THREE.Mesh(new THREE.BoxGeometry(W,Hh,0.1),safeMat);dm.position.set(W/2,Hh/2,0);hs.pivot.add(dm);
+      const dial=new THREE.Mesh(new THREE.CylinderGeometry(0.1,0.1,0.04,20),M.steel);dial.rotation.x=Math.PI/2;dial.position.set(W*0.62,0.8,0.07);hs.pivot.add(dial);hs.x=x;hs.z=z;}
+    // the harbor safe bag sits inside the safe
+    pointLight(-40.5,ROOF_Y+3.0,-10,0xffe0b0,0.55,10,true);pointLight(-33.5,ROOF_Y+3.0,-6,0xf0f4ff,0.4,10,true);
+
+    // ---------- workshop and the customs cage ----------
+    wX(0,-14,20,28,3.4,office);wZ(0,20,-14,-8,3.4,office);wZ(0,28,-14,-8,3.4,office);segX(0,-8,20,28,[[23,25,2.4]],3.4,office);addBox(19.8,-14.2,28.2,-7.8,3.6,office,{y0:3.4,collide:false});
+    makeDoor(23,25,-8,2.38,{mat:staffDoorMat,name:"workshop door"});
+    addBox(20.4,-13.8,27.6,-13.0,0.95,M.counter);fl(0,[20,-14,28,-8],fm.conc);pointLight(24,3.0,-11,0xf0f4ff,0.5,9,true);
+    const cutters=new THREE.Group();cutters.position.set(22,0.97,-13.4);lvAdd(cutters);
+    for(const s of [-1,1]){const h=new THREE.Mesh(new THREE.BoxGeometry(0.5,0.03,0.04),phong(0xc0202a));h.position.set(-0.2,0,s*0.04);h.rotation.y=s*0.12;cutters.add(h);}
+    {const j=new THREE.Mesh(new THREE.BoxGeometry(0.16,0.05,0.08),M.steel);j.position.set(0.12,0,0);cutters.add(j);}cutters.traverse(o=>o.userData.noHit=true);
+    for(const [x1,z1,x2,z2] of [[30,-14,36,-13.95],[36,-14,36.05,-8],[30,-14,30.05,-8],[30,-8,31.8,-7.95],[33.6,-8,36,-7.95]]){
+      const along=Math.abs(x2-x1)>Math.abs(z2-z1);const p=new THREE.Mesh(new THREE.PlaneGeometry(along?x2-x1:z2-z1,3.0),fenceM);p.position.set((x1+x2)/2,1.5,(z1+z2)/2);p.rotation.y=along?0:Math.PI/2;p.userData.noHit=true;lvAdd(p);
+      colliders.push({minX:x1-0.03,maxX:x2+0.03,minZ:z1-0.03,maxZ:z2+0.03,h:3.0,see:true,lvl:0});}
+    addBox(29.9,-14.1,36.1,-7.9,3.05,M.pole,{y0:2.97,collide:false});
+    const cageDoor=makeDoor(31.8,33.6,-8,2.6,{gate:true,pick:true,name:"customs cage"});
+    addBox(32.4,-10.0,33.6,-9.0,0.8,M.desk);
+    plaque(signTex("CUSTOMS · SEIZED GOODS",512,64,"#0b0d10","#f4ab3d","bold 30px Arial"),2.4,0.3,32.7,2.7,-7.9);
+
+    // ---------- the dock crane ----------
+    const craneM=phong(0xc8a020,{shininess:30}),cr={};
+    for(const [x,z] of [[-12,4],[-12,16],[-2.5,4],[-2.5,16]])addBox(x-0.5,z-0.5,x+0.5,z+0.5,15,craneM);
+    for(const z of [4,16])addBox(-12.5,z-0.4,-2,z+0.4,15.4,craneM,{y0:14.4,collide:false});
+    for(const x of [-12,-2.5])addBox(x-0.4,3.5,x+0.4,16.5,15.4,craneM,{y0:14.6,collide:false});
+    addBox(-8.1,-2,-6.4,42,16.2,craneM,{y0:15.4,collide:false});
+    addBox(-7.6,-6,-6.9,-2,16.0,M.cabinet,{y0:14.4,collide:false});
+    for(const z of [4,16])addBox(-50,z-0.12,50,z+0.12,0.08,M.steel,{collide:false});
+    cr.trolley=new THREE.Mesh(new THREE.BoxGeometry(2.2,0.7,2.4),M.cabinet);cr.trolley.position.set(-7.25,15.1,14);cr.trolley.userData.noHit=true;lvAdd(cr.trolley);
+    cr.spreader=new THREE.Mesh(new THREE.BoxGeometry(6.3,0.25,2.5),yellow);cr.spreader.position.set(-7.25,14.4,14);cr.spreader.userData.noHit=true;lvAdd(cr.spreader);
+    cr.cable=new THREE.Mesh(new THREE.BoxGeometry(0.06,1,0.06),M.pole);cr.cable.userData.noHit=true;lvAdd(cr.cable);
+    // cab platform at the top of the leg, ladder up the leg
+    addBox(-10.9,14,-7.4,18.6,3*ROOF_Y,M.steel,{y0:3*ROOF_Y-0.15,collide:false});
+    rail(3,-7.4,14,-7.4,18.6);rail(3,-10.9,14,-7.4,14);rail(3,-10.9,18.6,-7.4,18.6);rail(3,-10.9,14,-10.9,15.4);rail(3,-10.9,16.6,-10.9,18.6);
+    addBox(-10.6,17.6,-8.2,18.4,3*ROOF_Y+2.6,white,{y0:3*ROOF_Y,collide:false});colliders.push({minX:-10.6,maxX:-8.2,minZ:17.6,maxZ:18.4,h:2.6,lvl:3});
+    addBox(-10.8,14.2,-8.0,18.6,3*ROOF_Y+2.8,white,{y0:3*ROOF_Y+2.6,collide:false});
+    addBox(-10.4,17.1,-8.4,17.6,1.0,M.cabinet,{lvl:3});
+    const leverM=[0,1,2].map(i=>{const l=new THREE.Mesh(new THREE.BoxGeometry(0.05,0.35,0.05),phong(0xc0202a));l.position.set(-9.9+i*0.5,3*ROOF_Y+1.15,17.3);l.userData.noHit=true;lvAdd(l);return l;});
+    plaque(signTex("ROW 1     ROW 2     ROW 3",256,40,"#f0eee6","#1a1d20","bold 18px monospace"),1.4,0.2,-9.4,3*ROOF_Y+1.45,17.08,Math.PI);
+    pointLight(-9.4,3*ROOF_Y+2.3,16.2,0xf0f4ff,0.5,7);
+    {const g=new THREE.Group();g.position.set(-11.47,0,16);g.rotation.y=-Math.PI/2;lvAdd(g);for(const sx of [-0.25,0.25]){const r=new THREE.Mesh(new THREE.BoxGeometry(0.05,13.3,0.06),M.steel);r.position.set(sx,6.65,0);g.add(r);}for(let y=0.3;y<13.2;y+=0.3){const r=new THREE.Mesh(new THREE.BoxGeometry(0.5,0.035,0.035),M.steel);r.position.set(0,y,0);g.add(r);}}
+    LADDERS.push({name:"crane ladder",x:-11.05,z:16,yaw:Math.PI/2,lo:0,top:3*ROOF_Y+1.2,path:[[-10.4,16,3*ROOF_Y+1.2]],exit:{x:-10.2,z:16,lvl:3}});
+
+    // ---------- the ship ----------
+    // hull (sides from the waterline to the deck), deck railing
+    addBox(-34.2,23.8,18.2,24.2,ROOF_Y,hullM,{y0:-1.2});addBox(-34.2,37.8,18.2,38.2,ROOF_Y,hullM,{y0:-1.2});
+    addBox(-34.2,24,-33.8,38,ROOF_Y,hullM,{y0:-1.2});addBox(17.8,24,18.2,38,ROOF_Y,hullM,{y0:-1.2});
+    for(const [a,b] of [[-36,-34],[18,21]])addBox(a,24.4,b,37.6,ROOF_Y,hullM,{y0:-1.2,collide:false});
+    plaque(signTex("KESTREL",512,96,"#e8e4d8","rgba(0,0,0,0)","bold 70px Georgia, serif"),4,0.75,-28,2.4,23.78,Math.PI).material.transparent=true;
+    rail(1,-34,24.1,3.9,24.1);rail(1,6.1,24.1,18,24.1);rail(1,-34,37.9,18,37.9);rail(1,-33.9,24,-33.9,38);rail(1,17.9,24,17.9,38);
+    slab(1,PORT_DECK,hullM,[PORT_HATCH]);fl(1,PORT_DECK,fm.deck,[PORT_HATCH,PORT_SUP]);
+    // hold below deck: floor, bulkheads with doorways
+    fl(0,PORT_HOLD,fm.hold);addBox(-34,24.4,18,37.6,0.0,hullM,{y0:-0.3,collide:false});
+    segZ(0,-18,24.4,37.6,[[24.4,26.4,2.4]],IH,phong(0x6a6f74));segZ(0,-2,24.4,37.6,[[24.4,26.4,2.4]],IH,phong(0x6a6f74));
+    for(const z of [27.2,31,34.8])for(const [a,b] of [[-32,-25.9],[-25.4,-19.3]]){ci++;container(a,z-1.22,b,z+1.22,0,0,CCOL[ci%7],code(),{solid:true});}
+    for(const z of [27.2,34.8]){ci++;container(1,z-1.22,7.1,z+1.22,0,0,CCOL[ci%7],code(),{solid:true});}
+    pointLight(-10,3.2,31,0xf0f4ff,0.6,14,true);pointLight(-26,3.2,31,0xf0f4ff,0.45,12,true);pointLight(8,3.2,31,0xf0f4ff,0.5,12,true);
+    // bay 2: three rows, each a sealed container with a blocker parked against its doors
+    const rows=PORT_ROWS.map((z,i)=>{
+      ci++;const col=CCOL[(ci*3)%7];const cd=code();
+      container(-16.5,z-1.22,-10.4,z+1.22,0,0,col,cd,{doorAtMax:true});
+      // door (hinged at the -z edge, swings out toward +x)
+      const pivot=new THREE.Group();pivot.position.set(-10.4,0,z-1.22);lvAdd(pivot);
+      const leaf=new THREE.Mesh(new THREE.BoxGeometry(0.08,2.5,2.44),phong(col,{map:corrTex}));leaf.position.set(0,1.3,1.22);pivot.add(leaf);
+      const pad=new THREE.Mesh(new THREE.BoxGeometry(0.06,0.2,0.16),phong(0x111316));pad.position.set(0.07,1.3,2.0);pivot.add(pad);
+      const ledM=new THREE.MeshBasicMaterial({color:0xff3a30});const led=new THREE.Mesh(new THREE.PlaneGeometry(0.1,0.04),ledM);led.position.set(0.105,1.37,2.0);led.rotation.y=Math.PI/2;pivot.add(led);
+      const p2=plaque(signTex(cd,256,48,"#f0eee6","rgba(0,0,0,0)","bold 28px monospace"),1.4,0.26,-10.32,2.2,z,Math.PI/2);p2.material.transparent=true;
+      const doorCol={minX:-10.5,maxX:-10.3,minZ:z-1.22,maxZ:z+1.22,h:2.6,lvl:0};colliders.push(doorCol);
+      // blocker container: solid, liftable
+      const bg=new THREE.Group();lvAdd(bg);
+      const bm=new THREE.Mesh(new THREE.BoxGeometry(6.1,2.6,2.44),phong(CCOL[(ci*5+1)%7],{map:corrTex}));bm.castShadow=true;bm.receiveShadow=true;bg.add(bm);
+      bg.position.set(-7.25,1.3,z);bg.traverse(o=>o.userData.noHit=true);
+      const bcol={minX:-10.3,maxX:-4.2,minZ:z-1.22,maxZ:z+1.22,h:2.6,lvl:0};colliders.push(bcol);
+      return {z,code:cd,pivot,ledM,doorCol,bg,bcol,lifted:false,dropCol:{minX:-10.3,maxX:-4.2,minZ:PORT_DROP[i]-1.22,maxZ:PORT_DROP[i]+1.22,h:2.6,lvl:0}};
+    });
+    VAULT={x:-10.4,z:rows[0].z,pivot:rows[0].pivot,wheel:new THREE.Object3D(),col:rows[0].doorCol,drillGroup:new THREE.Group(),drillBit:new THREE.Object3D(),drillLight:{intensity:0},custom:true,level:0};
+    // hatch covers over bay 2 (hydraulic, two halves), fixed covers over bays 1 and 3
+    const hatch={halves:[],cols:[]};
+    for(const [x0,dir] of [[-11,1],[-3.5,-1]]){const piv=new THREE.Group();piv.position.set(x0,ROOF_Y+0.02,31);lvAdd(piv);
+      const h=new THREE.Mesh(new THREE.BoxGeometry(3.75,0.35,10),phong(0x2a4a5a,{shininess:30}));h.position.set(dir*1.875,0.175,0);h.castShadow=true;h.receiveShadow=true;piv.add(h);hatch.halves.push({piv,dir});}
+    hatch.cols.push({minX:-11,maxX:-3.5,minZ:26,maxZ:36,h:0.37,lvl:1});colliders.push(hatch.cols[0]);
+    for(const [a,b] of [[-31,-21],[0,8]])addBox(a,26,b,36,0.4,phong(0x2a4a5a,{shininess:30}),{lvl:1});
+    // a few containers on deck
+    for(const z of [28.2,33.2]){ci++;container(-30,z-1.22,-23.9,z+1.22,0.4,1,CCOL[ci%7],null,{solid:true});}
+    // hatch ladder (only usable with the hatch open)
+    makeLadder(-3.7,29.1,0,ROOF_Y+0.4,Math.PI/2);
+    LADDERS.push({name:"hold ladder",x:-4.0,z:29.1,yaw:-Math.PI/2,lo:0,top:ROOF_Y+0.4,path:[[-4.0,29.1,ROOF_Y+0.6],[-3.0,29.1,ROOF_Y+0.6]],exit:{x:-2.7,z:29.1,lvl:1},enabled:()=>G.p&&G.p.hatchOpen});
+    // superstructure: three decks over the stern
+    for(const l of [1,2,3]){
+      if(l===1){wX(1,25,10,18,OH,white);segZ(1,10,25,37,[[34,36,2.4]],OH,white);winZ(1,18,27,30,OH,white);wZ(1,18,25,27,OH,white);wZ(1,18,30,37,OH,white);wX(1,37,10,18,OH,white);}
+      if(l===2){wX(2,25,10,18,OH,white);winZ(2,10,26,30,OH,white);wZ(2,10,25,26,OH,white);wZ(2,10,30,37,OH,white);wZ(2,18,25,37,OH,white);winX(2,37,10,14,OH,white);wX(2,37,14,18,OH,white);}
+      if(l===3){winX(3,25,10,18,OH,white);winZ(3,10,25,37,OH,white);winZ(3,18,25,32,OH,white);wZ(3,18,32,37,OH,white);winX(3,37,10,18,OH,white);}
+    }
+    makeDoorZ(10,34,36,2.38,{lvl:1,mat:staffDoorMat,name:"superstructure door"});
+    slab(2,PORT_SUP);slab(3,PORT_SUP);addBox(9.8,24.8,18.2,37.2,4*ROOF_Y,white,{y0:4*ROOF_Y-0.35,collide:false});
+    fl(1,PORT_SUP,fm.tile);fl(2,PORT_SUP,fm.carpet);fl(3,PORT_SUP,fm.tile);
+    // deck 1: mess, the locked crew stairs down to the hold
+    addBox(11.4,34.6,13.4,36.2,0.8,M.desk,{lvl:1});
+    addBox(12.0,32.25,12.3,32.55,IH,white,{lvl:1});addBox(10.2,32.2,12.3,32.6,IH,white,{lvl:1,y0:2.4,collide:false});
+    const crewDoor=makeDoor(10.4,12,32.4,2.38,{lvl:1,mat:M.steel,name:"hold stairs door"});makeReader(crewDoor,12.15,ROOF_Y+1.25,32.62,0);
+    pointLight(13,ROOF_Y+3.0,34,0xfff0d8,0.55,10,true);
+    // deck 2: cabins
+    segX(2,31,10,13.5,[],IH,white);segZ(2,13.5,25,37,[[28,30,2.4],[33,35,2.4]],IH,white);
+    makeDoorZ(13.5,28,30,2.38,{lvl:2,mat:phong(0x4a3424),name:"captain's cabin"});makeDoorZ(13.5,33,35,2.38,{lvl:2,mat:phong(0x4a3424),name:"crew cabin"});
+    addBox(10.4,25.4,12.4,27.4,0.6,phong(0x3a4a5a),{lvl:2});addBox(10.4,27.6,11.6,28.4,0.6,M.desk,{lvl:2});addBox(10.4,35.4,12.4,36.6,0.8,M.desk,{lvl:2});
+    pointLight(15,2*ROOF_Y+3.0,31,0xfff0d8,0.5,10,true);
+    // deck 3: the bridge, hatch controls, the searchlight up top
+    addBox(10.4,36.0,17.6,36.6,1.0,M.cabinet,{lvl:3});addBox(12,25.2,15,25.8,1.0,M.cabinet,{lvl:3});
+    const hydr=new THREE.Mesh(new THREE.BoxGeometry(0.8,0.3,0.06),[M.cabinet,M.cabinet,M.cabinet,M.cabinet,new THREE.MeshBasicMaterial({map:signTex("HATCH 2 · HYDRAULICS",256,64,"#ffd27a","#140e04","bold 24px monospace")}),M.cabinet]);hydr.position.set(13.5,3*ROOF_Y+1.25,25.85);lvAdd(hydr);
+    addBox(13.2,30.6,14.8,31.4,1.0,M.cabinet,{lvl:3});
+    pointLight(14,3*ROOF_Y+3.0,31,0x9fc4ff,0.35,11,true);
+    addBox(13.6,30.6,14.4,31.4,4*ROOF_Y+0.6,M.pole,{y0:4*ROOF_Y,collide:false});
+    pointLight(-12,8.5,31,0xf0f4ff,0.7,22);
+
+    // ---------- the getaway: a speedboat at the east end ----------
+    {const bx=41.5,bz=22.6;
+      const hull=new THREE.Mesh(new THREE.BoxGeometry(7.5,0.9,2.6),phong(0xe8e6de,{shininess:60}));hull.position.set(bx,-0.75,bz);lvAdd(hull);
+      const stripe=new THREE.Mesh(new THREE.BoxGeometry(7.52,0.12,2.62),phong(0x1d4a7a));stripe.position.set(bx,-0.55,bz);lvAdd(stripe);
+      const ws=new THREE.Mesh(new THREE.BoxGeometry(0.1,0.5,2.2),M.glass);ws.position.set(bx+1.4,-0.05,bz);lvAdd(ws);
+      const mot=new THREE.Mesh(new THREE.BoxGeometry(0.5,0.8,0.6),dark2());mot.position.set(bx-4.0,-0.6,bz);lvAdd(mot);
+      SECURE={x:bx,z:19.0};VAN_Y=0.0;VAN_SLOTS=[[bx-2.4,bz-0.5],[bx-1.4,bz+0.5],[bx-0.4,bz-0.5],[bx+0.6,bz+0.5]];
+      ring=new THREE.Mesh(new THREE.RingGeometry(0.9,1.1,40),new THREE.MeshBasicMaterial({color:0x78d8a3,transparent:true,opacity:.35,depthWrite:false}));
+      ring.rotation.x=-Math.PI/2;ring.position.set(SECURE.x,0.05,SECURE.z);ring.userData.noHit=true;lvAdd(ring);
+      pointLight(bx,2.2,19.5,0xffd9a0,0.5,8);}
+    function dark2(){return phong(0x1a1c1e);}
+
+    // ---------- keycard (hold stairs) ----------
+    makeKeycard([[-40.6,0.81,-12.9],[8.3,0.81,-18.5],[12.6,4.81,35.0],[11.4,8.61,26.4],[26.4,0.96,-13.3],[-39.2,0.79,-3.0]]);
+    // ---------- cameras ----------
+    makeCam(-29.6,3.4,-14.4,-2.4+Math.PI,0.6,10,0,26,0.45,0);
+    makeCam(9.4,3.2,-15.6,0.4,0.5,9,1.2,22,0.45,0,{shadow:false});
+    makeCam(37.6,4.6,-1,-1.3,0.5,11,0.4,26,0.45,0,{shadow:false});
+    makeCam(-2.1,4.6,19.6,-1.6,0.6,10,2.0,24,0.45,0,{shadow:false});
+    makeCam(6.6,ROOF_Y+3.0,24.6,-0.9,0.4,9,0.8,18,0.45,1,{shadow:false});
+    const search=makeCam(14,4*ROOF_Y+0.8,30.2,-Math.PI/2,1.0,14,0.5,34,0.32,1,{shadow:false});search.spot.intensity=2.6;
+    // ---------- security ----------
+    new Guard([[7.5,-17.4,Math.PI,0]],0,{name:"Varga",flashShadow:false});
+    new Guard([[-28,-16,null,2],[-10,-16],[-10,14,null,2],[-28,14]],1.0,{name:"Moss"});
+    new Guard([[12,-16,null,2],[38,-16],[38,14,null,2],[12,14]],1.0,{name:"Kade",flashShadow:false});
+    new Guard([[-46,18,null,3],[46,18,null,3]],1.2,{name:"Holt",flashShadow:false});
+    new Guard([[-33,-12.5,null,2],[-33,-3,null,2]],1.0,{name:"Sten",flashShadow:false});
+    new Guard([[-41.5,-11,-Math.PI/2,0]],0,{security:true,seated:true,name:"Ibsen",flashShadow:false});
+    new Guard([[-30,25.2,null,3],[8,25.2,null,2],[8,36.8],[-30,36.8,null,3]],1.1,{name:"Riggs",level:1,flashShadow:false});
+    new Guard([[14.8,26,null,3],[14.8,36,null,3]],1.0,{name:"Bauer",level:2,flashShadow:false});
+    new Guard([[-30,25.3,null,2],[14,25.3,null,2]],1.0,{name:"Lund",flashShadow:false});
+    // ---------- the night shift ----------
+    new Civilian([[-41.6,-7.1,Math.PI/2,0]],0,{asleep:true,worker:true,label:"The crane driver",bedY:0.6});
+    new Civilian([[13,0.2,null,4],[34.5,0.2,null,4]],1.5,{worker:true,label:"A dock worker"});
+    new Civilian([[-28,0,null,5],[-11,0,null,5]],2,{worker:true,label:"A dock worker"});
+    new Civilian([[14,35.0,0,0]],0,{worker:true,label:"The first mate",level:3});
+    new Civilian([[14.8,35.5,-Math.PI/2,0]],0,{worker:true,label:"The cook",level:1});
+    new Civilian([[-40.5,-8.3,Math.PI,0]],0,{worker:true,label:"The night clerk",level:1});
+    Object.assign(self,{X:{rows,hatch,cr,cutters,culvG,culvCol,hs,leverM,cageDoor}});
+  },
+  reset(){
+    const X=this.X;if(!X)return;
+    const row=Math.random()*3|0;
+    G.p={row,manifest:false,craneKey:false,cutters:false,hatchOpen:false,hatchT:0,culvOpen:false,lift:null,holdT:0,holdId:"",keyPick:0,horn:20+Math.random()*20,noiseT:0};
+    // which container is the target; the vault door is its door
+    const t=X.rows[row];
+    VAULT={x:-10.4,z:t.z,pivot:t.pivot,wheel:new THREE.Object3D(),col:t.doorCol,drillGroup:new THREE.Group(),drillBit:new THREE.Object3D(),drillLight:{intensity:0},custom:true,keypadTitle:"CONTAINER E-SEAL",level:0,onCode:()=>{openSafe();t.ledM.color.setHex(0x40ff80);toast("The seal pops. The container is open","good",2200);}};
+    X.rows.forEach(r=>{r.pivot.rotation.y=0;if(!colliders.includes(r.doorCol))colliders.push(r.doorCol);r.ledM.color.setHex(0xff3a30);
+      r.lifted=false;r.bg.position.set(-7.25,1.3,r.z);if(!colliders.includes(r.bcol))colliders.push(r.bcol);{const i=colliders.indexOf(r.dropCol);if(i>=0)colliders.splice(i,1);}});
+    // the target's loot sits inside it
+    const tb=bags.filter(b=>b.box==="vault");
+    tb.forEach((b,i)=>{b.mesh.position.set(-15.2+(i>>1)*1.6,(b.gold?0.34:0.22)+(i%2?0:0),t.z+(i%2?0.55:-0.55));b.mesh.rotation.set(0,Math.PI/2,0);b.level=0;});
+    X.hatch.halves.forEach(h=>h.piv.rotation.z=0);if(!colliders.includes(X.hatch.cols[0]))colliders.push(X.hatch.cols[0]);
+    X.cutters.visible=true;X.culvG.visible=true;if(!colliders.includes(X.culvCol))colliders.push(X.culvCol);
+    X.hs.open=false;X.hs.t=0;X.hs.pickT=0;X.hs.pivot.rotation.y=0;
+    X.cr.trolley.position.set(-7.25,15.1,14);X.cr.spreader.position.set(-7.25,14.4,14);this.cable();
+    X.leverM.forEach(l=>l.rotation.x=0);
+  },
+  cable(){const c=this.X.cr,top=15.0,bot=c.spreader.position.y+0.12;c.cable.position.set(c.spreader.position.x,(top+bot)/2,c.spreader.position.z);c.cable.scale.y=Math.max(0.05,top-bot);},
+  tick(dt){
+    const X=this.X,p=G.p;if(!X||!p)return;
+    if(this.water)this.water.position.y=-1.2+Math.sin(G.world*0.6)*0.05;
+    // hatch halves fold up
+    const ht=p.hatchOpen?1:0;if(p.hatchT!==ht){p.hatchT=clamp(p.hatchT+(p.hatchOpen?dt:-dt)/4,0,1);const e=p.hatchT*p.hatchT*(3-2*p.hatchT);X.hatch.halves.forEach(h=>h.piv.rotation.z=h.dir*e*Math.PI/2*0.98);}
+    if(X.hs.open&&X.hs.t<1){X.hs.t=Math.min(1,X.hs.t+dt);X.hs.pivot.rotation.y=-1.7*(1-Math.pow(1-X.hs.t,3));}
+    if(state!=="playing")return;
+    // ship's horn now and then
+    p.horn-=dt;if(p.horn<=0){p.horn=50+Math.random()*40;tone({type:"sawtooth",f0:98,f1:96,dur:2.6,vol:.07,lp:400,attack:.3});tone({type:"sawtooth",f0:147,f1:145,dur:2.6,vol:.05,lp:500,attack:.3});}
+    // the crane lifting a blocker out of the hold
+    const L=p.lift;
+    if(L){
+      L.t+=dt;const r=X.rows[L.row],c=X.cr,t=L.t;
+      const lerp=(a,b,u)=>a+(b-a)*clamp(u,0,1),sm=u=>{u=clamp(u,0,1);return u*u*(3-2*u);};
+      let tz=14,sy=14.4,carry=false;
+      if(t<3){tz=lerp(14,r.z,sm(t/3));}
+      else if(t<5.5){tz=r.z;sy=lerp(14.4,2.75,sm((t-3)/2.5));}
+      else if(t<6.5){tz=r.z;sy=2.75;carry=t>6;}
+      else if(t<9){tz=r.z;sy=lerp(2.75,14.0,sm((t-6.5)/2.5));carry=true;}
+      else if(t<12){sy=14.0;tz=lerp(r.z,PORT_DROP[L.row],sm((t-9)/3));carry=true;}
+      else if(t<14.5){tz=PORT_DROP[L.row];sy=lerp(14.0,2.75,sm((t-12)/2.5));carry=true;}
+      else if(t<17){tz=lerp(PORT_DROP[L.row],14,sm((t-14.5)/2.5));sy=lerp(2.75,14.4,sm((t-14.5)/2));}
+      if(t>=6&&!L.picked){L.picked=true;const i=colliders.indexOf(r.bcol);if(i>=0)colliders.splice(i,1);}
+      if(t>=14.5&&!L.dropped){L.dropped=true;colliders.push(r.dropCol);r.bg.position.set(-7.25,1.3,PORT_DROP[L.row]);}
+      c.trolley.position.z=tz;c.spreader.position.set(-7.25,sy,tz);this.cable();
+      if(carry&&!L.dropped)r.bg.position.set(-7.25,sy-1.42,tz);
+      // it is LOUD
+      p.noiseT-=dt;if(p.noiseT<=0&&t<15){p.noiseT=0.5;G.bang={x:-7.25,z:tz,r:24,lvl:0};noiseHit({type:"lowpass",freq:180,dur:.5,vol:.18,attack:.1});tone({type:"sawtooth",f0:70,f1:72,dur:.5,vol:.05,lp:300});}
+      if(t>=17){p.lift=null;r.lifted=true;toast(L.row===p.row?"The container you want is free":"That row's container is free","good",2200);}
+    }
+  },
+  interact(dt,facing){
+    const X=this.X,p=G.p;if(!X||!p)return null;
+    const hold=(id,secs,label)=>{
+      if(!keys.KeyE){if(p.holdId===id)p.holdT=0;return null;}
+      if(p.holdId!==id){p.holdId=id;p.holdT=0;}
+      p.holdT+=dt;P.fiddle=Math.max(P.fiddle,0.3);
+      if(p.holdT>=secs){p.holdT=0;p.holdId="";return "done";}
+      return {p:label,prog:p.holdT/secs};
+    };
+    const lv=P.level,ord=["one","two","three"];
+    // culvert grate (street side)
+    if(lv===0&&!p.culvOpen&&Math.hypot(P.x+30,P.z+22.4)<1.4){
+      const r=hold("culv",2.5,"Working the grate loose…");
+      if(r==="done"){p.culvOpen=true;X.culvG.visible=false;const i=colliders.indexOf(X.culvCol);if(i>=0)colliders.splice(i,1);SFX.unlock();toast("The culvert runs under the fence. You'll have to crawl","good",2200);return null;}
+      return r||{p:"Hold <kbd>E</kbd> to pull the grate off the culvert"};
+    }
+    // manifest
+    if(lv===1&&facing(-41,-9.4,1.8)>=0){
+      if(pressedE){p.manifest=true;SFX.paper();showSub("D",`MV KESTREL · HOLD 2 · ROW ${p.row+1}: ${X.rows[p.row].code}, "agricultural machinery", e-seal ${G.safeCode}. Note: row is blocked in; needs the crane.`,7000,"THE MANIFEST");}
+      return {p:p.manifest?`The manifest: hold 2, row ${p.row+1} · seal ${G.safeCode}`:"Press <kbd>E</kbd> to read the manifest"};
+    }
+    // key cabinet: crane key
+    if(lv===1&&!p.craneKey&&facing(-38.2,-13.85,1.6)>=0){
+      if(keys.KeyE){if(pickTick({get pickT(){return p.keyPick;},set pickT(v){p.keyPick=v;}},4,dt)){p.craneKey=true;SFX.unlock();toast("The crane's ignition key","good",2000);}return {p:`Picking the key cabinet… ${Math.min(5,Math.floor(p.keyPick/4*5)+1)}/5`,prog:p.keyPick/4};}
+      return {p:"Hold <kbd>E</kbd> to pick the key cabinet",prog:p.keyPick>0?p.keyPick/4:null};
+    }
+    // harbor master's safe
+    if(lv===1&&!X.hs.open&&facing(X.hs.x,X.hs.z+0.3,1.8)>=0){
+      if(keys.KeyE){if(pickTick(X.hs,8,dt)){X.hs.open=true;bags.forEach(b=>{if(b.state==="locked"&&b.box==="hsafe")b.state="ground";});SFX.unlock();toast("The harbor master's safe is open","good",1800);}
+        return {p:`Cracking the dial… ${Math.min(5,Math.floor(X.hs.pickT/8*5)+1)}/5`,prog:X.hs.pickT/8};}
+      return {p:"Hold <kbd>E</kbd> to crack the safe",prog:X.hs.pickT>0?X.hs.pickT/8:null};
+    }
+    // bolt cutters
+    if(lv===0&&!p.cutters&&facing(22,-13.4,1.6)>=0){
+      if(pressedE){p.cutters=true;X.cutters.visible=false;SFX.pickup();toast("Bolt cutters. Good for padlocks","good",1800);}
+      return {p:"Press <kbd>E</kbd> to take the bolt cutters"};
+    }
+    // the customs cage padlock
+    const cd=X.cageDoor;
+    if(lv===0&&cd.locked&&p.cutters&&facing(cd.x,cd.z,1.9)>=0){
+      const r=hold("cage",1.5,"Cutting the padlock…");
+      if(r==="done"){cd.locked=false;openDoor(cd,P.x,P.z,false);noiseHit({type:"highpass",freq:3000,dur:.08,vol:.3});G.bang={x:cd.x,z:cd.z,r:7,lvl:0};toast("Snip","good",1000);return null;}
+      return r||{p:"Hold <kbd>E</kbd> to cut the padlock with the bolt cutters"};
+    }
+    if(lv===0&&!cd.locked&&!cd.cut){cd.cut=true;bags.forEach(b=>{if(b.state==="locked"&&b.box==="cage")b.state="ground";});}
+    // hatch hydraulics on the bridge
+    if(lv===3&&!p.hatchOpen&&facing(13.5,25.6,1.8)>=0){
+      const r=hold("hatch",3,"Opening hatch 2…");
+      if(r==="done"){p.hatchOpen=true;const i=colliders.indexOf(X.hatch.cols[0]);if(i>=0)colliders.splice(i,1);G.bang={x:-7,z:31,r:20,lvl:1};tone({type:"sawtooth",f0:60,f1:80,dur:3.5,vol:.08,lp:300,attack:.4});toast("The hydraulics groan. Hatch 2 is opening. Anyone on deck heard that","warn",3000);return null;}
+      return r||{p:"Hold <kbd>E</kbd> to open the cargo hatch over hold 2"};
+    }
+    // crane levers
+    if(lv===3&&inR(P.x,P.z,PORT_CAB)){
+      const dir=new THREE.Vector3();camera.getWorldDirection(dir);let best=-1,ba=0.25;
+      X.leverM.forEach((l,i)=>{const v=l.position.clone().sub(camera.position);if(v.length()>2.4)return;const a=dir.angleTo(v.normalize());if(a<ba){ba=a;best=i;}});
+      if(best>=0){
+        const r=X.rows[best];
+        if(p.lift)return {p:"The crane is busy…"};
+        if(!p.craneKey)return {p:"The crane needs its ignition key"};
+        if(!p.hatchOpen)return {p:"Hatch 2 is closed. Open it from the ship's bridge first"};
+        if(r.lifted)return {p:`Row ${best+1} is already clear`};
+        if(pressedE){p.lift={row:best,t:0};X.leverM[best].rotation.x=-0.6;toast(`Lifting the blocker off row ${best+1}. This is going to be loud`,"warn",2600);}
+        return {p:`Press <kbd>E</kbd> to lift the container blocking row ${best+1}`};
+      }
+    }
+    // the containers in hold 2
+    if(lv===0&&!G.keypad&&inR(P.x,P.z,[-10.4,25,-3,37])){
+      for(let i=0;i<3;i++){const r=X.rows[i];if(!r.lifted||Math.abs(P.z-r.z)>1.6||P.x>-7.5)continue;
+        if(i!==p.row)return {p:p.manifest?`Not this one. The manifest says row ${p.row+1}`:"A sealed container. Which one is it?"};
+        if(G.vaultOpen)return null;
+        if(pressedE&&!P.carry)openKeypad();
+        return {p:`Press <kbd>E</kbd> for the e-seal keypad${p.manifest?" · code "+G.safeCode:" · you need the code from the manifest"}`};}
+    }
+    return null;
+  },
+  chip(){
+    const p=G.p;if(!p)return "";const s=[];
+    if(p.manifest&&!G.vaultOpen)s.push(`ROW ${p.row+1} · SEAL ${G.safeCode}`);
+    if(p.craneKey&&!G.vaultOpen)s.push("CRANE KEY");
+    if(p.cutters)s.push("BOLT CUTTERS");
+    if(p.lift)s.push("CRANE WORKING");
+    return s.join(" · ");
+  },
+  objective(){
+    const p=G.p;if(!p)return this.text.case;
+    if(P.carry&&P.carry.kind==="loot")return this.text.van;
+    if(G.vaultOpen)return "The container is open. Get everything to the speedboat at the east end of the quay, then cast off.";
+    if(!P.masked&&!restricted(P.x,P.z))return this.text.case;
+    if(p.lift)return "The crane is lifting. Every guard on the quay can hear it.";
+    const need=[];
+    if(!p.manifest)need.push("find out which container: the manifest is on the computer upstairs in the harbor master's office (west side)");
+    if(!p.hatchOpen)need.push("open hatch 2 from the ship's bridge (top of the white superstructure, up the gangway)");
+    if(!p.craneKey)need.push("get the crane's ignition key (key cabinet, harbor master's office)");
+    if(p.manifest&&p.hatchOpen&&p.craneKey&&!X_lifted(this,p.row))need.push(`climb the dock crane and lift the container blocking row ${p.row+1}`);
+    if(need.length)return "To reach the container: "+need.join("; ")+".";
+    return `Get into hold 2 (down the ladder by the open hatch, or the crew stairs: keycard) and open row ${p.row+1}: e-seal ${G.safeCode}.`;
+  }
+};
+function X_lifted(def,row){return def.X.rows[row].lifted;}
+const MAPS={harbor:MAP_HARBOR,meridian:MAP_MERIDIAN,harborDay:MAP_HARBOR_DAY,meridianDay:MAP_MERIDIAN_DAY,club:MAP_CLUB,manor:MAP_MANOR,casino:MAP_CASINO,port:MAP_PORT};
 
 // night: moonlight and sodium lamps. day: sun, blue sky, light haze
 function setSky(day){
@@ -2604,7 +3077,7 @@ function buildMap(id){
     LV.group.traverse(o=>{if(o.geometry)o.geometry.dispose();if(o.shadow&&o.shadow.map){o.shadow.map.dispose();o.shadow.map=null;}});
   }
   colliders.length=0;doors.length=0;bins.length=0;cams.length=0;guards.length=0;civs.length=0;bags.length=0;transitions.length=0;hatches.length=0;windows.length=0;STAIRS.length=0;LADDERS.length=0;
-  secGuard=null;VAULT=null;ring=null;civSeed=0;KEYCARD=null;NOTE=null;jammerMeshes.length=0;CASH.length=0;
+  secGuard=null;VAULT=null;ring=null;civSeed=0;VAN_Y=0.82;KEYCARD=null;NOTE=null;jammerMeshes.length=0;CASH.length=0;
   LV={group:new THREE.Group(),def,id:def.id,day:!!def.day,sunny:!!def.day&&!def.night,fx:null};scene.add(LV.group);
   setSky(LV.sunny);
   def.build();
@@ -2728,7 +3201,7 @@ function makeStairs(o){
       box(x-0.06,o.minZ,x+0.06,o.maxZ,1.05,o.lo,false);box(x-0.04,o.minZ,x+0.04,o.maxZ,1.05,s.hi,true);}
     const zb=s.bot+(o.up>0?-0.06:0.06),zt=s.top+(o.up>0?0.06:-0.06);
     box(o.minX-0.1,zt-0.06,o.maxX+0.1,zt+0.06,ROOF_Y-0.4,o.lo,false);          // under the top: solid
-    box(o.minX-0.1,zb-0.04,o.maxX+0.1,zb+0.04,1.05,s.hi,true);                   // rail across the hole's low end
+    if(!o.noEndRail)box(o.minX-0.1,zb-0.04,o.maxX+0.1,zb+0.04,1.05,s.hi,true);   // rail across the hole's low end
   }else{
     for(const [side,z] of [["minZ",o.minZ-0.06],["maxZ",o.maxZ+0.06]]){if(open.includes(side))continue;
       box(o.minX,z-0.06,o.maxX,z+0.06,1.05,o.lo,false);box(o.minX,z-0.04,o.maxX,z+0.04,1.05,s.hi,true);}
@@ -3899,7 +4372,7 @@ function updateInteraction(dt){
     if(!prompt&&dv<2.6&&LV.def.needDiamond&&!G.hasDiamond){prompt=`The van isn't going anywhere without ${LV.def.needDiamond}`;G.leaveT=0;}
     else if(!prompt&&dv<2.6){
       const take=G.vanTake+G.pocket+G.diamondVal,all=G.secured>=bags.length;
-      prompt=all?`Hold <kbd>E</kbd> to drive off · every bag is in the van · ${money(take)}`:`Hold <kbd>E</kbd> to drive off with ${money(take)} · ${G.secured}/${bags.length} bags`;
+      const vb=LV.def.leaveVerb||"drive off",gw=LV.def.getaway||"van";prompt=all?`Hold <kbd>E</kbd> to ${vb} · every bag is in the ${gw} · ${money(take)}`:`Hold <kbd>E</kbd> to ${vb} with ${money(take)} · ${G.secured}/${bags.length} bags`;
       if(keys.KeyE&&!G.leaveBlock){
         if(G.leaveT===0)SFX.engine();
         G.leaveT+=dt;prompt="Starting the engine…";prog=G.leaveT/LEAVE_TIME;
@@ -3909,9 +4382,9 @@ function updateInteraction(dt){
   }else if(P.carry.kind==="loot"){
     const d=P.level===0?Math.hypot(SECURE.x-P.x,SECURE.z-P.z):99;
     if(d<2.6&&!prompt){
-      prompt="Press <kbd>E</kbd> to load the bag into the van";
+      prompt=`Press <kbd>E</kbd> to load the bag into the ${LV.def.getaway||"van"}`;
       if(pressedE){
-        const b=P.carry,slot=VAN_SLOTS[G.secured%VAN_SLOTS.length];b.state="secured";b.mesh.visible=true;b.mesh.position.set(slot[0],0.82+Math.floor(G.secured/VAN_SLOTS.length)*0.42,slot[1]);b.mesh.rotation.set(0,G.secured*0.9,0);
+        const b=P.carry,slot=VAN_SLOTS[G.secured%VAN_SLOTS.length];b.state="secured";b.mesh.visible=true;b.mesh.position.set(slot[0],VAN_Y+Math.floor(G.secured/VAN_SLOTS.length)*0.42,slot[1]);b.mesh.rotation.set(0,G.secured*0.9,0);
         P.carry=null;showCarry();G.secured++;G.vanTake+=b.value;G.leaveBlock=true;SFX.load();
         if(G.secured>=bags.length)toast(`Every bag is in the van · ${money(G.vanTake+G.pocket)}. Hold E here to drive off`,"good",3200);
         else toast(`Bag in the van · +${money(b.value)} · take ${money(G.vanTake+G.pocket)}`,"good",2200);
@@ -3928,7 +4401,7 @@ function updateInteraction(dt){
         bin.count++;bin.openT=1;G.binned++;SFX.binDump(bin.x,bin.z);
         toast("Body hidden","good",1400);
       }
-    }else if(!prompt&&P.level===0&&Math.hypot(SECURE.x-P.x,SECURE.z-P.z)<2.6)prompt="Bodies go in a bin, not the van";
+    }else if(!prompt&&P.level===0&&Math.hypot(SECURE.x-P.x,SECURE.z-P.z)<2.6)prompt=`Bodies go in a bin, not the ${LV.def.getaway||"van"}`;
   }
   // cameras: stand under one, look up, hold E to loop the feed (again before it runs out to refresh it)
   let loopCam=null;
@@ -4007,6 +4480,7 @@ function updateInteraction(dt){
   if(P.ladder&&!P.climb)prompt="<kbd>W</kbd> / <kbd>S</kbd> to climb · <kbd>SPACE</kbd> to let go";
   else if(!prompt&&!P.climb&&!DEV.ghost){
     for(const L of LADDERS){
+      if(L.enabled&&!L.enabled())continue;
       const heavy=P.carry&&(P.carry.kind==="body"||P.carry.gold);
       if(P.level===L.lo&&P.jh<0.5&&Math.hypot(L.x-P.x,L.z-P.z)<1.1&&Math.abs(wrap(P.yaw-L.yaw))<1.3){
         if(heavy){prompt="Too heavy to climb with. Press <kbd>Q</kbd> to drop it";break;}
