@@ -304,19 +304,17 @@ details.help .keys{margin-bottom:14px}
         <dt>ESC</dt><dd>Pause</dd>
       </dl>
       <ul class="tips">
-        <li>Outside without a mask you're just someone on the street. Inside the closed bank, or on its roof, anyone who sees you fills the detection meter, mask or not.</li>
-        <li>When a guard spots you or finds a body, he takes 6 seconds to radio it in. Drop him before he finishes. If a camera spots you, the security guard calls it in, so take him out instead.</li>
-        <li>Doors block sight, and an open door hides whoever stands behind it. Guards open doors as they walk through and close them behind them.</li>
-        <li>At Meridian Trust the security room is locked. Find the keycard first: staff leave it lying on a desk somewhere, and it's in a different place every time.</li>
-        <li>The drill runs by itself once it's set up, but it's loud: guards within about 6 m will hear it and look.</li>
-        <li>A headshot drops a guard instantly. A body shot only wounds him, and he radios it in after 2 seconds unless you finish him.</li>
-        <li>The security room guard watches every camera. Shoot a camera while he's up and he raises the alarm. Take him out and the cameras go dark.</li>
-        <li>Guards and cameras raise the alarm if they find a body or a body bag. Bag bodies and dump them in a bin.</li>
+        <li>Outside without a mask you're just someone on the street. Inside a closed building, in a staff-only area or on a roof, anyone who sees you fills the detection meter, mask or not.</li>
+        <li>Day jobs: the public areas are open, so walk in unmasked and look around. Behind counters and staff doors is off limits, and staff and guards notice you back there.</li>
+        <li>When a guard spots you or finds a body, he takes 6 seconds to radio it in. Drop him before he finishes. A headshot drops a guard instantly; a body shot only wounds him, and he radios it in after 2 seconds unless you finish him.</li>
+        <li>The security guard watches every camera. If a camera spots you, he calls it in, so take him out. Shoot a camera while he's up and he raises the alarm. Or stand under a camera, look up and hold E to loop it for 25 seconds (do it again before it runs out to keep it looped).</li>
+        <li>Guards hear you. Sprinting is loud, walking is quiet up close, crouching is silent. Doors block sight, and guards open doors as they walk through.</li>
+        <li>Keycards open doors with a card reader. Staff leave them lying on desks, in a different place every time.</li>
+        <li>Windows: hold E to pick a latch, or smash the glass (F, or shoot it). Jump while running into a window sill, a desk or a crate and you pull yourself up and over.</li>
+        <li>Guards and cameras raise the alarm if they find a body. You can bag a body (hold E) and dump it in a bin, or leave it and hope nobody walks past.</li>
         <li>Every guard you drop carries a pager. When it goes off, hold E at the body until the call is over. Dispatch only buys 3 excuses a night.</li>
-        <li>Guards hear you. Sprinting is loud, walking is quiet up close, crouching is silent.</li>
-        <li>Day jobs: the lobby is public, so walk in unmasked and look around. Behind counters and staff doors is off-limits, and staff and guards notice you back there.</li>
-        <li>Civilians who see a mask, a body or a hostage pull out their phones. Look at them and press F to shout before the call goes through. Anyone on the floor gets back up after 30 seconds unless you zip-tie them.</li>
-        <li>Tied hostages follow you when you press E, and stay when you press it again. Guards, cameras and other civilians react to hostages they can see, so stash them out of sight.</li>
+        <li>Civilians who see a mask, a body or a hostage pull out their phones. Look at them and press F to shout before the call goes through. Anyone on the floor gets back up after 30 seconds unless you zip-tie them. Tied hostages follow you when you press E.</li>
+        <li>A drill or a crane runs by itself once it's going, but it's loud: guards nearby will hear it and come and look.</li>
       </ul>
     </details>
   </div>
@@ -1096,7 +1094,7 @@ class Civilian extends Guard{
 }
 const SHOUTS=["Down! Everybody down!","On the floor! Hands on your head!","Nobody move! This is a very professional robbery!","Get down! And put the phone away!","Floor! Now! It's clean, I checked.","Down! Nobody's a hero today!","Hands where I can see them! No, the other hands!"];
 const CIV_DOWN=["Okay okay okay!","Please! I only came in for a free pen!","Not the face!","I'm down! I'm down!","This was supposed to be my lunch break…","I'll give you my loyalty card!","I didn't see anything! Nice mask though."];
-const CIV_CALL=["Hello, police? There's a man in a mask and he looks very serious…","Police? A robber! Yes, a real one!","Hi, I'd like to report a mask. With a man in it.","Police! Someone's robbing the bank! No, not me!","911? Yes, I'll hold. …I'll hold?!"];
+const CIV_CALL=["Hello, police? There's a man in a mask and he looks very serious…","Police? A robber! Yes, a real one!","Hi, I'd like to report a mask. With a man in it.","Police! Someone's robbing the place! No, not me!","911? Yes, I'll hold. …I'll hold?!"];
 const lastLine={};
 function pickLine(arr){let i;do{i=Math.random()*arr.length|0;}while(arr.length>1&&lastLine[arr[0]]===i);lastLine[arr[0]]=i;return arr[i];}
 
@@ -3594,7 +3592,7 @@ const MAP_TOWER={
         [12.2,8.81,-10.3],[11.5,8.81,3.5],[-12,8.81,9.5],
         [-12.4,12.81,6.1,"jewel"],[-12.4,12.81,10.1,"jewel"],[11.4,12.81,9.8],
         [-11.0,16.87,-8.2,"jewel"],[-10.4,16.87,-8.2,"jewel"],[-9.8,16.87,-8.2],[11.6,16.87,-8.6],[13.4,16.87,-8.4],
-        [12.6,20.81,-6.9,"jewel"],[9.6,21.06,-11.3],[-15.2,21.06,-6.5,"jewel"],[-11,20.81,8.1]],
+        [12.6,20.81,-6.9,"jewel"],[9.6,21.06,-11.3],[-15.2,21.06,-6.5,"jewel"],[-11,20.81,6.9]],
   isInside:(x,z)=>inR(x,z,TW_B),
   restricted(x,z,lvl){return lvl>=1||inR(x,z,TW_B);},
   trespassMsg(){return inR(P.x,P.z,TW_GON)&&P.level>=1?"You're hanging off the side of Halcyon Tower. Anyone looking out can see you":P.level===6?"You're on the roof. Don't let anyone see you up here":"Halcyon Tower is closed for the night. Don't let anyone see you inside";},
@@ -5352,7 +5350,7 @@ function updatePlayer(dt){
   camera.position.set(P.x,P.y+P.eye+bob,P.z);
   camera.rotation.set(P.pitch-P.kick*0.12+P.recoil*0.012,P.yaw,0);
   const r=restricted(P.x,P.z);
-  if(r&&!P.wasRestricted&&!P.masked&&!G.alarm&&!DEV.ghost)toast(LV.def.trespassMsg?LV.def.trespassMsg():onRoof()?"You're on the roof. Don't let anyone see you up here":LV.day?"Staff only. Don't let anyone see you back here":"The bank is closed. Don't let anyone see you inside","warn",2400);
+  if(r&&!P.wasRestricted&&!P.masked&&!G.alarm&&!DEV.ghost)toast(LV.def.trespassMsg?LV.def.trespassMsg():onRoof()?"You're on the roof. Don't let anyone see you up here":LV.day?"Staff only. Don't let anyone see you back here":`${LV.def.place} is closed. Don't let anyone see you inside`,"warn",2400);
   P.wasRestricted=r;
 }
 function settleAfterGhost(){
@@ -5675,7 +5673,7 @@ function updateDetection(dt){
   if(G.susp>=1){
     const o=G.lastSpotter,cam=o&&o.kind==="camera",who=cam?"A camera":"A guard";
     const msg=G.lastCause==="civ"?`${who} saw a civilian calling for help. Alarm!`:G.lastCause==="body"?(G.bodyHost?`${who} spotted a hostage. Alarm!`:`${who} found a body. Alarm!`)
-      :P.masked?`${who} spotted you. Alarm!`:!restricted(P.x,P.z)?`${who} caught you breaking in. Alarm!`:LV.day?`${who} caught you in a staff area. Alarm!`:`${who} caught you inside the closed bank. Alarm!`;
+      :P.masked?`${who} spotted you. Alarm!`:!restricted(P.x,P.z)?`${who} caught you breaking in. Alarm!`:LV.day?`${who} caught you in a staff area. Alarm!`:`${who} caught you somewhere you shouldn't be. Alarm!`;
     startReport(o,msg,G.lastCause==="body"&&o&&o.bodyAt?o.bodyAt:{x:P.x,z:P.z});
     G.susp=0.7;
   }
@@ -5848,12 +5846,12 @@ function updateInteraction(dt){
       prompt=best.kind==="body"?"Press <kbd>E</kbd> to pick up the body bag":"Press <kbd>E</kbd> to pick up the loot";
       if(pressedE){
         best.state="carried";best.mesh.visible=false;P.carry=best;showCarry();SFX.pickup();
-        if(best.kind==="loot")toast(best.gold?`Gold · ${money(best.value)}. Heavy: no running or jumping`:`Loot bag · ${money(best.value)}. Get it to the van`,"warn",2200);
+        if(best.kind==="loot")toast(best.gold?`Gold · ${money(best.value)}. Heavy: no running or jumping`:`Loot bag · ${money(best.value)}. Get it to the ${LV.def.getaway||"van"}`,"warn",2200);
       }
     }
     // at the van with empty hands: hold E to drive off with whatever you've got
     const gwy=nearGetaway(),dv=gwy?0:99;
-    if(!prompt&&dv<2.6&&LV.def.needDiamond&&!G.hasDiamond){prompt=`The van isn't going anywhere without ${LV.def.needDiamond}`;G.leaveT=0;}
+    if(!prompt&&dv<2.6&&LV.def.needDiamond&&!G.hasDiamond){prompt=`The ${gwy.name||LV.def.getaway||"van"} isn't going anywhere without ${LV.def.needDiamond}`;G.leaveT=0;}
     else if(!prompt&&dv<2.6){
       const take=G.vanTake+G.pocket+G.diamondVal,all=G.secured>=bags.length;
       const vb=gwy.verb||LV.def.leaveVerb||"drive off",gw=gwy.name||LV.def.getaway||"van";prompt=all?`Hold <kbd>E</kbd> to ${vb} · every bag is in the ${gw} · ${money(take)}`:`Hold <kbd>E</kbd> to ${vb} with ${money(take)} · ${G.secured}/${bags.length} bags`;
@@ -6004,7 +6002,7 @@ const CALLS=[
   [["D","{n}, your vitals monitor flagged a fall. You okay?"],["Y","Yeah. Slipped on a… very wet floor."],["D","The cleaner left at six."],["Y","Then it's a mystery. Spooky. All good though."]],
   [["D","{n}, status report."],["Y","Everything is extremely normal and not robbed."],["D","…Why would it be robbed?"],["Y","Exactly. It wouldn't. Over."]],
   [["D","{n}? We heard a thud on your channel."],["Y","Push-ups. Staying sharp."],["D","At three in the morning?"],["Y","Crime never sleeps. Neither do my triceps."]],
-  [["D","{n}, you sound different."],["Y","*cough* Got a cold. Very bank-related cold."],["D","Drink some tea."],["Y","Tea. Love it. Bye."]],
+  [["D","{n}, you sound different."],["Y","*cough* Got a cold. Very work-related cold."],["D","Drink some tea."],["Y","Tea. Love it. Bye."]],
   [["D","{n}, are you asleep again?"],["Y","Negative. Wide awake. Guarding things. Like money."],["D","Good. Keep it that way."],["Y","Keeping it. All of it. Right where it is."]],
   [["D","{n}, why does your heart rate say zero?"],["Y","Very calm guy. Meditation. Big fan."],["D","…Huh. Teach me sometime."],["Y","Step one: breathe. Step two: don't call."]],
   [["D","{n}, your panic button just twitched."],["Y","Sat on it. With my… pocket."],["D","Your pocket sat on it?"],["Y","It's a big pocket. Everything's fine."]],
@@ -6107,7 +6105,7 @@ function updateHUD(){
   else if(!G.vaultOpen)obj=G.drilling?`Drill running: ${Math.round(G.drill*100)}%. Keep guards away from the vault.`:G.drill===0?LV.def.text.vault:`Drill stopped at ${Math.round(G.drill*100)}%.`;
   else if(P.carry)obj=LV.def.text.van;
   else if(G.secured>=bags.length)obj=`Every bag is in the ${LV.def.getaway||"van"}. Hold E at the ${LV.def.getaway||"van"} to ${LV.def.leaveVerb||"drive off"}, or grab some loose cash first.`;
-  else obj=(VAULT.safe?"Grab a loot bag from the safe.":"Grab a loot bag from the vault.")+(G.secured?" Or hold E at the van to drive off with what you have.":"");
+  else obj=(VAULT.safe?"Grab a loot bag from the safe.":"Grab a loot bag from the vault.")+(G.secured?` Or hold E at the ${LV.def.getaway||"van"} to ${LV.def.leaveVerb||"drive off"} with what you have.`:"");
   $("objText").textContent=obj;
   {const tip=urgent?urgent:P.carry&&P.carry.kind==="body"?"Tip: "+LV.def.text.bins:loose&&!G.alarm?`Tip: ${loose>1?`${loose} bodies are`:"a body is"} lying in the open. If a guard or camera finds one, they raise the alarm. You can bag a body (hold E) and dump it in a bin, or leave it.`:"";
     const el=$("objTip");if(el.textContent!==tip)el.textContent=tip;el.hidden=!tip;el.classList.toggle("urgent",!!urgent);}
