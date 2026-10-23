@@ -231,14 +231,14 @@ details.help .keys{margin-bottom:14px}
       <button class="job jewel" type="button" role="radio" aria-checked="false" data-map="jewel">
         <span class="job-time jewel">NIGHT · 03:10 · SMALL, TRICKY</span>
         <span class="job-name">Brilliant Cut</span>
-        <span class="job-place">Lindqvist &amp; Döttrar, jewellers</span>
-        <span class="job-meta">Small jeweller's with a basement · in through the café cellar wall, the skylight or the stockroom window · work out the alarm code from a calendar and a UV torch · motion sensors, wired cases and door contacts with an entry delay · lift the strongroom key from behind the watchman · crack the safe by ear · you can't leave without the Nordstjärnan · 4 guards · 3 cameras · 4 bags</span>
+        <span class="job-place">Lindqvist &amp; Daughters, jewellers</span>
+        <span class="job-meta">Small jeweller's with a basement · in through the café cellar wall, the skylight or the stockroom window · work out the alarm code from a calendar and a UV torch · motion sensors, wired cases and door contacts with an entry delay · lift the strongroom key from behind the watchman · crack the safe by ear · you can't leave without the North Star · 4 guards · 3 cameras · 4 bags</span>
       </button>
       <button class="job jewelDay" type="button" role="radio" aria-checked="false" data-map="jewelDay">
         <span class="job-time day">DAY · 14:30 · OPEN · SMALL, TRICKY</span>
         <span class="job-name">Window Shopping</span>
-        <span class="job-place">Lindqvist &amp; Döttrar, jewellers</span>
-        <span class="job-meta">The same jeweller's, open for business · walk in with the customers · the back rooms and the basement are staff only · the owner, the shop assistant and a jeweller at work downstairs · the cases and the strongroom are still on the alarm · you can't leave without the Nordstjärnan · 3 guards · 7 civilians · 3 cameras · 4 bags</span>
+        <span class="job-place">Lindqvist &amp; Daughters, jewellers</span>
+        <span class="job-meta">The same jeweller's, open for business · walk in with the customers · the back rooms and the basement are staff only · Mrs Lindqvist (the owner), the shop assistant and a jeweller at work downstairs · the cases and the strongroom are still on the alarm · you can't leave without the North Star · 3 guards · 7 civilians · 3 cameras · 4 bags</span>
       </button>
     </div>
     <label class="dev" for="devToggle"><input type="checkbox" id="devToggle"><span>Dev mode<small>Press V during a job for noclip: fly through walls, invisible to guards and cameras. SPACE up, CTRL or C down, SHIFT faster. Shows your position.</small></span></label>
@@ -3081,7 +3081,7 @@ function X_lifted(def,row){return def.X.rows[row].lifted;}
 // a small jeweller's on a city street: shop floor, back rooms, a basement workshop and strongroom, the café cellar next door
 const JW_SHOP=[-10,-8,10,8],JW_FLOOR=[-10,0,10,8],JW_BASE=[-10,-8,10,8],JW_CELLAR=[-20,-8,-10,10.5],JW_COURT=[-20,-16,13,-8],JW_PASS=[10,-8,13,8];
 const JW_SKY=[0.6,-6,2.8,-4],JW_HATCH=[-15.6,9.2,-14.4,10.4],JW_STAIR=[-1.8,-6.8,-0.2,-1.2];
-const JW_NAMES=["Elin","Mormor Greta","Hugo"];
+const JW_NAMES=["Elin","Grandma Greta","Hugo"];
 function jwDates(){
   // three birthdays as DDMM, each with four different digits, no two with the same set of digits
   const out=[];let guard=0;
@@ -3094,10 +3094,10 @@ function jwDates(){
   }
   return out;
 }
-const JW_MONTHS=["januari","februari","mars","april","maj","juni","juli","augusti","september","oktober","november","december"];
+const JW_MONTHS=["January","February","March","April","May","June","July","August","September","October","November","December"];
 const MAP_JEWEL={
-  id:"jewel",job:"Brilliant Cut",place:"Lindqvist & Döttrar",time:"03:10",multi:true,levels:[-1,1],codeLen:4,zipTies:3,
-  spawn:{x:-24,z:17,yaw:-Math.PI/2},moon:30,needDiamond:"the Nordstjärnan",diamondValue:260000,
+  id:"jewel",job:"Brilliant Cut",place:"Lindqvist & Daughters",time:"03:10",multi:true,levels:[-1,1],codeLen:4,zipTies:3,
+  spawn:{x:-24,z:17,yaw:-Math.PI/2},moon:30,needDiamond:"the North Star",diamondValue:260000,
   bagValue:[25000,45000],goldValue:[70000,110000],cashValue:[300,1800],jewelValue:[3000,9000],
   cardMsg:"A keycard? This shop doesn't use them",
   bagSpots:[
@@ -3132,7 +3132,7 @@ const MAP_JEWEL={
   },
   fly(a){camera.position.set(Math.sin(a)*22+2,9,22+Math.cos(a)*5);camera.lookAt(0,1.5,2);},
   text:{
-    case:"Lindqvist & Döttrar at ten past three. The shutters are down and the alarm is armed. You can't leave without the Nordstjärnan, a sapphire necklace in the strongroom safe. Ways in: the café cellar next door (the hatch on the pavement), the roof (a ladder in the courtyard), the stockroom window or the back door (that one's wired). Hold G to put on your mask when you're ready.",
+    case:"Lindqvist & Daughters at ten past three. The shutters are down and the alarm is armed. You can't leave without the North Star, a sapphire necklace in the strongroom safe. Ways in: the café cellar next door (the hatch on the pavement), the roof (a ladder in the courtyard), the stockroom window or the back door (that one's wired). Hold G to put on your mask when you're ready.",
     vault:"",
     van:"Carry the bag to the van on the street, east of the shop (through the courtyard and the passage).",
     bins:"Dump the body in a bin in the courtyard. Q drops it."
@@ -3175,7 +3175,7 @@ const MAP_JEWEL={
     block(13,-16,30,8,11,"s");block(-30,-24,30,-16,12,"s");block(-30,-16,-20,8,10,"s");block(-30,26,30,34,12,"n");
     // the café next door (closed): a solid building with a lit window
     addBox(-20,-8,-10,8,7.2,phong(day?0x8a7460:0x3a332c));{const w=new THREE.Mesh(new THREE.PlaneGeometry(6,2.2),new THREE.MeshBasicMaterial({color:day?0x9fb6c8:0x6a4a2a}));w.position.set(-15,1.6,8.02);lvAdd(w);}
-    plaque(signTex("KAFÉ SOLROS",512,96,"#f2e2b8","#3a1e12","bold 54px Georgia"),4,0.7,-15,3.4,8.03);
+    plaque(signTex("SUNFLOWER CAFÉ",512,96,"#f2e2b8","#3a1e12","bold 54px Georgia"),4,0.7,-15,3.4,8.03);
     colliders.push({minX:-20,maxX:-10,minZ:-8,maxZ:8,h:7.2,lvl:0});
     for(const x of [-22,-4,16])lamp(x,11.4,0xffc070);lamp(2,-12,0xffd9a0);
     for(const [x,z] of [[-12,14],[4,18.5],[22,13.8]]){addBox(x-2.1,z-0.9,x+2.1,z+0.9,0.95,M.car);addBox(x-1.2,z-0.85,x+1.0,z+0.85,1.45,M.glass,{y0:0.95,collide:false});}
@@ -3200,8 +3200,8 @@ const MAP_JEWEL={
       for(const x of [-17,-13]){const t=new THREE.Mesh(new THREE.CylinderGeometry(0.4,0.4,0.75,12),wood);t.position.set(x,0.375,9.4);lvAdd(t);colliders.push({minX:x-0.4,maxX:x+0.4,minZ:9,maxZ:9.8,h:0.75,lvl:0});}
     }
     addBox(-10,8.2,10,8.7,4.0,greenW,{y0:3.3,collide:false});
-    plaque(signTex("LINDQVIST & DÖTTRAR",512,80,"#e2c27a","#1f3a32","bold 46px Georgia"),6,0.7,0,3.65,8.72);
-    plaque(signTex("GULDSMEDER SEDAN 1911",512,48,"#e2c27a","#1f3a32","bold 28px Georgia"),3,0.25,0,3.15,8.47);
+    plaque(signTex("LINDQVIST & DAUGHTERS",512,80,"#e2c27a","#1f3a32","bold 46px Georgia"),6,0.7,0,3.65,8.72);
+    plaque(signTex("GOLDSMITHS SINCE 1911",512,48,"#e2c27a","#1f3a32","bold 28px Georgia"),3,0.25,0,3.15,8.47);
     // roof and the parapet, the skylight
     slab(1,JW_SHOP,M.ceil,[JW_SKY]);fl(1,[-10,-8,10,8],fm.gravel,[JW_SKY]);
     for(const [x1,z1,x2,z2] of [[-10.2,-8.2,10.2,-7.9],[-10.2,7.9,10.2,8.2],[-10.2,-8.2,-9.9,8.2],[9.9,-8.2,10.2,8.2]])box(1,x1,z1,x2,z2,0.55,wall);
@@ -3222,7 +3222,7 @@ const MAP_JEWEL={
     box(0,8.6,2,9.4,6.5,1.05,wood);box(0,8.55,1.95,9.45,6.55,1.1,M.counterTop,{y0:1.05,collide:false});
     {const r=new THREE.Mesh(new THREE.BoxGeometry(0.4,0.25,0.35),dark);r.position.set(9.0,1.23,3.4);lvAdd(r);}
     for(const z of [1.2,6.8]){const m=new THREE.Mesh(new THREE.PlaneGeometry(1.0,1.4),new THREE.MeshBasicMaterial({color:0x9aa6b0}));m.position.set(-9.78,1.7,z+0.5);m.rotation.y=Math.PI/2;lvAdd(m);}
-    plaque(signTex("NORDSTJÄRNAN · Visas endast efter avtal",512,64,"#e2c27a","#1a1d22","bold 26px Georgia"),2.4,0.3,0,2.6,0.22);
+    plaque(signTex("THE NORTH STAR · viewing by appointment",512,64,"#e2c27a","#1a1d22","bold 26px Georgia"),2.4,0.3,0,2.6,0.22);
     pointLight(-3.5,3.2,4,0xffe8c8,0.8,11);pointLight(5,3.2,4,0xffe8c8,0.55,9);pointLight(-7,2.2,4,0xfff2d0,0.35,5);pointLight(0,2.2,4,0xfff2d0,0.35,5);
     // ---------- back rooms: office (W), stockroom (middle), hallway (E) ----------
     segX(0,0,-10,10,[[5,6.5,2.4]],WH,wall);
@@ -3250,7 +3250,7 @@ const MAP_JEWEL={
     // hallway: the alarm panel, the back door
     const panel=new THREE.Mesh(new THREE.BoxGeometry(0.06,0.34,0.26),phong(0xe8e6de));panel.position.set(9.77,1.45,-4);lvAdd(panel);
     const panelScr=new THREE.MeshBasicMaterial({color:0xff3a30});{const s=new THREE.Mesh(new THREE.PlaneGeometry(0.18,0.06),panelScr);s.position.set(9.73,1.56,-4);s.rotation.y=-Math.PI/2;s.userData.dyn=1;lvAdd(s);}
-    plaque(signTex("LARM",128,48,"#0b0d10","#e8e6de","bold 30px Arial"),0.22,0.08,9.73,1.75,-4,-Math.PI/2);
+    plaque(signTex("ALARM",128,48,"#0b0d10","#e8e6de","bold 30px Arial"),0.22,0.08,9.73,1.75,-4,-Math.PI/2);
     pointLight(7,3.0,-4,0xf0f4ff,0.4,8,true);
     // motion sensors on the shop floor
     const pirs=[[-9.7,2.9,7.7,Math.PI*0.75],[9.7,2.9,0.3,-Math.PI*0.25]].map(([x,y,z,yaw])=>{
@@ -3304,7 +3304,7 @@ const MAP_JEWEL={
     {const l=new THREE.Mesh(new THREE.BoxGeometry(1.2,0.05,1.2),new THREE.MeshPhongMaterial({map:drawPlateTex(),shininess:40}));l.position.set(0.6,0,0);hatchPiv.add(l);hatchPiv.traverse(o=>o.userData.dyn=1);}
     function drawPlateTex(){return tex(64,64,drawPlate);}
     // ---------- courtyard: bins, the roof ladder, the passage gate ----------
-    makeBin(-4,-14.8,1.8,1.2,1.3,M.dumpster,lidMat,"AVFALL");makeBin(-8,-14.8,1.8,1.2,1.3,M.dumpster,lidMat,"AVFALL");
+    makeBin(-4,-14.8,1.8,1.2,1.3,M.dumpster,lidMat,"WASTE");makeBin(-8,-14.8,1.8,1.2,1.3,M.dumpster,lidMat,"WASTE");
     makeLadder(-6,-8.25,0,Y+0.5,0);
     LADDERS.push({name:"ladder",x:-6,z:-8.6,yaw:Math.PI,lo:0,top:Y+0.4,path:[[-6,-8.6,Y+0.6],[-6,-7.4,Y+0.6]],exit:{x:-6,z:-7.2,lvl:1}});
     box(0,-18,-15.6,-15.6,-13.6,1.0,M.crate);
@@ -3318,7 +3318,7 @@ const MAP_JEWEL={
     if(!day)new Guard([[-7,4.2,null,3],[7.2,4.2],[5.75,1.4],[5.75,-1.5],[7.6,-5.6,null,4],[5.75,-1.5],[5.75,1.4],[7.2,4.2]],1.0,{name:"Holm",flashShadow:false});
     else new Guard([[-6.5,7.0,Math.PI,5],[4.5,7.0,Math.PI,5]],1.0,{name:"Holm",flashShadow:false});
     if(!day)new Guard([[-27,12.4,null,3],[24,12.4,null,3]],1.0,{name:"Berg"});
-    new Guard([[-17,-12,null,3],[11.5,-12,null,2],[11.5,4,null,3],[11.5,-12]],1.0,{name:"Nyström",flashShadow:false});
+    new Guard([[-17,-12,null,3],[11.5,-12,null,2],[11.5,4,null,3],[11.5,-12]],1.0,{name:"Nystrom",flashShadow:false});
     if(!day)new Civilian([[-11.7,11.15,Math.PI/2,0]],0,{asleep:true,label:"A man asleep on the bench",bedY:0.62});
     else{
       // open for business: customers, the assistant, the owner, the jeweller downstairs, a pedestrian outside
@@ -3326,7 +3326,7 @@ const MAP_JEWEL={
       new Civilian([[-1.6,6.9,0,7],[-6.8,6.9,0,6]],2,{label:"A customer"});
       new Civilian([[2.2,3.6,Math.PI/2,0]],0,{label:"A customer"});
       new Civilian([[7.7,3.2,Math.PI/2,0]],0,{worker:true,label:"The shop assistant"});
-      new Civilian([[-6,-3.4,null,6],[-3,-7.2],[1.2,-7.2],[2.2,-2.3],[7.2,-4.6,null,6],[2.2,-2.3],[1.2,-7.2],[-3,-7.2]],1.5,{worker:true,label:"Fru Lindqvist"});
+      new Civilian([[-6,-3.4,null,6],[-3,-7.2],[1.2,-7.2],[2.2,-2.3],[7.2,-4.6,null,6],[2.2,-2.3],[1.2,-7.2],[-3,-7.2]],1.5,{worker:true,label:"Mrs Lindqvist"});
       new Civilian([[-7.6,-6.3,Math.PI,0]],0,{seated:true,worker:true,label:"The jeweller",level:-1});
       new Civilian([[-26,10.2,null,4],[24,10.2,null,4]],1,{label:"A pedestrian"});
     }
@@ -3406,7 +3406,7 @@ const MAP_JEWEL={
     // the calendar in the office
     if(lv===0&&inR(P.x,P.z,JW_SHOP)&&facing(-5,-7.8,1.9)>=0&&P.z<-5.5){
       if(pressedE){j.cal=true;SFX.paper();const s=j.dates.map((d,i)=>`${JW_NAMES[i]} ${d.d} ${JW_MONTHS[d.m-1]}`).join(" · ");
-        showSub("D",`Circled: ${s}. Scribbled underneath: "Larm = en födelsedag (DDMM). Skriv INTE upp den, Lars!"`,9000,"THE CALENDAR");}
+        showSub("D",`Circled: ${s}. Scribbled underneath: "Alarm code = one of the birthdays (DDMM). Do NOT write it down, Lars!"`,9000,"THE CALENDAR");}
       return {p:j.cal?"The calendar: three birthdays. The alarm code is one of them, as DDMM":"Press <kbd>E</kbd> to look at the calendar"};
     }
     // the strongroom key on the hook (behind Lars)
@@ -3463,16 +3463,16 @@ const MAP_JEWEL={
         else if(!d.clicked)toast("Too soon. Hold E and let go right after the click","warn",1800);
         else toast("Missed it. Try that number again","warn",1600);
         d.t=0;d.clicked=false;d.over=false;d.target=1.4+Math.random()*2.2;
-        if(d.n>=3){openSafe();toast("The safe is open. The Nordstjärnan is inside","good",2600);}
+        if(d.n>=3){openSafe();toast("The safe is open. The North Star is inside","good",2600);}
         return null;
       }
       if(P.carry)return {p:"Drop what you're carrying to work the dial. <kbd>Q</kbd>"};
       return {p:`Hold <kbd>E</kbd> to turn the dial, let go right after the click · ${d.n}/3 numbers`};
     }
-    // the Nordstjärnan
+    // the North Star
     if(lv===-1&&G.vaultOpen&&!G.hasDiamond&&facing(7.5,-7.4,1.8)>=0){
-      if(pressedE){G.hasDiamond=true;G.diamondVal=this.diamondValue;X.necklace.visible=false;X.nGlint.visible=false;SFX.cash();toast("You have the Nordstjärnan","good",2600);}
-      return {p:"Press <kbd>E</kbd> to take the Nordstjärnan"};
+      if(pressedE){G.hasDiamond=true;G.diamondVal=this.diamondValue;X.necklace.visible=false;X.nGlint.visible=false;SFX.cash();toast("You have the North Star","good",2600);}
+      return {p:"Press <kbd>E</kbd> to take the North Star"};
     }
     return null;
   },
@@ -3493,14 +3493,14 @@ const MAP_JEWEL={
   objective(){
     const j=G.j;if(!j)return this.text.case;
     if(P.carry&&P.carry.kind==="loot")return this.text.van;
-    if(G.hasDiamond)return "You have the Nordstjärnan. Take what else you want (the display cases, the workshop, the stockroom) and get to the van on the street.";
-    if(G.vaultOpen)return "The safe is open. Take the Nordstjärnan.";
+    if(G.hasDiamond)return "You have the North Star. Take what else you want (the display cases, the workshop, the stockroom) and get to the van on the street.";
+    if(G.vaultOpen)return "The safe is open. Take the North Star.";
     if(!P.masked&&!restricted(P.x,P.z))return this.text.case;
     const need=[];
     if(j.armed)need.push(`disarm the alarm at the panel in the back hallway: the code is a birthday${j.cal?" on the office calendar":" (the calendar in the back office, where the watchman sits)"}${j.uvRead?", and the worn keys are "+[...G.safeCode].sort().join(" "):"; a UV torch in the workshop shows which keys are worn"}`);
     if(!j.key)need.push("the strongroom key: on the hook in the back office, behind the watchman");
     need.push("crack the safe in the strongroom (basement): hold E to turn the dial, let go right after each click");
-    return "To get the Nordstjärnan: "+need.join("; ")+".";
+    return "To get the North Star: "+need.join("; ")+".";
   }
 };
 
@@ -3510,7 +3510,7 @@ const MAP_JEWEL_DAY=Object.assign({},MAP_JEWEL,{
   restricted(x,z,lvl){return lvl!==0||(inR(x,z,JW_SHOP)&&!inR(x,z,[-10,0,8.4,8]))||inR(x,z,JW_COURT)||inR(x,z,JW_PASS)&&z<7.8;},
   trespassMsg(){return P.level===1?"You're on the roof. Don't let anyone see you up here":P.level===-1?"You're downstairs. Staff only":inR(P.x,P.z,JW_SHOP)?"Staff only. Don't let anyone see you back here":"You're in the courtyard behind the shops. Don't let anyone see you";},
   text:{
-    case:"Lindqvist & Döttrar is open. Walk in like any customer and look at the cases. Behind the counter, the back rooms and the basement are staff only, and the Nordstjärnan is in the strongroom safe downstairs. In the daytime the shop's motion sensors and the back door are off the alarm, but the display cases and the strongroom door stay on it until someone types the code. Hold G to put on your mask when you're ready.",
+    case:"Lindqvist & Daughters is open. Walk in like any customer and look at the cases. Behind the counter, the back rooms and the basement are staff only, and the North Star is in the strongroom safe downstairs. In the daytime the shop's motion sensors and the back door are off the alarm, but the display cases and the strongroom door stay on it until someone types the code. Hold G to put on your mask when you're ready.",
     vault:"",van:MAP_JEWEL.text.van,bins:MAP_JEWEL.text.bins
   }
 });
