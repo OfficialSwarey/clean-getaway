@@ -134,7 +134,7 @@ details.help .keys{margin-bottom:14px}
   <div id="detect"><div class="lbl" id="detectLbl">Detection</div><div class="bar"><i id="detectFill"></i></div></div>
   <div id="clock"><span class="lbl" id="clockLbl">Elapsed</span><span id="clockVal">00:00</span></div>
   <div id="obj"><div class="lbl">Objective</div><div id="objText">Get into the bank unseen.</div><div id="bagsRow">Bags secured <b id="bagsVal">0/3</b></div></div>
-  <div id="status"><span class="chip" id="devChip" hidden>DEV · GHOST OFF · V</span><span class="chip" id="posChip" hidden></span><span class="chip" id="ammo" hidden>PISTOL 12 / 36</span><span class="chip" id="pagerChip" hidden>PAGERS 0/3</span><span class="chip" id="tieChip" hidden>ZIP TIES 6</span><span class="chip" id="jamChip" hidden>JAMMERS 2 · J</span><span class="chip ok" id="cardChip" hidden>KEYCARD</span><span class="chip" id="maskChip">UNMASKED · OUTSIDE</span><span class="chip" id="carry" hidden>CARRYING BAG · SLOWED</span><span class="chip" id="stance">STANDING</span><span class="chip" id="sound">SOUND ON · M</span></div>
+  <div id="status"><span class="chip" id="devChip" hidden>DEV · GHOST OFF · V</span><span class="chip" id="posChip" hidden></span><span class="chip" id="ammo" hidden>PISTOL 12 / 36</span><span class="chip" id="pagerChip" hidden>PAGERS 0/3</span><span class="chip" id="tieChip" hidden>ZIP TIES 6</span><span class="chip" id="loopChip" hidden></span><span class="chip" id="jamChip" hidden>JAMMERS 2 · J</span><span class="chip ok" id="cardChip" hidden>KEYCARD</span><span class="chip" id="maskChip">UNMASKED · OUTSIDE</span><span class="chip" id="carry" hidden>CARRYING BAG · SLOWED</span><span class="chip" id="stance">STANDING</span><span class="chip" id="sound">SOUND ON · M</span></div>
   <div id="crosshair"></div>
   <div id="prompt" hidden><span id="promptText"></span><div class="pbar" id="pbar" hidden><i id="pfill"></i></div></div>
   <div id="subs" hidden><span id="subWho"></span><span id="subLine"></span></div>
@@ -181,9 +181,10 @@ details.help .keys{margin-bottom:14px}
         <dt>WASD</dt><dd>Move</dd>
         <dt>MOUSE</dt><dd>Look around</dd>
         <dt>SHIFT</dt><dd>Sprint (you get spotted faster)</dd>
+        <dt>SPACE</dt><dd>Jump (onto desks and benches, through open or smashed windows)</dd>
         <dt>C</dt><dd>Crouch on/off (hide behind counters, cars, crates, window sills)</dd>
         <dt>HOLD G</dt><dd>Put on your mask</dd>
-        <dt>E</dt><dd>Interact: doors, ladders, the drill, loot. Hold it to bag a body, answer a pager or zip-tie a civilian. Tap it to make a tied hostage follow you or stay</dd>
+        <dt>E</dt><dd>Interact: doors, ladders, the drill, loot. Hold it to pick a lock, loop a camera (stand under it and look up), bag a body, answer a pager or zip-tie a civilian. Tap it to make a tied hostage follow you or stay</dd>
         <dt>Q</dt><dd>Drop what you're carrying</dd>
         <dt>J</dt><dd>Put down a jammer: for 15 seconds no radio, phone or pager can raise the alarm (2 per job)</dd>
         <dt>CLICK</dt><dd>Fire the silenced pistol</dd>
@@ -343,6 +344,59 @@ function windowX(z,a,b,h){
   addBox(a,z-0.2,b,z+0.2,h,M.outer,{y0:WIN_HI,collide:false});
   const g=new THREE.Mesh(new THREE.PlaneGeometry(b-a,WIN_HI-WIN_LO),winGlass);g.position.set((a+b)/2,(WIN_LO+WIN_HI)/2,z);g.userData.noHit=true;lvAdd(g);
   addBox((a+b)/2-0.04,z-0.05,(a+b)/2+0.04,z+0.05,WIN_HI,M.trim,{y0:WIN_LO,collide:false});
+  colliders.push({minX:a,maxX:b,minZ:z-0.05,maxZ:z+0.05,h:WIN_HI,see:true,lvl:0});
+}
+// windows you can pick open (quiet) or smash with a bullet (loud), then jump through: low sill
+const OWIN_LO=0.7,OWIN_HI=2.3,windows=[];
+const sashMat=phong(0x2f3439,{shininess:40}),shardMat=new THREE.MeshPhongMaterial({color:0xcfe3ee,transparent:true,opacity:.55,shininess:100,specular:0xffffff,side:THREE.DoubleSide});
+const oGlass=new THREE.MeshPhongMaterial({color:0x9fb8c8,transparent:true,opacity:.24,shininess:90,specular:0x777777,depthWrite:false,side:THREE.DoubleSide});
+function makeWindowAt(cx,cz,w,alongZ,h,mat,name){
+  const hw=w/2;
+  const B=(u1,u2,v1,v2,top,m,o)=>alongZ?addBox(cx+v1,cz+u1,cx+v2,cz+u2,top,m,o):addBox(cx+u1,cz+v1,cx+u2,cz+v2,top,m,o);
+  B(-hw,hw,-0.2,0.2,OWIN_LO,mat);
+  B(-hw,hw,-0.2,0.2,h,mat,{y0:OWIN_HI,collide:false});
+  B(-hw,hw,-0.26,0.26,OWIN_LO+0.04,sashMat,{y0:OWIN_LO,collide:false});
+  B(-hw,-hw+0.07,-0.1,0.1,OWIN_HI,sashMat,{y0:OWIN_LO,collide:false});B(hw-0.07,hw,-0.1,0.1,OWIN_HI,sashMat,{y0:OWIN_LO,collide:false});
+  const grp=new THREE.Group();grp.position.set(cx,(OWIN_LO+OWIN_HI)/2,cz);grp.rotation.y=alongZ?Math.PI/2:0;lvAdd(grp);
+  const W=w-0.14,Hh=OWIN_HI-OWIN_LO;
+  const wo={x:cx,z:cz,w,alongZ,grp,baseY:(OWIN_LO+OWIN_HI)/2,state:"closed",pickT:0,openT:0,shards:[],name:name||"window"};
+  const pane=new THREE.Mesh(new THREE.PlaneGeometry(W,Hh-0.08),oGlass);pane.userData.win=wo;grp.add(pane);
+  for(const [x,y,sw,sh] of [[0,Hh/2-0.03,W,0.06],[0,-Hh/2+0.03,W,0.06],[0,0,W,0.045],[-W/2+0.03,0,0.06,Hh],[W/2-0.03,0,0.06,Hh]]){
+    const b=new THREE.Mesh(new THREE.BoxGeometry(sw,sh,0.05),sashMat);b.position.set(x,y,0);b.userData.win=wo;grp.add(b);
+  }
+  const latch=new THREE.Mesh(new THREE.BoxGeometry(0.12,0.03,0.08),M.steel);latch.position.set(0,0.035,0.04);grp.add(latch);
+  wo.col=alongZ?{minX:cx-0.05,maxX:cx+0.05,minZ:cz-hw,maxZ:cz+hw,h:OWIN_HI,see:true,lvl:0}:{minX:cx-hw,maxX:cx+hw,minZ:cz-0.05,maxZ:cz+0.05,h:OWIN_HI,see:true,lvl:0};
+  colliders.push(wo.col);windows.push(wo);return wo;
+}
+const windowOX=(z,a,b,h,mat,name)=>makeWindowAt((a+b)/2,z,b-a,false,h,mat,name);
+const windowOZ=(x,a,b,h,mat,name)=>makeWindowAt(x,(a+b)/2,b-a,true,h,mat,name);
+function resetWindow(w){
+  w.state="closed";w.pickT=0;w.openT=0;w.grp.visible=true;w.grp.position.y=w.baseY;
+  if(!colliders.includes(w.col))colliders.push(w.col);
+  w.shards.forEach(m=>LV.group.remove(m));w.shards.length=0;
+}
+function openWindow(w){
+  if(w.state!=="closed")return;
+  w.state="open";const i=colliders.indexOf(w.col);if(i>=0)colliders.splice(i,1);SFX.slide(w.x,w.z);
+}
+function breakWindow(w){
+  if(w.state!=="closed")return;
+  w.state="broken";w.grp.visible=false;const i=colliders.indexOf(w.col);if(i>=0)colliders.splice(i,1);
+  for(let k=0;k<14;k++){
+    const m=new THREE.Mesh(new THREE.BoxGeometry(0.05+Math.random()*0.16,0.006,0.04+Math.random()*0.12),shardMat);
+    const u=(Math.random()-0.5)*w.w*0.9,v=(Math.random()<0.5?-1:1)*(0.3+Math.random()*1.0);
+    m.position.set(w.x+(w.alongZ?v:u),0.01,w.z+(w.alongZ?u:v));m.rotation.y=Math.random()*3;m.userData.noHit=true;lvAdd(m);w.shards.push(m);
+  }
+  SFX.glass(w.x,w.z);
+  G.bang={x:w.x,z:w.z,r:14,lvl:0}; // everyone nearby hears it
+  toast("Window smashed. That was loud","warn",1800);
+}
+function updateWindows(dt){
+  for(const w of windows){
+    if(w.state!=="open"||w.openT>=1)continue;
+    w.openT=Math.min(1,w.openT+dt/0.7);const e=w.openT*w.openT*(3-2*w.openT);
+    w.grp.position.y=w.baseY+e*(OWIN_HI-OWIN_LO-0.04);
+  }
 }
 
 /* ---------- doors: E to open/close; guards open them as they walk through; closed doors block sight ---------- */
@@ -370,7 +424,7 @@ function makeDoorAt(cx,cz,w,h,rot,o){
   const col=alongZ?{minX:cx-0.07,maxX:cx+0.07,minZ:cz-w/2,maxZ:cz+w/2,h,see:!!o.glass,lvl:0}
                   :{minX:cx-w/2,maxX:cx+w/2,minZ:cz-0.07,maxZ:cz+0.07,h,see:!!o.glass,lvl:0};
   colliders.push(col);
-  const d={x:cx,z:cz,w,h,rot,leaves,col,t:0,open:false,swing:1,byGuard:false,name:o.name||"door",glass:!!o.glass,dayOpen:!!o.dayOpen,leafCols:null};
+  const d={x:cx,z:cz,w,h,rot,leaves,col,t:0,open:false,swing:1,byGuard:false,name:o.name||"door",glass:!!o.glass,dayOpen:!!o.dayOpen,leafCols:null,pick:!!o.pick,locked:!!o.pick,pickT:0};
   doors.push(d);return d;
 }
 function makeDoor(x1,x2,z,h,o){return makeDoorAt((x1+x2)/2,z,x2-x1,h,0,o);}        // door in a wall running along x
@@ -506,7 +560,7 @@ function makeCam(x,y,z,center,amp,period,phase,range,half,lvl,o){
   spot.position.set(0,0,0.3);spot.castShadow=o.shadow!==false;spot.shadow.mapSize.set(512,512);
   spot.shadow.camera.near=0.3;spot.shadow.camera.far=range+3;spot.shadow.bias=-0.0005;spot.shadow.normalBias=0.04;head.add(spot);
   const st=new THREE.Object3D();st.position.set(0,0,6);head.add(st);spot.target=st;
-  const c={g,head,cone,spot,body,led,coneMat,x,z,center,amp,period,phase,range,half,level:lvl||0,yaw:center,seeDist:-1,bodyDist:-1,base:0.33,kind:"camera",dead:false};
+  const c={g,head,cone,spot,body,led,coneMat,x,z,center,amp,period,phase,range,half,level:lvl||0,yaw:center,seeDist:-1,bodyDist:-1,civDist:-1,loopT:0,base:0.33,kind:"camera",dead:false};
   [body,lens,bracket].forEach(m=>m.userData.cam=c);
   cams.push(c);return c;
 }
@@ -563,6 +617,7 @@ class Guard{
     const n=Math.max(G.noise,G.shotNoise);
     if(n>0&&exposed()&&!DEV.ghost)srcs.push({x:P.x,z:P.z,r:n,lvl:P.level});
     if(G.drilling)srcs.push({x:DRILL_POS.x,z:DRILL_POS.z,r:DRILL_NOISE,lvl:0}); // a running drill is never innocent
+    if(G.bang)srcs.push(G.bang);
     for(const s of srcs){
       const d=Math.hypot(s.x-this.x,s.z-this.z);
       let eff=s.lvl!==this.level?d*2.2:blocked(this.x,this.z,s.x,s.z,2.0,this.level)?d*1.7:d; // through a roof is very muffled
@@ -793,7 +848,7 @@ class Civilian extends Guard{
     // idle: notice anything off
     let gain=0,tx=null,tz=null;
     if(sd>=0){
-      if(P.masked||P.carry)gain=2.4*(1+(1-sd/range));
+      if(P.masked||P.carry||P.fiddle>0)gain=2.4*(1+(1-sd/range));
       else if(sd<10)gain=0.35*(1+(1-sd/10)); // a stranger in the staff area: "excuse me?"
       if(gain>0){tx=P.x;tz=P.z;}
     }
@@ -802,6 +857,7 @@ class Civilian extends Guard{
       const d=Math.hypot(P.x-this.x,P.z-this.z),eff=blocked(this.x,this.z,P.x,P.z,2.0,this.level)?d*1.7:d;
       if(eff<G.loud){this.sus=Math.max(this.sus,0.55);if(tx==null){tx=P.x;tz=P.z;}}
     }
+    if(G.bang&&G.bang.lvl===this.level&&Math.hypot(G.bang.x-this.x,G.bang.z-this.z)<G.bang.r){this.sus=Math.max(this.sus,0.6);if(tx==null){tx=G.bang.x;tz=G.bang.z;}}
     if(gain>0){if(this.sus===0)SFX.gasp(this.x,this.z,this.level);this.sus+=gain*dt;}
     else if(tx==null)this.sus=Math.max(0,this.sus-0.3*dt);
     if(tx!=null){this.lx=tx;this.lz=tz;}
@@ -911,7 +967,7 @@ const MAP_HARBOR={
   },
   fly(a){camera.position.set(Math.sin(a)*6+4,5.5,27+Math.cos(a)*2);camera.lookAt(0,1.5,4);},
   text:{
-    case:"Case the bank from the street. Watch the guards through the front windows. Hold G to put on your mask when you're ready.",
+    case:"Case the bank from the street. Watch the guards through the front windows. The back door is locked (hold E to pick it), and the side windows can be picked or smashed and jumped through. Hold G to put on your mask when you're ready.",
     vault:"Get to the vault behind the tellers and set up the drill.",
     van:"Carry the bag to the van in the back alley (northwest corner).",
     bins:"Dump the body in a bin: the two dumpsters behind the bank or the linen cart in the office. Q drops it."
@@ -933,7 +989,8 @@ const MAP_HARBOR={
     lintelX(12,-1.5,1.5,2.6,4,M.outer);
     windowX(12,-10.2,-5.8,4); windowX(12,5.8,10.2,4);
     wallX(-12,-15.2,-12,4,M.outer); wallX(-12,-9.5,15.2,4,M.outer); lintelX(-12,-12,-9.5,2.4,4,M.outer);
-    wallZ(-15,-12.2,12.2,4,M.outer); wallZ(15,-12.2,12.2,4,M.outer);
+    wallZ(-15,-12.2,-10,4,M.outer); windowOZ(-15,-10,-8,4,M.outer,"office window"); wallZ(-15,-8,12.2,4,M.outer);
+    wallZ(15,-12.2,5,4,M.outer); windowOZ(15,5,7,4,M.outer,"lobby window"); wallZ(15,7,12.2,4,M.outer);
     addBox(-15.1,-12.1,15.1,12.1,3.4,M.ceil,{y0:3.2,collide:false});
     plaque(signTex("HARBOR SAVINGS & LOAN",1024,136,"#e9eef2","#11161d","bold 76px 'Arial Narrow', Arial, sans-serif"),9,1.2,0,3.35,12.215);
     addBox(-1.8,12.2,-1.5,12.5,2.6,M.trim,{collide:false});addBox(1.5,12.2,1.8,12.5,2.6,M.trim,{collide:false});
@@ -956,7 +1013,7 @@ const MAP_HARBOR={
     plaque(staffTex(),0.75,0.28,-10.75,2.75,-12.22,Math.PI);
     // doors
     makeDoor(-1.5,1.5,12,2.58,{glass:true,name:"front door",dayOpen:true});
-    makeDoor(-12,-9.5,-12,2.38,{mat:staffDoorMat,name:"back door"});
+    makeDoor(-12,-9.5,-12,2.38,{mat:staffDoorMat,name:"back door",pick:true});
     makeDoor(-11,-9,0,2.38,{name:"office door"});
     makeDoor(-1.2,1.2,0,2.38,{mat:staffDoorMat,name:"vault hall door"});
     makeDoor(9,11,0,2.38,{name:"security door"});
@@ -1023,7 +1080,7 @@ const MAP_HARBOR_DAY=Object.assign({},MAP_HARBOR,{
   id:"harborDay",job:"Business Hours",time:"11:20",day:true,zipTies:6,
   isStaff:(x,z)=>x>-15&&x<15&&z>-12&&z<4,
   text:{
-    case:"Walk in through the front doors like any customer. The lobby is public, everything behind the teller counter is staff only. Hold G to put on your mask when you're ready.",
+    case:"Walk in through the front doors like any customer. The lobby is public, everything behind the teller counter is staff only. The back door is locked (hold E to pick it); the side windows can be picked or smashed. Hold G to put on your mask when you're ready.",
     vault:"Get to the vault behind the tellers and set up the drill.",
     van:MAP_HARBOR.text.van,bins:MAP_HARBOR.text.bins
   }
@@ -1044,7 +1101,7 @@ const MAP_MERIDIAN={
   },
   fly(a){camera.position.set(Math.sin(a)*9+6,9,36+Math.cos(a)*3);camera.lookAt(0,2,6);},
   text:{
-    case:"Case Meridian Trust from the street. Three ways in: the glass front doors, the loading door on the east side, or the roof hatch. The roof ladder is in the back alley. The security room needs a keycard: staff leave one on a desk somewhere. Hold G to put on your mask when you're ready.",
+    case:"Case Meridian Trust from the street. Ways in: the glass front doors, the locked loading door on the east side, the roof hatch, or a window you pick or smash (west office, back of the loading bay). The roof ladder is in the back alley. The security room needs a keycard: staff leave one on a desk somewhere. Hold G to put on your mask when you're ready.",
     vault:"Get to the vault behind the counting room and set up the drill.",
     van:"Carry the bag to the van in the east loading yard, just outside the loading door.",
     bins:"Dump the body in a bin: the dumpster in the back alley, the one in the east yard, or the trash cart in the break room. Q drops it."
@@ -1069,8 +1126,8 @@ const MAP_MERIDIAN={
     wallX(14,-24.2,-21,H,M.outer); windowX(14,-21,-15,H); wallX(14,-15,-9,H,M.outer); windowX(14,-9,-4,H); wallX(14,-4,-1.5,H,M.outer);
     lintelX(14,-1.5,1.5,2.6,H,M.outer);
     wallX(14,1.5,4,H,M.outer); windowX(14,4,9,H); wallX(14,9,15,H,M.outer); windowX(14,15,21,H); wallX(14,21,24.2,H,M.outer);
-    wallX(-18,-24.2,24.2,H,M.outer);
-    wallZ(-24,-18.2,14.2,H,M.outer);
+    wallX(-18,-24.2,20.5,H,M.outer); windowOX(-18,20.5,22.5,H,M.outer,"loading bay window"); wallX(-18,22.5,24.2,H,M.outer);
+    wallZ(-24,-18.2,9,H,M.outer); windowOZ(-24,9,11,H,M.outer,"office window"); wallZ(-24,11,14.2,H,M.outer);
     wallZ(24,-18.2,-12,H,M.outer); wallZ(24,-10,14.2,H,M.outer); lintelZ(24,-12,-10,2.4,H,M.outer);
     // roof slab with a hole for the hatch at (-9,-15)
     const roofTop=phong(0xffffff,{map:tex(256,256,drawGravel,4,4)});
@@ -1078,7 +1135,7 @@ const MAP_MERIDIAN={
     const slab=(x1,z1,x2,z2)=>addBox(x1,z1,x2,z2,ROOF_Y,roofMat,{y0:3.2,collide:false});
     slab(-24.1,-14.4,24.1,14.1); slab(-24.1,-18.1,24.1,-15.6); slab(-24.1,-15.6,-9.6,-14.4); slab(-8.4,-15.6,24.1,-14.4);
     // parapet on the roof level
-    for(const c of [{minX:-24.4,maxX:24.4,minZ:13.6,maxZ:14.4},{minX:-24.4,maxX:24.4,minZ:-18.4,maxZ:-17.6},{minX:-24.4,maxX:-23.6,minZ:-18.4,maxZ:14.4},{minX:23.6,maxX:24.4,minZ:-18.4,maxZ:14.4}])colliders.push(Object.assign(c,{h:0.8,lvl:1}));
+    for(const c of [{minX:-24.4,maxX:24.4,minZ:13.6,maxZ:14.4},{minX:-24.4,maxX:24.4,minZ:-18.4,maxZ:-17.6},{minX:-24.4,maxX:-23.6,minZ:-18.4,maxZ:14.4},{minX:23.6,maxX:24.4,minZ:-18.4,maxZ:14.4}])colliders.push(Object.assign(c,{h:1.3,lvl:1}));
     // facade
     plaque(signTex("MERIDIAN TRUST",1024,136,"#e9eef2","#10161c","bold 80px 'Arial Narrow', Arial, sans-serif"),10,1.3,0,3.75,14.215);
     addBox(-1.8,14.2,-1.5,14.5,2.6,M.trim,{collide:false});addBox(1.5,14.2,1.8,14.5,2.6,M.trim,{collide:false});
@@ -1107,7 +1164,7 @@ const MAP_MERIDIAN={
     // doors (3 ways in: front, loading door, roof hatch)
     makeDoor(-1.5,1.5,14,2.58,{glass:true,name:"front door",dayOpen:true});
     makeDoorZ(-10,8.3,10.3,2.38,{name:"accounts office door",dayOpen:true});
-    makeDoorZ(24,-12,-10,2.38,{mat:staffDoorMat,name:"loading door"});
+    makeDoorZ(24,-12,-10,2.38,{mat:staffDoorMat,name:"loading door",pick:true});
     makeDoor(-18,-16,4,2.38,{name:"office door"});
     makeDoor(-1.2,1.2,4,2.38,{mat:staffDoorMat,name:"staff door"});
     makeDoor(16,18,4,2.38,{name:"manager's door"});
@@ -1119,7 +1176,7 @@ const MAP_MERIDIAN={
     const secDoor=makeDoor(8,10,-8,2.38,{name:"security door"});
     makeReader(secDoor,10.45,1.25,-7.77,0);
     makeKeycard([[17.2,0.81,9.6],[-19.6,0.76,-4.0],[-21.3,0.79,7.4],[-16.9,0.79,11.6],[5.9,0.91,-3.8]]);
-    makeDoor(-16,-14,-8,2.38,{name:"server room door"});
+    makeDoor(-16,-14,-8,2.38,{name:"server room door",pick:true});
     // lobby: reception desk, benches, pillars, plants
     addBox(-4,8,4,9,1.1,M.counter); addBox(-4.1,7.9,4.1,9.1,1.16,M.counterTop,{y0:1.1,collide:false});
     plaque(signTex("RECEPTION",512,76,"#c9d2d6","#1a2028","600 44px Arial, sans-serif"),2.6,0.4,0,2.5,9.12);
@@ -1184,10 +1241,12 @@ const MAP_MERIDIAN={
     addBox(22.5,12.5,22.8,12.8,2.5,M.pole,{lvl:1});
     const hatch=makeHatch(-9,-15);
     // ladders and the hatch move you between the ground (level 0) and the roof (level 1)
-    transitions.push({x:-18,z:-19,lvl:0,to:{x:-18,z:-16.9,lvl:1},label:"climb the ladder to the roof"});
-    transitions.push({x:-18,z:-17.0,lvl:1,to:{x:-18,z:-19.2,lvl:0},label:"climb down the ladder"});
-    transitions.push({x:-9,z:-14.0,lvl:1,to:{x:-9,z:-14.6,lvl:0},label:"climb down through the hatch",hatch});
-    transitions.push({x:-9,z:-14.7,lvl:0,to:{x:-9,z:-13.8,lvl:1},label:"climb up to the roof",hatch});
+    // climbs follow a path: straight up the ladder outside the wall, then over the parapet (no clipping)
+    const TOP=ROOF_Y+0.95;
+    transitions.push({x:-18,z:-19,lvl:0,to:{x:-18,z:-16.9,lvl:1},label:"climb the ladder to the roof",path:[[-18,-18.75,0],[-18,-18.75,TOP],[-18,-17.3,TOP]]});
+    transitions.push({x:-18,z:-17.0,lvl:1,to:{x:-18,z:-19.2,lvl:0},label:"climb down the ladder",path:[[-18,-17.3,TOP],[-18,-18.75,TOP],[-18,-18.75,0]]});
+    transitions.push({x:-9,z:-14.0,lvl:1,to:{x:-9,z:-14.6,lvl:0},label:"climb down through the hatch",hatch,path:[[-9,-15,ROOF_Y],[-9,-15,0]]});
+    transitions.push({x:-9,z:-14.7,lvl:0,to:{x:-9,z:-13.8,lvl:1},label:"climb up to the roof",hatch,path:[[-9,-15,0],[-9,-15,ROOF_Y]]});
     // lights
     lamp(-10,16.2,0xffb050); lamp(10,16.2,0xffb050); lamp(-26,-20,0xffa848); lamp(26,-4,0xffa848);
     pointLight(-18,ROOF_Y+2.2,-16.6,0xd8e2ff,0.45,8);
@@ -1234,7 +1293,7 @@ const MAP_MERIDIAN_DAY=Object.assign({},MAP_MERIDIAN,{
   id:"meridianDay",job:"Lunch Rush",time:"12:45",day:true,zipTies:8,
   isStaff(x,z){return x>-24&&x<24&&z>-18&&z<14&&!(x<10&&z>4);},
   text:{
-    case:"Walk in through the front doors. The lobby and the accounts office are public; everything past the staff door is off limits. Other ways in: the loading door on the east side and the roof hatch (ladder in the back alley). The security room needs a keycard: staff leave one on a desk somewhere. Hold G to put on your mask when you're ready.",
+    case:"Walk in through the front doors. The lobby and the accounts office are public; everything past the staff door is off limits. Other ways in: the locked loading door on the east side, the roof hatch (ladder in the back alley), or a window you pick or smash. The security room needs a keycard: staff leave one on a desk somewhere. Hold G to put on your mask when you're ready.",
     vault:MAP_MERIDIAN.text.vault,van:MAP_MERIDIAN.text.van,bins:MAP_MERIDIAN.text.bins
   }
 });
@@ -1258,7 +1317,7 @@ function buildMap(id){
     scene.remove(LV.group);
     LV.group.traverse(o=>{if(o.geometry)o.geometry.dispose();if(o.shadow&&o.shadow.map){o.shadow.map.dispose();o.shadow.map=null;}});
   }
-  colliders.length=0;doors.length=0;bins.length=0;cams.length=0;guards.length=0;civs.length=0;bags.length=0;transitions.length=0;hatches.length=0;
+  colliders.length=0;doors.length=0;bins.length=0;cams.length=0;guards.length=0;civs.length=0;bags.length=0;transitions.length=0;hatches.length=0;windows.length=0;
   secGuard=null;VAULT=null;ring=null;civSeed=0;KEYCARD=null;jammerMeshes.length=0;
   LV={group:new THREE.Group(),def,id:def.id,day:!!def.day};scene.add(LV.group);
   setSky(LV.day);
@@ -1331,10 +1390,13 @@ let sparkI=0;
 function spark(pt,big){const s=sparks[sparkI++%sparks.length];s.position.copy(pt);s.life=big?0.35:0.12;s.scale.setScalar(big?2.2:1);s.visible=true;}
 
 /* ================= collision & sight ================= */
-function resolve(p,r,lvl){
-  lvl=lvl||0;
+const STAND_MAX=1.25; // you can stand on anything up to this height (desks, benches, sills, crates)
+function resolve(p,r,lvl,feet){
+  lvl=lvl||0;feet=feet||0;
   for(let it=0;it<3;it++)for(const c of colliders){
     if((c.lvl||0)!==lvl)continue;
+    if(feet>0&&c.h<=STAND_MAX&&c.h<=feet+0.02&&!c.see)continue; // you're above it
+
     const cx=clamp(p.x,c.minX,c.maxX),cz=clamp(p.z,c.minZ,c.maxZ);
     const dx=p.x-cx,dz=p.z-cz,d2=dx*dx+dz*dz;
     if(d2<r*r){
@@ -1343,6 +1405,21 @@ function resolve(p,r,lvl){
         if(m===l)p.x=c.minX-r;else if(m===rr)p.x=c.maxX+r;else if(m===t)p.z=c.minZ-r;else p.z=c.maxZ+r;}
     }
   }
+}
+function supportAt(x,z,r,lvl,feet){
+  let s=0;
+  for(const c of colliders){
+    if((c.lvl||0)!==lvl||c.see||c.h>STAND_MAX||c.h>feet+0.02)continue;
+    if(x+r>c.minX&&x-r<c.maxX&&z+r>c.minZ&&z-r<c.maxZ&&c.h>s)s=c.h;
+  }
+  return s;
+}
+function seePoint(ox,oz,yaw,half,range,lvl,x,z,minH){
+  const dx=x-ox,dz=z-oz,d=Math.hypot(dx,dz);
+  if(d>range)return -1;
+  if(d>0.5&&Math.abs(wrap(Math.atan2(dx,dz)-yaw))>half)return -1;
+  if(blocked(ox,oz,x,z,minH,lvl))return -1;
+  return d;
 }
 function segBox(ax,az,bx,bz,c){
   let t0=0,t1=1;const dx=bx-ax,dz=bz-az;
@@ -1361,14 +1438,15 @@ function blocked(ax,az,bx,bz,minH,lvl){
 // at night the whole bank and the roof are off limits; by day only the staff areas (and the roof)
 function restricted(x,z,lvl){if(lvl==null)lvl=P.level;return lvl===1||(LV.day?LV.def.isStaff(x,z):LV.def.isInside(x,z));}
 // unmasked outside you're just someone on the street: nobody reacts
-function exposed(){return G.alarm||P.masked||restricted(P.x,P.z);}
+// picking a lock or fiddling with a camera is suspicious anywhere
+function exposed(){return G.alarm||P.masked||P.fiddle>0||restricted(P.x,P.z);}
 function canSee(ox,oz,yaw,half,range,lvl){
   if(DEV.ghost||!exposed())return -1;
   if((lvl||0)!==P.level)return -1;
   const dx=P.x-ox,dz=P.z-oz,d=Math.hypot(dx,dz);
   if(d>range)return -1;
   if(Math.abs(wrap(Math.atan2(dx,dz)-yaw))>half)return -1;
-  if(blocked(ox,oz,P.x,P.z,P.crouch?1.0:1.6,P.level))return -1;
+  if(blocked(ox,oz,P.x,P.z,(P.crouch?1.0:1.6)+P.jh,P.level))return -1;
   return d;
 }
 // bodies on the floor and body bags left in the open
@@ -1508,6 +1586,17 @@ const SFX={
   jamOn(){tone({type:"square",f0:300,f1:1400,dur:.35,vol:.08,lp:3000});noiseHit({type:"bandpass",freq:2800,q:.6,dur:.6,vol:.15,attack:.05});},
   jamTick(x,z,fast){const s=spatial(x,z,20)||{vol:.2,pan:0};tone({type:"square",f0:fast?1500:1100,dur:.05,vol:.06*s.vol+.015,pan:s.pan,lp:s.lp||4000});noiseHit({freq:3000,q:.8,dur:.12,vol:.05*s.vol+.01,pan:s.pan});},
   jamOff(){tone({type:"sawtooth",f0:900,f1:120,dur:.5,vol:.06,lp:1500});},
+  pick(){noiseHit({freq:4200+Math.random()*1800,q:7,dur:.025,vol:.06});},
+  pin(){tone({type:"triangle",f0:2700,f1:2300,dur:.05,vol:.08});noiseHit({freq:3200,q:3,dur:.03,vol:.12});},
+  unlock(){noiseHit({type:"lowpass",freq:900,dur:.08,vol:.28});tone({type:"square",f0:520,f1:300,dur:.07,vol:.06,lp:1500,delay:.05});},
+  slide(x,z){const s=spatial(x,z,15)||{vol:.4,pan:0};noiseHit({type:"bandpass",freq:650,q:.8,dur:.55,vol:.16*s.vol+.03,attack:.12,pan:s.pan});noiseHit({type:"lowpass",freq:400,dur:.1,vol:.2*s.vol,pan:s.pan,delay:.55});},
+  glass(x,z){const s=spatial(x,z,40)||{vol:.5,pan:0};noiseHit({type:"lowpass",freq:350,dur:.18,vol:.45*s.vol+.1,pan:s.pan});
+    for(let i=0;i<16;i++)noiseHit({type:"highpass",freq:3800+Math.random()*3000,q:.8,dur:.03+Math.random()*.07,vol:(.32*s.vol+.07)*(1-i/18),pan:s.pan,delay:i*.035+Math.random()*.05});
+    for(let i=0;i<6;i++)tone({type:"sine",f0:3000+Math.random()*3500,dur:.12,vol:.04*s.vol+.01,pan:s.pan,delay:.15+i*.08+Math.random()*.05});},
+  loopStart(){tone({type:"square",f0:700,dur:.05,vol:.04,lp:2500});noiseHit({freq:2500,q:2,dur:.08,vol:.08});},
+  loopDone(){tone({type:"sine",f0:880,f1:1320,dur:.12,vol:.1});tone({type:"sine",f0:1320,dur:.1,vol:.1,delay:.13});},
+  loopEnd(){tone({type:"triangle",f0:600,f1:300,dur:.3,vol:.06});},
+  jump(){noiseHit({type:"lowpass",freq:300,dur:.08,vol:.16});},
   card(){tone({type:"sine",f0:1320,dur:.08,vol:.12});tone({type:"sine",f0:1760,dur:.12,vol:.12,delay:.09});},
   denied(){tone({type:"square",f0:220,dur:.14,vol:.09,lp:1200});tone({type:"square",f0:180,dur:.2,vol:.09,lp:1200,delay:.16});},
   tie(){for(let i=0;i<9;i++)noiseHit({freq:3200+i*120,q:4,dur:.02,vol:.16,delay:i*.06});noiseHit({type:"lowpass",freq:500,dur:.1,vol:.2,delay:.6});},
@@ -1623,24 +1712,26 @@ function updateAudio(){
 
 /* ================= game state ================= */
 const MAG=12,MASK_TIME=1.0,RELOAD_TIME=1.4;
-const P={x:2,z:20.5,yaw:0,pitch:0,crouch:false,eye:1.65,bobT:0,carry:null,sprinting:false,kick:0,level:0,y:0,climb:null};
+const P={x:2,z:20.5,yaw:0,pitch:0,crouch:false,eye:1.65,bobT:0,carry:null,sprinting:false,kick:0,level:0,y:0,climb:null,jh:0,vy:0,gnd:0,fiddle:0};
 const DEV={on:false,ghost:false};
 try{DEV.on=localStorage.getItem("cg-dev")==="1";}catch(e){}
 const G={time:0,world:0,susp:0,unseen:0,alarm:false,alarmT:60,drill:0,drillWas:false,vaultOpen:false,doorAnim:0,secured:0,takedowns:0,everAlarm:false,lastSpotter:"guard",lastCause:"player",noise:0,shotNoise:0,blipT:0,bodies:[],secAlert:0,bagT:0,binned:0};
 const BAG_TIME=2.0,PAGER_DELAY=2.5,PAGER_WINDOW=12,MAX_PAGERS=3,REPORT_TIME=6,JAM_TIME=15,JAMMERS=2;
+const LOOP_TIME=25,LOOP_HOLD=2.0,LOOP_REACH=2.4,PICK_DOOR=5,PICK_WIN=3.5,PINS=5,JUMP_V=5.6,GRAV=17;
 let state="menu",locked=false,everLocked=false,fallback=false,pendingStart=false,pressedE=false;
 const keys={};
 const DRILL_TIME=20,ALARM_TIME=60;
 
 function resetGame(){
   const sp=LV.def.spawn;
-  Object.assign(P,{x:sp.x,z:sp.z,yaw:sp.yaw||0,level:0,y:0,climb:null,pitch:0,crouch:false,eye:1.65,bobT:0,carry:null,sprinting:false,kick:0,
+  Object.assign(P,{x:sp.x,z:sp.z,yaw:sp.yaw||0,level:0,y:0,climb:null,jh:0,vy:0,gnd:0,fiddle:0,pitch:0,crouch:false,eye:1.65,bobT:0,carry:null,sprinting:false,kick:0,
     masked:false,maskT:0,mag:MAG,reserve:MAG*3,reload:0,fireCD:0,aim:false,aimT:0,recoil:0,raise:0,wasRestricted:false,ties:LV.def.zipTies||0,shoutCD:0,jammers:JAMMERS,hasCard:false});
   Object.assign(G,{time:0,susp:0,unseen:0,alarm:false,alarmT:ALARM_TIME,drill:0,drillWas:false,vaultOpen:false,doorAnim:0,secured:0,takedowns:0,kills:0,camsShot:0,shots:0,everAlarm:false,noise:0,shotNoise:0,blipT:0,bodies:[],secAlert:0,bagT:0,binned:0,
-    loud:0,trail:[],trailBase:0,tieT:0,tied:0,civKills:0,callLine:-9,bodyHost:false,lastSpotter:null,secMsg:"",jamT:0,jamsUsed:0,jamBeep:0});
-  cams.forEach(c=>{c.dead=false;c.cone.visible=true;c.spot.intensity=1.6;c.head.rotation.set(0.24,0,0);c.body.material=M.camBody;});
+    loud:0,trail:[],trailBase:0,tieT:0,tied:0,civKills:0,callLine:-9,bodyHost:false,lastSpotter:null,secMsg:"",jamT:0,jamsUsed:0,jamBeep:0,loopHold:0,loops:0,picks:0,picking:false,pickScr:0,bang:null,civWatched:false});
+  cams.forEach(c=>{c.dead=false;c.loopT=0;c.civDist=-1;c.cone.visible=true;c.spot.intensity=1.6;c.head.rotation.set(0.24,0,0);c.body.material=M.camBody;});
   bins.forEach(b=>{b.count=0;b.openT=0;b.piv.rotation.x=0;});
-  doors.forEach(d=>{d.open=false;d.byGuard=false;d.t=0;d.leafCols=null;d.leaves.forEach(l=>l.piv.rotation.y=0);if(!colliders.includes(d.col))colliders.push(d.col);if(LV.day&&d.dayOpen)setDoorOpen(d,1);});
+  doors.forEach(d=>{d.open=false;d.byGuard=false;d.t=0;d.leafCols=null;d.leaves.forEach(l=>l.piv.rotation.y=0);if(!colliders.includes(d.col))colliders.push(d.col);d.pickT=0;if(d.pick)d.locked=true;if(LV.day&&d.dayOpen)setDoorOpen(d,1);});
+  windows.forEach(resetWindow);
   G.drilling=false;G.pagersUsed=0;P.locked=false;stopVoices();$("subs").hidden=true;
   gun.visible=false;camera.fov=72;camera.updateProjectionMatrix();
   $("maskEdge").hidden=true;
@@ -1665,6 +1756,7 @@ addEventListener("keydown",e=>{
   if(state!=="playing")return;
   if(e.code==="KeyE"&&!e.repeat)pressedE=true;
   if(e.code==="KeyC"&&!e.repeat)P.crouch=!P.crouch;
+  if(e.code==="Space"&&!e.repeat)tryJump();
   if(e.code==="KeyF"&&!e.repeat)pressF();
   if(e.code==="KeyR"&&!e.repeat)startReload();
   if(e.code==="KeyQ"&&!e.repeat)dropCarry();
@@ -1761,7 +1853,13 @@ function setPrompt(html,progress){
 
 /* ================= player ================= */
 function startClimb(tr){
-  P.climb={t:0,dur:1.1,fx:P.x,fz:P.z,fy:P.y,tx:tr.to.x,tz:tr.to.z,ty:tr.to.lvl*ROOF_Y,lvl:tr.to.lvl};
+  const pts=[[P.x,P.z,P.y]];
+  for(const q of (tr.path||[]))pts.push(q);
+  pts.push([tr.to.x,tr.to.z,tr.to.lvl*ROOF_Y]);
+  const segs=[];let len=0;
+  for(let i=1;i<pts.length;i++){const a=pts[i-1],b=pts[i],l=Math.hypot(b[0]-a[0],b[1]-a[1],b[2]-a[2]);segs.push(l);len+=l;}
+  P.climb={t:0,dur:clamp(0.4+len*0.24,1.1,2.8),pts,segs,len,ty:tr.to.lvl*ROOF_Y,lvl:tr.to.lvl};
+  P.jh=0;P.vy=0;P.crouch=false;
   P.aim=false;SFX.climb();
   if(tr.to.lvl!==P.level){
     const f=civs.filter(c=>c.follow);
@@ -1772,8 +1870,11 @@ function updatePlayer(dt){
   if(P.climb){
     // ladder / hatch: no control while climbing
     const c=P.climb;c.t=Math.min(1,c.t+dt/c.dur);const e=c.t*c.t*(3-2*c.t);
-    P.x=c.fx+(c.tx-c.fx)*e;P.z=c.fz+(c.tz-c.fz)*e;P.y=c.fy+(c.ty-c.fy)*e;
-    if(c.t>=1){P.level=c.lvl;P.y=c.ty;P.climb=null;}
+    let s=e*c.len,i=0;
+    while(i<c.segs.length-1&&s>c.segs[i]){s-=c.segs[i];i++;}
+    const a=c.pts[i],b=c.pts[i+1],k=c.segs[i]>0?Math.min(1,s/c.segs[i]):1;
+    P.x=a[0]+(b[0]-a[0])*k;P.z=a[1]+(b[1]-a[1])*k;P.y=a[2]+(b[2]-a[2])*k;
+    if(c.t>=1){P.level=c.lvl;P.x=c.pts[c.pts.length-1][0];P.z=c.pts[c.pts.length-1][1];P.y=c.ty;P.jh=0;P.gnd=0;P.climb=null;}
     G.noise=0;P.sprinting=false;
     camera.position.set(P.x,P.y+P.eye,P.z);camera.rotation.set(P.pitch,P.yaw,0);
     return;
@@ -1793,19 +1894,31 @@ function updatePlayer(dt){
   if(len>0){
     mx/=len;mz/=len;
     const p={x:P.x+mx*speed*dt,z:P.z+mz*speed*dt};
-    resolve(p,0.35,P.level);
-    for(const g of npcs()){if(g.down||g.level!==P.level)continue;const r=g.kind==="civ"?0.55:0.65;const dx=p.x-g.x,dz=p.z-g.z,d=Math.hypot(dx,dz);if(d<r&&d>1e-6){p.x=g.x+dx/d*r;p.z=g.z+dz/d*r;}}
+    resolve(p,0.35,P.level,P.jh);
+    for(const g of npcs()){if(P.jh>1.0)break;if(g.down||g.level!==P.level)continue;const r=g.kind==="civ"?0.55:0.65;const dx=p.x-g.x,dz=p.z-g.z,d=Math.hypot(dx,dz);if(d<r&&d>1e-6){p.x=g.x+dx/d*r;p.z=g.z+dz/d*r;}}
     P.x=p.x;P.z=p.z;
     const tl=G.trail[G.trail.length-1];
     if(!tl||Math.hypot(P.x-tl.x,P.z-tl.z)>0.35){G.trail.push({x:P.x,z:P.z});if(G.trail.length>600){G.trail.shift();G.trailBase++;}}
     const before=Math.floor(P.bobT/Math.PI);
-    P.bobT+=dt*speed*2.1;
+    if(P.jh<=P.gnd+0.02)P.bobT+=dt*speed*2.1;
     if(Math.floor(P.bobT/Math.PI)!==before){
       stepSound(P.x,P.z,P.sprinting?0.5:P.crouch?0.08:0.25,0,null,P.level);
       if(P.carry)noiseHit({type:"lowpass",freq:700,dur:.12,vol:.12});
     }
   }
-  G.noise=len>0?(P.sprinting?7:P.crouch?0:1.8):0;
+  G.noise=len>0&&P.jh<=P.gnd+0.02?(P.sprinting?7:P.crouch?0:1.8):0;
+  P.fiddle=Math.max(0,P.fiddle-dt);
+  // gravity: stand on whatever low thing is under you, fall off edges, land with a thump
+  const sup=supportAt(P.x,P.z,0.3,P.level,P.jh);P.gnd=sup;
+  if(P.jh>sup+1e-4||P.vy>0){
+    P.vy-=GRAV*dt;P.jh+=P.vy*dt;
+    if(P.level===0&&LV.def.isInside(P.x,P.z)){const cap=3.05-P.eye;if(P.jh>cap){P.jh=cap;if(P.vy>0)P.vy=0;}}
+    if(P.jh<=sup){
+      if(P.vy<-2.5){stepSound(P.x,P.z,0.45,0,null,P.level);G.noise=Math.max(G.noise,P.crouch?1.5:3);}
+      P.jh=sup;P.vy=0;
+    }
+  }else{P.jh=sup;P.vy=0;}
+  P.y=P.level*ROOF_Y+P.jh;
   const targetEye=P.crouch?1.05:1.65;
   P.eye+=(targetEye-P.eye)*Math.min(1,dt*10);
   const reduce=matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -1817,6 +1930,22 @@ function updatePlayer(dt){
   if(r&&!P.wasRestricted&&!P.masked&&!G.alarm)toast(P.level===1?"You're on the roof. Don't let anyone see you up here":LV.day?"Staff only. Don't let anyone see you back here":"The bank is closed. Don't let anyone see you inside","warn",2400);
   P.wasRestricted=r;
 }
+function tryJump(){
+  if(P.locked||P.climb||state!=="playing")return;
+  if(P.jh>P.gnd+0.02||P.vy>0)return;
+  if(P.carry&&P.carry.kind==="body"){toast("Too heavy to jump with","warn",1200);return;}
+  P.crouch=false;P.vy=P.carry?JUMP_V*0.85:JUMP_V;SFX.jump();
+}
+// lockpicking: hold E, five pins click into place one by one; progress stays if you let go
+function pickTick(o,total,dt){
+  if(!G.picking&&o.pickT===0)SFX.pick();
+  const b=Math.floor(o.pickT/total*PINS);o.pickT=Math.min(total,o.pickT+dt);const a=Math.floor(o.pickT/total*PINS);
+  if(a>b&&a<PINS)SFX.pin();
+  G.pickScr-=dt;if(G.pickScr<=0){SFX.pick();G.pickScr=0.1+Math.random()*0.22;}
+  P.fiddle=0.3;G.picking=true;
+  return o.pickT>=total;
+}
+const pinTxt=(o,total)=>`Picking the lock… pin ${Math.min(PINS,Math.floor(o.pickT/total*PINS)+1)}/${PINS}`;
 // F: take down a guard right in front of you, otherwise (day jobs) shout at civilians
 function takedownTarget(){
   const fx=-Math.sin(P.yaw),fz=-Math.cos(P.yaw);let best=null,bd=1e9;
@@ -1867,7 +1996,7 @@ function placeJammer(){
   let p={x:P.x+fx*0.7,z:P.z+fz*0.7};
   if(blocked(P.x,P.z,p.x,p.z,0.3,P.level))p={x:P.x,z:P.z};
   resolve(p,0.2,P.level);
-  makeJammer(p.x,p.z,P.y+0.0,P.yaw);
+  makeJammer(p.x,p.z,P.level*ROOF_Y+supportAt(p.x,p.z,0.12,P.level,P.gnd),P.yaw);
   P.jammers--;G.jamsUsed++;G.jamT=JAM_TIME;G.jamBeep=0;SFX.jamOn();
   if(civs.some(c=>c.state==="calling")){speak(1.1,VOICE_CIV);showSub("C","Hello? Hello?! …I've got no signal!",2400,"CIVILIAN · ON THE PHONE");}
   toast("Jammer on: no radios, phones or pagers for 15 s","good",2400);
@@ -1934,11 +2063,13 @@ function shoot(){
   }else if(ud.civ){
     const c=ud.civ;SFX.flesh(c.x,c.z);
     if(!c.dead){c.knockDown();G.civKills++;toast("Civilian down","bad",1300);}
+  }else if(ud.win&&ud.win.state==="closed"){
+    spark(hit.point,false);breakWindow(ud.win);
   }else if(ud.cam){
     const c=ud.cam;
     spark(hit.point,true);
     if(!c.dead){
-      c.dead=true;c.seeDist=-1;c.bodyDist=-1;c.cone.visible=false;c.spot.intensity=0;c.led.visible=false;c.head.rotation.set(0.95,0,0.35);c.body.material=CAM_DEAD;G.camsShot++;
+      c.dead=true;c.loopT=0;c.seeDist=-1;c.bodyDist=-1;c.civDist=-1;c.cone.visible=false;c.spot.intensity=0;c.led.visible=false;c.head.rotation.set(0.95,0,0.35);c.body.material=CAM_DEAD;G.camsShot++;
       SFX.camBreak(c.x,c.z);
       if(secGuard&&!secGuard.down&&!G.alarm){
         if(!(G.secAlert>0)){G.secAlert=3;G.secMsg="The security guard saw a camera go dark. Alarm!";}
@@ -1956,7 +2087,7 @@ function dropCarry(){
   if(blocked(P.x,P.z,p.x,p.z,0.3,P.level))p={x:P.x,z:P.z};
   resolve(p,0.3,P.level);
   it.level=P.level;
-  it.mesh.position.set(p.x,P.y+(it.kind==="body"?0.2:0.22),p.z);
+  it.mesh.position.set(p.x,P.level*ROOF_Y+supportAt(p.x,p.z,0.15,P.level,P.gnd)+(it.kind==="body"?0.2:0.22),p.z);
   it.mesh.rotation.set(0,P.yaw+(it.kind==="body"?Math.PI/2:0.4),0);
   it.mesh.visible=true;it.state="ground";P.carry=null;showCarry();SFX.drop(p.x,p.z);
   if(it.kind==="body")toast("A body bag in the open is still suspicious","warn",2000);
@@ -2003,7 +2134,8 @@ function updateWeapon(dt){
 /* ================= world updates ================= */
 function updateCams(dt,simOnly){
   for(const c of cams){
-    if(c.dead){c.seeDist=-1;c.bodyDist=-1;continue;}
+    if(c.dead){c.seeDist=-1;c.bodyDist=-1;c.civDist=-1;continue;}
+    c.civDist=-1;
     if(!simOnly&&secGuard&&secGuard.down){
       // nobody is watching the feeds any more: cameras go idle
       c.seeDist=-1;c.bodyDist=-1;c.coneMat.color.setHex(0x4a5058);c.spot.color.setHex(0x4a5058);c.coneMat.opacity=0.05;c.spot.intensity=0.4;c.led.visible=false;
@@ -2012,10 +2144,25 @@ function updateCams(dt,simOnly){
     c.spot.intensity=1.6;
     c.yaw=c.center+c.amp*Math.sin(G.world*2*Math.PI/c.period+c.phase);
     c.g.rotation.y=c.yaw;
+    if(c.loopT>0){
+      // looped: the security room sees an empty recording, the camera keeps sweeping
+      if(!simOnly){c.loopT=Math.max(0,c.loopT-dt);if(c.loopT===0){SFX.loopEnd();toast("A camera loop ran out. It's live again","warn",1800);}}
+      c.seeDist=-1;c.bodyDist=-1;
+      c.coneMat.color.setHex(0x6fe0a8);c.spot.color.setHex(0x9fc0ff);c.coneMat.opacity=0.08;
+      c.led.material.color.setHex(0x40ff80);c.led.visible=(Math.floor(G.world*4)%2)===0;
+      continue;
+    }
+    c.led.material.color.setHex(0xff3030);
     c.seeDist=simOnly?-1:canSee(c.x,c.z,c.yaw,c.half,c.range,c.level);
+    if(c.seeDist>=0&&c.seeDist<1.3)c.seeDist=-1; // blind spot right under the camera
+    if(!simOnly&&civs.length&&!G.alarm)for(const v of civs){
+      if(v.state!=="calling"||v.level!==c.level)continue;
+      const d=seePoint(c.x,c.z,c.yaw,c.half,c.range,c.level,v.x,v.z,1.4);
+      if(d>=0&&(c.civDist<0||d<c.civDist))c.civDist=d;
+    }
     const fb=simOnly?null:findBody(c.x,c.z,c.yaw,c.half,c.range,null,c.level);
     c.bodyDist=fb?fb.d:-1;c.bodyHost=!!(fb&&fb.hostage);
-    const seeing=c.seeDist>=0||c.bodyDist>=0;
+    const seeing=c.seeDist>=0||c.bodyDist>=0||c.civDist>=0;
     const col=G.alarm?0xff5040:seeing?0xffb048:0x9fc0ff;
     c.coneMat.color.setHex(col);c.spot.color.setHex(col);
     c.coneMat.opacity=seeing?0.2:0.1;
@@ -2024,7 +2171,7 @@ function updateCams(dt,simOnly){
 }
 function updateDetection(dt){
   if(G.alarm)return;
-  let gain=0,bodyGain=0,spotter=null,bodySpotter=null;
+  let gain=0,bodyGain=0,civGain=0,spotter=null,bodySpotter=null,civSpotter=null;
   const obs=[...guards,...cams];
   for(const o of obs){
     const range=o.kind==="camera"?o.range:14;
@@ -2035,20 +2182,22 @@ function updateDetection(dt){
       gain+=r;spotter=o;
     }
     if(o.bodyDist>=0){bodyGain+=0.45*(1+1.5*(1-o.bodyDist/range));bodySpotter=o;G.bodyHost=!!o.bodyHost;}
+    if(o.civDist>=0){civGain+=0.5*(1+1.5*(1-o.civDist/range));civSpotter=o;}
   }
   G.blipT-=dt;
-  const total=gain+bodyGain;
+  const total=gain+bodyGain+civGain;
   if(total>0){
     G.susp=Math.min(1,G.susp+total*dt);G.unseen=0;
-    if(bodyGain>gain){G.lastCause="body";G.lastSpotter=bodySpotter;}else{G.lastCause="player";G.lastSpotter=spotter;}
+    if(civGain>gain&&civGain>bodyGain){G.lastCause="civ";G.lastSpotter=civSpotter;}
+    else if(bodyGain>gain){G.lastCause="body";G.lastSpotter=bodySpotter;}else{G.lastCause="player";G.lastSpotter=spotter;}
     if(G.blipT<=0){SFX.blip(G.susp);G.blipT=0.42-0.3*G.susp;}
   }
   else{G.unseen+=dt;if(G.unseen>0.8)G.susp=Math.max(0,G.susp-0.16*dt);}
-  G.bodyWatched=bodyGain>0;
+  G.bodyWatched=bodyGain>0;G.civWatched=civGain>0;
   if(G.susp>=1){
     const o=G.lastSpotter,cam=o&&o.kind==="camera",who=cam?"A camera":"A guard";
-    const msg=G.lastCause==="body"?(G.bodyHost?`${who} spotted a hostage. Alarm!`:`${who} found a body. Alarm!`)
-      :P.masked?`${who} spotted you. Alarm!`:LV.day?`${who} caught you in a staff area. Alarm!`:`${who} caught you inside the closed bank. Alarm!`;
+    const msg=G.lastCause==="civ"?`${who} saw a civilian calling for help. Alarm!`:G.lastCause==="body"?(G.bodyHost?`${who} spotted a hostage. Alarm!`:`${who} found a body. Alarm!`)
+      :P.masked?`${who} spotted you. Alarm!`:!restricted(P.x,P.z)?`${who} caught you breaking in. Alarm!`:LV.day?`${who} caught you in a staff area. Alarm!`:`${who} caught you inside the closed bank. Alarm!`;
     startReport(o,msg,G.lastCause==="body"&&o&&o.bodyAt?o.bodyAt:{x:P.x,z:P.z});
     G.susp=0.7;
   }
@@ -2061,7 +2210,7 @@ function startReport(o,msg,at){
     toast(G.lastCause==="body"?`${o.name} found something! Drop him before he radios it in`:`${o.name} spotted you! Drop him before he radios it in`,"bad",2600);
   }else if(o&&o.kind==="camera"&&secGuard&&!secGuard.down){
     if(G.secAlert>0)return;
-    G.secAlert=REPORT_TIME;G.secMsg=G.lastCause==="body"?"The security guard saw something on camera. Alarm!":"The security guard saw you on camera. Alarm!";
+    G.secAlert=REPORT_TIME;G.secMsg=G.lastCause==="civ"?"The security guard saw a panicking civilian on camera. Alarm!":G.lastCause==="body"?"The security guard saw something on camera. Alarm!":"The security guard saw you on camera. Alarm!";
     toast("The security guard saw it on camera! Take him out","bad",2600);
   }else triggerAlarm(msg);
 }
@@ -2075,6 +2224,7 @@ function triggerAlarm(msg){
   toast(msg||"Alarm!","bad",3000);
 }
 function updateInteraction(dt){
+  const wasPicking=G.picking;G.picking=false;
   const fx=-Math.sin(P.yaw),fz=-Math.cos(P.yaw);
   const facing=(x,z,max)=>{const dx=x-P.x,dz=z-P.z,d=Math.hypot(dx,dz);return d<max&&(d<0.4||(dx*fx+dz*fz)/d>0.45)?d:-1;};
   let prompt=null,prog=null;
@@ -2211,11 +2361,60 @@ function updateInteraction(dt){
       }
     }else if(!prompt&&P.level===0&&Math.hypot(SECURE.x-P.x,SECURE.z-P.z)<2.6)prompt="Bodies go in a bin, not the van";
   }
+  // cameras: stand under one, look up, hold E to loop the feed (again before it runs out to refresh it)
+  let loopCam=null;
+  if(!prompt&&secGuard&&!secGuard.down&&!G.alarm&&P.pitch>0.35){
+    let bd=1e9;
+    for(const c of cams){
+      if(c.dead||c.level!==P.level)continue;
+      const dx=c.x-P.x,dz=c.z-P.z,d=Math.hypot(dx,dz);
+      if(d<LOOP_REACH&&(d<0.6||(dx*fx+dz*fz)/d>0.3)&&d<bd){loopCam=c;bd=d;}
+    }
+    if(loopCam){
+      const c=loopCam;
+      if(P.carry)prompt="Drop what you're carrying to loop the camera. <kbd>Q</kbd>";
+      else{
+        prompt=c.loopT>0?`Hold <kbd>E</kbd> to restart the loop · ${Math.ceil(c.loopT)} s left`:`Hold <kbd>E</kbd> to loop the camera for ${LOOP_TIME} s`;
+        if(keys.KeyE){
+          if(G.loopHold===0)SFX.loopStart();
+          G.loopHold+=dt;P.fiddle=0.3;prompt="Splicing in a loop…";prog=G.loopHold/LOOP_HOLD;
+          if(G.loopHold>=LOOP_HOLD){G.loopHold=0;c.loopT=LOOP_TIME;G.loops++;SFX.loopDone();toast(`Camera looped for ${LOOP_TIME} s`,"good",1600);}
+        }
+      }
+    }
+  }
+  if(!loopCam||!keys.KeyE)G.loopHold=0;
+  // windows: hold E to pick the latch; shoot the glass to smash it; jump through once it's open
+  if(!prompt&&P.level===0){
+    let win=null,bd=1e9;
+    for(const w of windows){const d=facing(w.x,w.z,1.8);if(d>=0&&d<bd){win=w;bd=d;}}
+    if(win&&win.state==="closed"){
+      if(P.carry)prompt="Drop what you're carrying to pick the window. <kbd>Q</kbd>";
+      else{
+        prompt=`Hold <kbd>E</kbd> to pick the window latch${P.masked?" · or shoot the glass (loud)":""}`;
+        if(keys.KeyE){
+          prompt=pinTxt(win,PICK_WIN);
+          if(pickTick(win,PICK_WIN,dt)){openWindow(win);G.picks++;SFX.unlock();toast("Latch picked. Jump through with SPACE","good",1800);}
+        }
+        if(win.pickT>0)prog=win.pickT/PICK_WIN;
+      }
+    }else if(win&&P.jh<=P.gnd+0.02&&bd<1.4)prompt=`Press <kbd>SPACE</kbd> to jump through the ${win.state==="broken"?"smashed ":""}window`;
+  }
   // doors
   if(!prompt){
     let door=null,bd=1e9;
     for(const dr of doors){if(P.level!==0)break;const d=facing(dr.x,dr.z,Math.max(1.9,dr.w/2+0.9));if(d>=0&&d<bd){door=dr;bd=d;}}
-    if(door&&door.locked&&!door.open){
+    if(door&&door.locked&&!door.open&&door.pick){
+      if(P.carry)prompt=`The ${door.name} is locked. Drop what you're carrying to pick it. <kbd>Q</kbd>`;
+      else{
+        prompt=`Locked · Hold <kbd>E</kbd> to pick the ${door.name}`;
+        if(keys.KeyE){
+          prompt=pinTxt(door,PICK_DOOR);
+          if(pickTick(door,PICK_DOOR,dt)){door.locked=false;G.picks++;SFX.unlock();toast("Lock picked","good",1200);}
+        }
+        if(door.pickT>0&&door.locked)prog=door.pickT/PICK_DOOR;
+      }
+    }else if(door&&door.locked&&!door.open){
       if(P.hasCard){
         prompt=`Press <kbd>E</kbd> to swipe the keycard`;
         if(pressedE){openDoor(door,P.x,P.z,false);SFX.card();door.reader.flash=0.6;}
@@ -2243,6 +2442,7 @@ function updateInteraction(dt){
     }
   }
   if(P.climb)prompt=null;
+  if(wasPicking&&!G.picking)G.pickScr=0;
   if(!P.masked&&P.maskT>0){prompt="Putting on your mask…";prog=P.maskT/MASK_TIME;}
   else if(P.reload>0&&!prompt){prompt="Reloading…";prog=1-P.reload/RELOAD_TIME;}
   setPrompt(prompt,prog);
@@ -2350,7 +2550,7 @@ function updateHUD(){
   $("detectFill").style.width=(meter*100).toFixed(1)+"%";
   if(ringing||caller)hud.classList.add("alarm");
   const radioWho=reporter?reporter.name:"The security guard";
-  $("detectLbl").textContent=G.alarm?"Alarm raised":radio?(jam?`${radioWho}'s radio is jammed · ${Math.ceil(G.jamT)} s`:`${radioWho} is radioing it in · ${Math.ceil(repT)} s`):caller?(jam?`${caller.label} has no signal · ${Math.ceil(G.jamT)} s`:`${caller.label} is calling the police · ${Math.ceil(caller.callT)} s`):ringing?(ringing.pager.state==="ringing"?`Pager going off · ${Math.ceil(ringing.pager.t)} s`:"On the line with dispatch"):radio?"A guard is reaching for his radio":G.bodyWatched?(G.bodyHost?"Hostage spotted":"Body spotted"):civSus>G.susp?"A civilian is getting suspicious":watched?"Being watched":"Detection";
+  $("detectLbl").textContent=G.alarm?"Alarm raised":radio?(jam?`${radioWho}'s radio is jammed · ${Math.ceil(G.jamT)} s`:`${radioWho} is radioing it in · ${Math.ceil(repT)} s`):caller?(jam?`${caller.label} has no signal · ${Math.ceil(G.jamT)} s`:`${caller.label} is calling the police · ${Math.ceil(caller.callT)} s`):ringing?(ringing.pager.state==="ringing"?`Pager going off · ${Math.ceil(ringing.pager.t)} s`:"On the line with dispatch"):radio?"A guard is reaching for his radio":G.civWatched?"A camera sees a panicking civilian":G.bodyWatched?(G.bodyHost?"Hostage spotted":"Body spotted"):civSus>G.susp?"A civilian is getting suspicious":watched?"Being watched":"Detection";
   $("seenEdge").style.opacity=G.alarm?0:(Math.max(G.susp,civSus)*0.55).toFixed(3);
   $("clockLbl").textContent=G.alarm?"Police arrive in":"Elapsed";
   $("clockVal").textContent=G.alarm?fmt(G.alarmT):fmtUp(G.time);
@@ -2367,7 +2567,7 @@ function updateHUD(){
   else obj="Grab a loot bag from the vault.";
   $("objText").textContent=obj;
   $("bagsVal").textContent=`${G.secured}/${bags.length}`;
-  $("stance").textContent=P.crouch?"CROUCHED · SILENT":P.sprinting?"SPRINTING · LOUD":"STANDING";
+  $("stance").textContent=P.jh>P.gnd+0.05?"JUMPING":P.crouch?"CROUCHED · SILENT":P.sprinting?"SPRINTING · LOUD":P.gnd>0.1?"STANDING ON SOMETHING":"STANDING";
   const cc=$("carry");cc.hidden=!P.carry;
   if(P.carry){const t=P.carry.kind==="body"?"CARRYING BODY · Q DROP":"CARRYING LOOT · Q DROP";if(cc.textContent!==t)cc.textContent=t;}
   const mc=$("maskChip"),r=restricted(P.x,P.z);
@@ -2377,6 +2577,8 @@ function updateHUD(){
   const jc=$("jamChip");jc.hidden=!P.masked&&!jam;
   if(!jc.hidden){const t=jam?`JAMMER ON · ${Math.ceil(G.jamT)} s`:`JAMMERS ${P.jammers} · J`;if(jc.textContent!==t)jc.textContent=t;jc.className=jam?"chip warn":P.jammers?"chip":"chip bad";}
   $("cardChip").hidden=!P.hasCard;
+  {const lc=$("loopChip"),lp=cams.filter(c=>c.loopT>0&&!c.dead);lc.hidden=!lp.length||G.alarm;
+   if(!lc.hidden){const m=Math.min(...lp.map(c=>c.loopT)),t=`CAM LOOP${lp.length>1?" ×"+lp.length:""} · ${Math.ceil(m)} s`;if(lc.textContent!==t)lc.textContent=t;lc.className=m<6?"chip warn":"chip ok";}}
   const tc=$("tieChip");tc.hidden=!(P.masked&&civs.length);
   if(!tc.hidden){const nf=civs.filter(c=>c.follow&&!c.dead).length;const t=`ZIP TIES ${P.ties}`+(nf?` · ${nf} FOLLOWING`:"");if(tc.textContent!==t)tc.textContent=t;tc.className=P.ties===0?"chip bad":"chip";}
   $("obj").hidden=!$("subs").hidden; // subtitles take the bottom of the screen during a call
@@ -2417,6 +2619,7 @@ function stepGame(dt){
   updateDoors(dt,false);
   updateDrill(dt);
   updateJammer(dt);
+  updateWindows(dt);
   updatePagers(dt);
   if(state!=="playing")return;
   G.bodies=collectBodies();
@@ -2433,7 +2636,7 @@ function stepGame(dt){
   updateAlarm(dt);
   updateAudio();
   updateHUD();
-  pressedE=false;G.shotNoise=0;G.loud=0;
+  pressedE=false;G.shotNoise=0;G.loud=0;G.bang=null;
 }
 function stepMenu(dt){
   G.world+=dt;
