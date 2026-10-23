@@ -4194,6 +4194,104 @@ function setSky(day){
     moon.color.setHex(0x8ea4d4);moon.intensity=0.35;moon.position.set(-18,30,14);
   }
 }
+/* ================= surroundings: neighbouring buildings / tree lines around the older maps ================= */
+const ENV_WIN={night:null,day:null};
+function envWinMat(day){
+  const k=day?"day":"night";if(ENV_WIN[k])return ENV_WIN[k];
+  const t=tex(256,256,(g,w,h)=>{
+    g.fillStyle=day?"#5d6b78":"#16181c";g.fillRect(0,0,w,h);
+    for(let y=6;y<h;y+=32)for(let x=6;x<w;x+=32){
+      const r=Math.random();
+      if(day){g.fillStyle=r<.5?"#9fb6c8":"#7f96aa";g.fillRect(x,y,20,22);g.fillStyle="rgba(255,255,255,.18)";g.fillRect(x,y,20,5);}
+      else{g.fillStyle=r<.16?"#d8b56a":r<.22?"#8aa0c0":r<.26?"#c9d8e8":"#0b0d10";g.fillRect(x,y,20,22);if(r<.16){g.fillStyle="rgba(0,0,0,.25)";g.fillRect(x,y+15,20,7);}}
+    }
+    g.fillStyle="rgba(0,0,0,.35)";for(let y=0;y<h;y+=32)g.fillRect(0,y,w,3);
+  });
+  return ENV_WIN[k]=new THREE.MeshBasicMaterial({map:t});
+}
+const ENV_MATS=[0x2a2c30,0x33302c,0x2c3036,0x3a3530,0x262a2e].map(c=>phong(c,{shininess:10}));
+const envCap=phong(0x1c1e21),envAC=phong(0x55595e,{shininess:20});
+function envRng(seed){let s=0;for(const ch of seed)s=(s*31+ch.charCodeAt(0))>>>0;return ()=>{s=(s*1664525+1013904223)>>>0;return s/4294967296;};}
+// a facade plane whose window grid keeps its size whatever the building's size
+function envFacade(w,h,day){
+  const g=new THREE.PlaneGeometry(w,h),uv=g.attributes.uv;
+  for(let i=0;i<uv.count;i++)uv.setXY(i,uv.getX(i)*w/8,uv.getY(i)*h/8);
+  return new THREE.Mesh(g,envWinMat(day));
+}
+// one row of buildings along a side of the playable area, facing inward
+function envRow(side,a,b,line,o,rnd,day){
+  let u=a;
+  while(u<b){
+    const w=Math.min(b-u,7+rnd()*9),h=o.h[0]+rnd()*(o.h[1]-o.h[0]),dep=10+rnd()*6,m=ENV_MATS[(rnd()*ENV_MATS.length)|0];
+    const set=rnd()<0.3?rnd()*2.5:0;              // some buildings sit a little further back
+    const f=line+(side==="s"||side==="e"?set:-set);
+    let x1,z1,x2,z2,fx,fz,ry;
+    if(side==="n"){x1=u;x2=u+w;z2=f;z1=f-dep;fx=(x1+x2)/2;fz=f+0.03;ry=0;}
+    if(side==="s"){x1=u;x2=u+w;z1=f;z2=f+dep;fx=(x1+x2)/2;fz=f-0.03;ry=Math.PI;}
+    if(side==="w"){z1=u;z2=u+w;x2=f;x1=f-dep;fx=f+0.03;fz=(z1+z2)/2;ry=Math.PI/2;}
+    if(side==="e"){z1=u;z2=u+w;x1=f;x2=f+dep;fx=f-0.03;fz=(z1+z2)/2;ry=-Math.PI/2;}
+    if(o.warehouse){
+      addBox(x1,z1,x2,z2,h,m,{collide:false});addBox(x1-0.15,z1-0.15,x2+0.15,z2+0.15,h+0.4,envCap,{y0:h,collide:false});
+      const door=new THREE.Mesh(new THREE.PlaneGeometry(Math.min(w-2,5),Math.min(h-1,5)),phong(0x5a6066));door.position.set(fx,Math.min(h-1,5)/2,fz);door.rotation.y=ry;lvAdd(door);
+      if(rnd()<0.6){const l=new THREE.Mesh(new THREE.BoxGeometry(0.6,0.12,0.3),M.lamp);l.position.set(fx,Math.min(h-0.6,6),fz);l.rotation.y=ry;lvAdd(l);}
+    }else{
+      addBox(x1,z1,x2,z2,h,m,{collide:false});
+      addBox(x1-0.2,z1-0.2,x2+0.2,z2+0.2,h+0.5,envCap,{y0:h,collide:false});
+      const p=envFacade(w-0.6,h-1.6,day);p.position.set(fx,0.9+(h-1.6)/2+0.4,fz);p.rotation.y=ry;lvAdd(p);
+      // a shopfront strip at street level on the street side
+      if(o.shops&&rnd()<0.6){const s=new THREE.Mesh(new THREE.PlaneGeometry(w-1.2,0.5),new THREE.MeshBasicMaterial({color:[0xc9a24a,0x7fd0ff,0xe06a5a,0x9fe8b0][(rnd()*4)|0]}));s.position.set(fx,3.2,fz+(side==="s"?-0.01:side==="n"?0.01:0));s.rotation.y=ry;lvAdd(s);}
+      if(rnd()<0.5){const ac=new THREE.Mesh(new THREE.BoxGeometry(2,1.2,1.6),envAC);ac.position.set((x1+x2)/2+(rnd()-0.5)*(w-3),h+1.1,(z1+z2)/2+(rnd()-0.5)*4);lvAdd(ac);}
+    }
+    u+=w+(rnd()<0.2?1.5:0);
+  }
+}
+// trees for the countryside
+const envTrunk=phong(0x4a3424),envLeaf=phong(0x2c4a2e,{shininess:5}),envLeaf2=phong(0x3c4c2a,{shininess:5});
+const envConeG=new THREE.ConeGeometry(2.2,7,7),envTrunkG=new THREE.CylinderGeometry(0.22,0.3,2,6),envBallG=new THREE.SphereGeometry(2.4,7,5);
+function envTree(x,z,s,rnd){
+  const t=new THREE.Mesh(envTrunkG,envTrunk);t.position.set(x,1,z);t.scale.setScalar(s);lvAdd(t);
+  if(rnd()<0.6){const c=new THREE.Mesh(envConeG,envLeaf);c.position.set(x,(2+3.5)*s,z);c.scale.setScalar(s);lvAdd(c);}
+  else{const c=new THREE.Mesh(envBallG,envLeaf2);c.position.set(x,4.2*s,z);c.scale.set(s,s*1.2,s);lvAdd(c);}
+}
+const ENV={
+  // b = the boundary wall [minX,minZ,maxX,maxZ]; per side: [offset from the wall, min height, max height]
+  harbor:{b:[-24.2,-22.2,24.2,24.2],n:[0.4,12,22],e:[0.4,10,20],w:[0.4,10,20],s:[7,12,22],street:"s"},
+  meridian:{b:[-34.2,-30.2,34.2,28.2],n:[0.4,14,26],e:[0.4,12,24],w:[0.4,12,24],s:[13,14,26],street:"s"},
+  club:{b:[-28.2,-24.2,28.2,30.2],n:[0.4,12,24],e:[0.4,10,22],w:[0.4,10,22],s:[6,12,24],street:"s"},
+  casino:{b:[-40.2,-26.2,40.2,36.2],n:[0.4,16,30],e:[0.4,14,28],w:[0.4,14,28],s:[11,10,15],street:"s"},
+  port:{b:[-50.2,-30.2,50.2,20.4],n:[1,8,14],e:[1,8,14],w:[1,8,14],warehouse:true},
+  manor:{b:[-46.2,-34.2,46.2,44.2],trees:true}
+};
+function buildEnv(id){
+  const key=id==="harborDay"?"harbor":id==="meridianDay"?"meridian":id;
+  const o=ENV[key];if(!o)return;
+  const day=!!LV.sunny,rnd=envRng(key),[x1,z1,x2,z2]=o.b,ext=14;
+  if(o.trees){
+    // a dark tree line all round the estate, a few rows deep
+    for(let row=0;row<3;row++){const d=2.5+row*5.5;
+      for(let x=x1-ext;x<=x2+ext;x+=4.5+rnd()*2){envTree(x+rnd()*2,z1-d-rnd()*2,0.8+rnd()*0.6,rnd);envTree(x+rnd()*2,z2+d+rnd()*2,0.8+rnd()*0.6,rnd);}
+      for(let z=z1;z<=z2;z+=4.5+rnd()*2){envTree(x1-d-rnd()*2,z+rnd()*2,0.8+rnd()*0.6,rnd);envTree(x2+d+rnd()*2,z+rnd()*2,0.8+rnd()*0.6,rnd);}
+    }
+    // low hills behind the trees
+    for(const [x,z,r] of [[-70,0,26],[70,10,30],[0,-70,34],[-40,75,28],[45,78,26]]){const h=new THREE.Mesh(new THREE.SphereGeometry(r,16,8,0,Math.PI*2,0,Math.PI/2),phong(0x111a12));h.position.set(x,-r*0.45,z);h.scale.y=0.5;lvAdd(h);}
+    return;
+  }
+  const sides={n:o.n,s:o.s,e:o.e,w:o.w};
+  for(const [side,cfg] of Object.entries(sides)){
+    if(!cfg)continue;const [off,h0,h1]=cfg,oo={h:[h0,h1],warehouse:o.warehouse,shops:side===o.street};
+    if(side==="n")envRow("n",x1-ext,x2+ext,z1-off,oo,rnd,day);
+    if(side==="s")envRow("s",x1-ext,x2+ext,z2+off,oo,rnd,day);
+    if(side==="w")envRow("w",z1,z2,x1-off,oo,rnd,day);
+    if(side==="e")envRow("e",z1,z2,x2+off,oo,rnd,day);
+    // the strip between the boundary and buildings set back from it: pavement and lamps
+    if(off>1){
+      const fm=floorMat(drawConcrete,Math.max(2,(x2-x1+2*ext)/6),Math.max(1,off/3));
+      if(side==="s"){floor(x1-ext,z2,x2+ext,z2+off,fm,0.02);if(!day)for(let x=x1+6;x<x2;x+=16){const h=new THREE.Mesh(new THREE.BoxGeometry(0.24,4.6,0.24),M.pole);h.position.set(x,2.3,z2+off-1.2);lvAdd(h);const l=new THREE.Mesh(new THREE.BoxGeometry(0.7,0.15,0.35),M.lamp);l.position.set(x,4.6,z2+off-1.2);lvAdd(l);pointLight(x,4.3,z2+off-1.6,0xffb050,0.9,13);}}
+      if(side==="n")floor(x1-ext,z1-off,x2+ext,z1,fm,0.02);
+    }
+  }
+}
+
 function buildMap(id){
   const def=MAPS[id]||MAP_HARBOR;
   if(LV.group){
@@ -4205,6 +4303,7 @@ function buildMap(id){
   LV={group:new THREE.Group(),def,id:def.id,day:!!def.day,sunny:!!def.day&&!def.night,fx:null};scene.add(LV.group);
   setSky(LV.sunny);
   def.build();
+  buildEnv(def.id||id);
   secGuard=guards.find(g=>g.security)||null;
   BAG_SPOTS=def.bagSpots.map(s=>Array.isArray(s)?{x:s[0],z:s[1],y:s[2],ry:s[3]}:s);
   for(const s of BAG_SPOTS){const m=makeBag(s.gold);m.userData.noHit=true;lvAdd(m);bags.push({kind:"loot",mesh:m,state:"ground",level:s.lvl||0,gold:!!s.gold,box:s.box||null});}
