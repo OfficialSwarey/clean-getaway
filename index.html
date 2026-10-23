@@ -56,6 +56,11 @@ html,body{height:100%;margin:0;overflow:hidden;background:var(--ink);color:var(-
 #status{position:absolute;right:max(18px,env(safe-area-inset-right,0px));bottom:calc(18px + env(safe-area-inset-bottom,0px));display:flex;flex-direction:column;align-items:flex-end;gap:6px}
 .chip{font-family:var(--f-mono);font-size:12px;letter-spacing:.12em;padding:6px 10px;background:var(--panel);border:1px solid var(--line)}
 #carry{color:var(--sodium);border-color:var(--sodium)}
+.chip.ok{color:var(--secure);border-color:var(--secure)}
+.chip.warn{color:var(--sodium);border-color:var(--sodium)}
+.chip.bad{color:var(--alarm);border-color:var(--alarm)}
+#ammo{font-size:14px}
+#maskEdge{position:fixed;inset:0;pointer-events:none;z-index:1;background:radial-gradient(ellipse 80% 75% at 50% 48%,transparent 62%,rgba(0,0,0,.55) 100%)}
 
 #crosshair{position:absolute;left:50%;top:50%;width:4px;height:4px;margin:-2px 0 0 -2px;border-radius:50%;background:var(--fg);opacity:.8;box-shadow:0 0 0 1px rgba(0,0,0,.6)}
 #prompt{position:absolute;left:50%;top:calc(50% + 46px);transform:translateX(-50%);display:grid;gap:8px;justify-items:center;text-align:center}
@@ -93,19 +98,19 @@ button{font:inherit;cursor:pointer}
 @media (max-width:640px){#obj{max-width:calc(100vw - 150px)}#objText{font-size:15px}}
 @media (prefers-reduced-motion:reduce){#alarmEdge{animation:none;opacity:.45}#toast{transition:none}}
 </style>
-
 </head>
 <body>
 <div id="game"></div>
 <div id="vignette"></div>
 <div id="seenEdge"></div>
 <div id="alarmEdge" hidden></div>
+<div id="maskEdge" hidden></div>
 
 <div id="hud" hidden>
   <div id="detect"><div class="lbl" id="detectLbl">Detection</div><div class="bar"><i id="detectFill"></i></div></div>
   <div id="clock"><span class="lbl" id="clockLbl">Elapsed</span><span id="clockVal">00:00</span></div>
   <div id="obj"><div class="lbl">Objective</div><div id="objText">Get into the bank unseen.</div><div id="bagsRow">Bags secured <b id="bagsVal">0/3</b></div></div>
-  <div id="status"><span class="chip" id="carry" hidden>CARRYING BAG · SLOWED</span><span class="chip" id="stance">STANDING</span><span class="chip" id="sound">SOUND ON · M</span></div>
+  <div id="status"><span class="chip" id="ammo" hidden>PISTOL 12 / 36</span><span class="chip" id="maskChip">UNMASKED · OUTSIDE</span><span class="chip" id="carry" hidden>CARRYING BAG · SLOWED</span><span class="chip" id="stance">STANDING</span><span class="chip" id="sound">SOUND ON · M</span></div>
   <div id="crosshair"></div>
   <div id="prompt" hidden><span id="promptText"></span><div class="pbar" id="pbar" hidden><i id="pfill"></i></div></div>
   <div id="toast"></div>
@@ -115,19 +120,29 @@ button{font:inherit;cursor:pointer}
   <div class="card">
     <span class="stamp">HARBOR SAVINGS &amp; LOAN · 02:40</span>
     <h1>Quiet Hours</h1>
-    <p>Three bags of cash sit in the vault. Drill the vault door, carry every bag to the van in the back alley, and stay out of sight. If the alarm goes off, police arrive in 60 seconds.</p>
+    <p>It's 02:40 and the bank is closed. Three bags of cash sit in the vault. Case the place from the street through the front windows first. When you're ready, put on your mask, get inside, set the drill on the vault and carry every bag to the van in the back alley. If the alarm goes off, police arrive in 60 seconds.</p>
     <dl class="keys">
       <dt>WASD</dt><dd>Move</dd>
       <dt>MOUSE</dt><dd>Look around</dd>
-      <dt>SHIFT</dt><dd>Sprint (louder to the eye, you get spotted faster)</dd>
+      <dt>SHIFT</dt><dd>Sprint (you get spotted faster)</dd>
       <dt>C</dt><dd>Crouch on/off (hide behind the counter, cars, crates)</dd>
-      <dt>E</dt><dd>Interact. Hold it to drill the vault</dd>
-      <dt>CLICK</dt><dd>Take down a guard from behind</dd>
+      <dt>HOLD G</dt><dd>Put on your mask</dd>
+      <dt>E</dt><dd>Interact: open doors, start the drill. Hold it to bag a body</dd>
+      <dt>Q</dt><dd>Drop what you're carrying</dd>
+      <dt>CLICK</dt><dd>Fire the silenced pistol</dd>
+      <dt>R-CLICK</dt><dd>Aim down the sights</dd>
+      <dt>R</dt><dd>Reload</dd>
+      <dt>F</dt><dd>Take down a guard from behind</dd>
       <dt>M</dt><dd>Sound on/off</dd>
       <dt>ESC</dt><dd>Pause</dd>
     </dl>
     <ul class="tips">
-      <li>Guards and cameras fill the detection meter while they can see you. Break line of sight and it drains.</li>
+      <li>Outside without a mask you're just someone on the street. Inside, anyone who sees you fills the detection meter, mask or not.</li>
+      <li>Doors block sight. Guards open doors as they walk through and close them behind them. Crouch below the window sills to stay hidden.</li>
+      <li>The drill runs by itself once it's set up, but it's loud: guards within about 6 m will hear it and look.</li>
+      <li>Once the mask is on, anyone who sees you fills the detection meter. Break line of sight and it drains.</li>
+      <li>A headshot drops a guard instantly. A body shot only wounds him, and he radios it in after 2 seconds unless you finish him. Shoot cameras to blind them, but only after the security room guard is down, or he raises the alarm.</li>
+      <li>Guards and cameras raise the alarm if they find a body or a body bag. Bag bodies and dump them in a bin.</li>
       <li>Guards hear you. Sprinting and drilling are loud, walking is quiet up close, crouching is silent. Wear headphones to hear their footsteps.</li>
       <li>Two ways in: the front door past the lobby, or the back door in the alley.</li>
       <li>Bags slow you down. You can carry one at a time.</li>
@@ -181,7 +196,7 @@ const canvas=renderer.domElement;
 const scene=new THREE.Scene();
 scene.background=new THREE.Color(0x06090e);
 scene.fog=new THREE.FogExp2(0x06090e,0.03);
-const camera=new THREE.PerspectiveCamera(72,innerWidth/innerHeight,0.05,140);
+const camera=new THREE.PerspectiveCamera(72,innerWidth/innerHeight,0.1,140);
 camera.rotation.order="YXZ";
 scene.add(camera);
 addEventListener("resize",()=>{camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight);});
@@ -219,7 +234,8 @@ const floorMats={
   carpet1:phong(0xffffff,{map:tex(256,256,drawCarpet,5,6)}),
   carpet2:phong(0xffffff,{map:tex(256,256,drawCarpet,5,6)}),
   vault:phong(0xffffff,{map:tex(256,256,drawPlate,5,3.5),shininess:50,specular:0x222222}),
-  ground:phong(0xffffff,{map:tex(256,256,drawAsphalt,16,16)})
+  // pushed back in depth so indoor floors never fight with it
+  ground:phong(0xffffff,{map:tex(256,256,drawAsphalt,16,16),polygonOffset:true,polygonOffsetFactor:2,polygonOffsetUnits:2})
 };
 const depositMat=phong(0xffffff,{map:tex(256,256,drawDeposit,4,1.3),shininess:50});
 
@@ -238,7 +254,7 @@ function addBox(x1,z1,x2,z2,h,mat,o){
 const wallX=(z,a,b,h,mat)=>addBox(a,z-0.2,b,z+0.2,h,mat);
 const wallZ=(x,a,b,h,mat)=>addBox(x-0.2,a,x+0.2,b,h,mat);
 const lintelX=(z,a,b,y0,h,mat)=>addBox(a,z-0.2,b,z+0.2,h,mat,{y0,collide:false});
-function floor(x1,z1,x2,z2,mat,y){const m=new THREE.Mesh(new THREE.PlaneGeometry(x2-x1,z2-z1),mat);m.rotation.x=-Math.PI/2;m.position.set((x1+x2)/2,y||0.01,(z1+z2)/2);m.receiveShadow=true;scene.add(m);return m;}
+function floor(x1,z1,x2,z2,mat,y){const m=new THREE.Mesh(new THREE.PlaneGeometry(x2-x1,z2-z1),mat);m.rotation.x=-Math.PI/2;m.position.set((x1+x2)/2,y!=null?y:0.03,(z1+z2)/2);m.receiveShadow=true;scene.add(m);return m;}
 function pointLight(x,y,z,color,intensity,dist,fixture){
   const l=new THREE.PointLight(color,intensity,dist,2);l.position.set(x,y,z);scene.add(l);
   if(fixture){const f=new THREE.Mesh(new THREE.BoxGeometry(1.2,0.05,0.3),M.fluoro);f.position.set(x,3.18,z);scene.add(f);}
@@ -254,12 +270,21 @@ wallZ(-24,-22,24,2.6,M.brick); wallZ(24,-22,24,2.6,M.brick);
 wallX(-22,-24,24,2.6,M.brick); wallX(24,-24,24,2.6,M.brick);
 
 // --- bank shell (outer walls 4m tall, parapet above the ceiling)
-wallX(12,-15.2,-1.5,4,M.outer); wallX(12,1.5,15.2,4,M.outer); lintelX(12,-1.5,1.5,2.6,4,M.outer);
+// front wall with real window openings (sill 1.05 m: crouch below it to stay out of sight)
+const WIN_LO=1.05,WIN_HI=2.65;
+wallX(12,-15.2,-10.2,4,M.outer); wallX(12,-5.8,-1.5,4,M.outer); wallX(12,1.5,5.8,4,M.outer); wallX(12,10.2,15.2,4,M.outer);
+lintelX(12,-1.5,1.5,2.6,4,M.outer);
+const winGlass=new THREE.MeshPhongMaterial({color:0x9fb8c8,transparent:true,opacity:.16,shininess:90,specular:0x666666,depthWrite:false,side:THREE.DoubleSide});
+for(const [a,b] of [[-10.2,-5.8],[5.8,10.2]]){
+  addBox(a,11.8,b,12.2,WIN_LO,M.outer);                                  // sill (collides, low enough to see over)
+  addBox(a,11.8,b,12.2,4,M.outer,{y0:WIN_HI,collide:false});              // header
+  const g=new THREE.Mesh(new THREE.PlaneGeometry(b-a,WIN_HI-WIN_LO),winGlass);g.position.set((a+b)/2,(WIN_LO+WIN_HI)/2,12);g.userData.noHit=true;scene.add(g);
+  addBox((a+b)/2-0.04,11.95,(a+b)/2+0.04,12.05,WIN_HI,M.trim,{y0:WIN_LO,collide:false}); // mullion
+}
 wallX(-12,-15.2,-12,4,M.outer); wallX(-12,-9.5,15.2,4,M.outer); lintelX(-12,-12,-9.5,2.4,4,M.outer);
 wallZ(-15,-12.2,12.2,4,M.outer); wallZ(15,-12.2,12.2,4,M.outer);
 addBox(-15.2,-12.2,15.2,12.2,3.4,M.ceil,{y0:3.2,collide:false});
 // front facade details
-for(const wx of [-8,8]){const w=new THREE.Mesh(new THREE.PlaneGeometry(4.4,1.7),M.glass);w.position.set(wx,1.8,12.215);scene.add(w);}
 const sign=new THREE.Mesh(new THREE.PlaneGeometry(9,1.2),new THREE.MeshBasicMaterial({map:signTex("HARBOR SAVINGS & LOAN",1024,136,"#e9eef2","#11161d","bold 76px 'Arial Narrow', Arial, sans-serif")}));
 sign.position.set(0,3.35,12.215);scene.add(sign);
 addBox(-1.8,12.2,-1.5,12.5,2.6,M.trim,{collide:false});addBox(1.5,12.2,1.8,12.5,2.6,M.trim,{collide:false});
@@ -285,6 +310,73 @@ addBox(-7.4,9.6,-6.6,10.4,3.2,M.pillar); addBox(6.6,9.6,7.4,10.4,3.2,M.pillar);
 addBox(-13,10.6,-10,11.2,0.5,M.bench); addBox(10,10.6,13,11.2,0.5,M.bench);
 const counterSign=new THREE.Mesh(new THREE.PlaneGeometry(3.4,0.5),new THREE.MeshBasicMaterial({map:signTex("TELLERS 1 – 4",512,76,"#c9d2d6","#1a2028","600 44px Arial, sans-serif")}));
 counterSign.position.set(-1.5,2.6,4.05);scene.add(counterSign);
+// it's night: the whole bank is closed
+const closedSign=new THREE.Mesh(new THREE.PlaneGeometry(0.9,0.5),new THREE.MeshBasicMaterial({map:tex(256,140,(g,w,h)=>{g.fillStyle="#e9e3d0";g.fillRect(0,0,w,h);g.fillStyle="#a8261c";g.font="bold 54px Arial, sans-serif";g.textAlign="center";g.fillText("CLOSED",w/2,64);g.fillStyle="#1a1d22";g.font="600 24px Arial, sans-serif";g.fillText("Open Mon–Fri 9–17",w/2,108);})}));
+closedSign.position.set(2.35,1.6,12.215);scene.add(closedSign);
+const staffSignBack=new THREE.Mesh(new THREE.PlaneGeometry(0.75,0.28),new THREE.MeshBasicMaterial({map:signTex("STAFF ONLY",256,96,"#0b0d10","#f4ab3d","bold 46px Arial, sans-serif")}));
+staffSignBack.position.set(-10.75,2.75,-12.22);staffSignBack.rotation.y=Math.PI;scene.add(staffSignBack);
+
+/* ---------- doors: E to open/close; guards open them as they walk through; closed doors block sight ---------- */
+const doors=[];
+const doorMat=phong(0x4f4236),doorMetal=phong(0x7a8186,{shininess:50,specular:0x333333}),staffDoorMat=phong(0x5d6469);
+const glassDoorMat=new THREE.MeshPhongMaterial({color:0xa9c2d2,transparent:true,opacity:.22,shininess:90,specular:0x777777,depthWrite:false,side:THREE.DoubleSide});
+function makeDoor(x1,x2,z,h,o){
+  o=o||{};
+  const w=x2-x1,dbl=w>2.2,lw=dbl?w/2:w,leaves=[];
+  for(const [hx,dir] of (dbl?[[x1,1],[x2,-1]]:[[x1,1]])){
+    const piv=new THREE.Group();piv.position.set(hx,0,z);scene.add(piv);
+    if(o.glass){
+      const pane=new THREE.Mesh(new THREE.BoxGeometry(lw-0.16,h-0.2,0.02),glassDoorMat);pane.position.set(dir*lw/2,h/2,0);pane.userData.noHit=true;piv.add(pane);
+      for(const [fx,fy,fw,fh] of [[lw/2,0.05,lw-0.03,0.1],[lw/2,h-0.06,lw-0.03,0.1],[0.06,h/2,0.08,h-0.04],[lw-0.06,h/2,0.08,h-0.04]]){
+        const f=new THREE.Mesh(new THREE.BoxGeometry(fw,fh,0.06),doorMetal);f.position.set(dir*fx,fy,0);f.castShadow=true;piv.add(f);
+      }
+      const bar=new THREE.Mesh(new THREE.BoxGeometry(lw*0.6,0.04,0.05),doorMetal);bar.position.set(dir*lw*0.55,1.05,0.05);piv.add(bar);
+    }else{
+      const slab=new THREE.Mesh(new THREE.BoxGeometry(lw-0.03,h-0.03,0.07),o.mat||doorMat);slab.position.set(dir*lw/2,h/2,0);slab.castShadow=true;slab.receiveShadow=true;piv.add(slab);
+      for(const s of [-1,1]){const k=new THREE.Mesh(new THREE.BoxGeometry(0.14,0.035,0.05),doorMetal);k.position.set(dir*(lw-0.16),1.0,s*0.06);piv.add(k);}
+    }
+    leaves.push({piv,dir});
+  }
+  const col={minX:x1,maxX:x2,minZ:z-0.07,maxZ:z+0.07,h,see:!!o.glass};colliders.push(col);
+  const d={x:(x1+x2)/2,z,w,leaves,col,t:0,open:false,swing:1,byGuard:false,name:o.name||"door"};
+  doors.push(d);return d;
+}
+makeDoor(-1.5,1.5,12,2.58,{glass:true,name:"front door"});
+makeDoor(-12,-9.5,-12,2.38,{mat:staffDoorMat,name:"back door"});
+makeDoor(-11,-9,0,2.38,{name:"office door"});
+makeDoor(-1.2,1.2,0,2.38,{mat:staffDoorMat,name:"vault hall door"});
+makeDoor(9,11,0,2.38,{name:"security door"});
+function openDoor(d,fromX,fromZ,byGuard){
+  if(d.open)return;
+  d.open=true;d.byGuard=byGuard;d.swing=fromZ>d.z?1:-1;
+  const i=colliders.indexOf(d.col);if(i>=0)colliders.splice(i,1);
+  SFX.door(d.x,d.z,true);
+}
+function closeDoor(d){if(!d.open)return;d.open=false;d.byGuard=false;SFX.door(d.x,d.z,false);}
+function updateDoors(dt,simOnly){
+  for(const d of doors){
+    if(!simOnly){
+      // guards open a door when they walk into it, and close it again once they're through
+      for(const g of guards){
+        if(g.down||d.open)continue;
+        const dx=d.x-g.x,dz=d.z-g.z,dist=Math.hypot(dx,dz);
+        const fwd=Math.sin(g.yaw)*dx/dist+Math.cos(g.yaw)*dz/dist;
+        if(dist<1.3&&(fwd>0.5||dist<0.6)&&g.speedNow>0)openDoor(d,g.x,g.z,true);
+      }
+      if(d.open&&d.byGuard&&d.t>=1){
+        const guardNear=guards.some(g=>!g.down&&Math.hypot(d.x-g.x,d.z-g.z)<2.4);
+        if(!guardNear&&Math.hypot(d.x-P.x,d.z-P.z)>1.3)closeDoor(d);
+      }
+    }
+    const target=d.open?1:0;
+    if(d.t!==target){
+      d.t=clamp(d.t+(d.open?dt:-dt)/0.45,0,1);
+      if(!d.open&&d.t<=0.05&&!colliders.includes(d.col)){colliders.push(d.col);d.t=0;}
+      const e=d.t*d.t*(3-2*d.t);
+      for(const l of d.leaves)l.piv.rotation.y=l.dir*d.swing*e*Math.PI/2*0.95;
+    }
+  }
+}
 
 // --- office
 addBox(-14,-7,-12.8,-5,0.8,M.desk); addBox(-14,-3,-12.8,-1.5,0.8,M.desk);
@@ -313,11 +405,25 @@ const drillGroup=new THREE.Group();drillGroup.position.set(0.45,1.3,-4.5);scene.
 const drillBody=new THREE.Mesh(new THREE.BoxGeometry(0.5,0.35,0.35),M.drill);drillGroup.add(drillBody);
 const drillBit=new THREE.Mesh(new THREE.CylinderGeometry(0.04,0.04,0.35,6),M.steel);drillBit.rotation.x=Math.PI/2;drillBit.position.z=-0.3;drillGroup.add(drillBit);
 const drillLegs=new THREE.Mesh(new THREE.BoxGeometry(0.06,1.3,0.06),M.pole);drillLegs.position.set(0,-0.65,0.1);drillGroup.add(drillLegs);
-drillGroup.visible=false;
+drillGroup.visible=false;drillGroup.userData.noHit=true;
 const drillLight=new THREE.PointLight(0xffa040,0,4,2);drillLight.position.set(0.45,1.3,-4.3);scene.add(drillLight);
 
 // --- alley & yard props
-addBox(-8.4,-14.4,-6.6,-13.2,1.4,M.dumpster);
+// bins: bodies can be dumped here
+const bins=[];
+const lidMat=phong(0x1f3627),cartMat=phong(0x5b6066),cartLid=phong(0x3e4348);
+function makeBin(cx,cz,w,d,h,mat,lmat,label){
+  addBox(cx-w/2,cz-d/2,cx+w/2,cz+d/2,h,mat);
+  addBox(cx-w/2-0.04,cz-d/2+0.1,cx-w/2,cz+d/2-0.1,h*0.6,M.pole,{y0:h*0.4,collide:false}); // side handle
+  const piv=new THREE.Group();piv.position.set(cx,h,cz-d/2);scene.add(piv);
+  const lid=new THREE.Mesh(new THREE.BoxGeometry(w+0.06,0.06,d+0.04),lmat);lid.position.set(0,0.03,d/2);lid.castShadow=true;piv.add(lid);
+  const t=new THREE.Mesh(new THREE.PlaneGeometry(Math.min(w*0.6,0.9),0.22),new THREE.MeshBasicMaterial({map:signTex(label,256,64,"#0b0d10","#c9d2d6","bold 34px Arial, sans-serif")}));
+  t.position.set(cx,h*0.62,cz+d/2+0.01);scene.add(t);
+  bins.push({x:cx,z:cz,w,d,piv,count:0,openT:0});
+}
+makeBin(-7.5,-13.8,1.8,1.2,1.3,M.dumpster,lidMat,"WASTE");
+makeBin(8,-13.9,1.8,1.2,1.3,M.dumpster,lidMat,"WASTE");
+makeBin(-8,-11.3,1.2,0.8,1.0,cartMat,cartLid,"LINEN");
 addBox(-14.6,-15.6,-13.4,-14.4,1.2,M.crate); addBox(-14.4,-15.4,-13.6,-14.6,1.9,M.crate,{y0:1.2,collide:false});
 addBox(-17.6,3,-16.4,4.2,1.1,M.crate); addBox(-17.8,5,-16.6,6.2,1.1,M.crate);
 // parked car on the street
@@ -343,7 +449,7 @@ colliders.push({minX:-22.9,maxX:VAN.x2,minZ:VAN.z1,maxZ:VAN.z2,h:2.3});
 for(const [wx,wz] of [[-22,VAN.z1],[-18.4,VAN.z1],[-22,VAN.z2],[-18.4,VAN.z2]]){const w=new THREE.Mesh(new THREE.CylinderGeometry(0.4,0.4,0.26,12),M.tire);w.rotation.x=Math.PI/2;w.position.set(wx,0.4,wz);w.castShadow=true;scene.add(w);}
 const SECURE={x:-16.2,z:-17};
 const ring=new THREE.Mesh(new THREE.RingGeometry(0.9,1.1,40),new THREE.MeshBasicMaterial({color:0x78d8a3,transparent:true,opacity:.35,depthWrite:false}));
-ring.rotation.x=-Math.PI/2;ring.position.set(SECURE.x,0.03,SECURE.z);scene.add(ring);
+ring.rotation.x=-Math.PI/2;ring.position.set(SECURE.x,0.03,SECURE.z);ring.userData.noHit=true;scene.add(ring);
 
 // street lamps
 function lamp(x,z,color){addBox(x-0.12,z-0.12,x+0.12,z+0.12,4.6,M.pole);const h=new THREE.Mesh(new THREE.BoxGeometry(0.7,0.15,0.35),M.lamp);h.position.set(x,4.6,z);scene.add(h);return pointLight(x,4.3,z,color,1.3,15);}
@@ -354,7 +460,7 @@ pointLight(-10.7,2.9,-12.6,0xd8e2ff,0.6,6);
 scene.add(new THREE.HemisphereLight(0x3d4c6a,0x0b0d10,0.55));
 const moon=new THREE.DirectionalLight(0x8ea4d4,0.35);moon.position.set(-18,30,14);moon.target.position.set(0,0,0);
 moon.castShadow=true;moon.shadow.mapSize.set(2048,2048);
-Object.assign(moon.shadow.camera,{left:-32,right:32,top:32,bottom:-32,near:1,far:80});moon.shadow.bias=-0.0008;
+Object.assign(moon.shadow.camera,{left:-32,right:32,top:32,bottom:-32,near:1,far:80});moon.shadow.bias=-0.0004;moon.shadow.normalBias=0.03;
 scene.add(moon);scene.add(moon.target);
 pointLight(-7,3,6,0xdfe8ff,0.9,10,true); pointLight(7,3,6,0xdfe8ff,0.9,10,true);
 pointLight(-9.5,3,-6,0xcad6ff,0.5,8,true); pointLight(10,3,-6,0x7fa4e8,0.6,8,true);
@@ -369,15 +475,21 @@ function makeCam(x,y,z,center,amp,period,phase,range,half){
   const body=new THREE.Mesh(new THREE.BoxGeometry(0.22,0.2,0.5),M.camBody);body.castShadow=true;head.add(body);
   const lens=new THREE.Mesh(new THREE.CylinderGeometry(0.07,0.07,0.06,12),M.lens);lens.rotation.x=Math.PI/2;lens.position.z=0.27;head.add(lens);
   const led=new THREE.Mesh(new THREE.SphereGeometry(0.025,6,6),new THREE.MeshBasicMaterial({color:0xff3030}));led.position.set(0.07,0.07,0.26);head.add(led);
-  const r=range*Math.tan(half);
-  const cg=new THREE.ConeGeometry(r,range,28,1,true);cg.translate(0,-range/2,0);cg.rotateX(-Math.PI/2);
-  const coneMat=new THREE.MeshBasicMaterial({color:0x9fc0ff,transparent:true,opacity:.07,depthWrite:false,side:THREE.DoubleSide,blending:THREE.AdditiveBlending});
-  const cone=new THREE.Mesh(cg,coneMat);head.add(cone);
-  const c={g,led,coneMat,x,z,center,amp,period,phase,range,half,yaw:center,seeDist:-1,base:0.33,kind:"camera"};
+  // short lens glow only; the real coverage is a shadow-casting spotlight, so it stops at walls
+  const CL=0.9,r=CL*Math.tan(half);
+  const cg=new THREE.ConeGeometry(r,CL,24,1,true);cg.translate(0,-CL/2,0);cg.rotateX(-Math.PI/2);cg.translate(0,0,0.3);
+  const coneMat=new THREE.MeshBasicMaterial({color:0x9fc0ff,transparent:true,opacity:.1,depthWrite:false,side:THREE.DoubleSide,blending:THREE.AdditiveBlending});
+  const cone=new THREE.Mesh(cg,coneMat);cone.userData.noHit=true;head.add(cone);
+  const spot=new THREE.SpotLight(0x9fc0ff,1.6,range+3,half+0.1,0.35,1.1);
+  spot.position.set(0,0,0.3);spot.castShadow=true;spot.shadow.mapSize.set(512,512);
+  spot.shadow.camera.near=0.3;spot.shadow.camera.far=range+3;spot.shadow.bias=-0.0005;spot.shadow.normalBias=0.04;head.add(spot);
+  const st=new THREE.Object3D();st.position.set(0,0,6);head.add(st);spot.target=st;
+  const c={g,head,cone,spot,body,led,coneMat,x,z,center,amp,period,phase,range,half,yaw:center,seeDist:-1,bodyDist:-1,base:0.33,kind:"camera",dead:false};
+  [body,lens,bracket].forEach(m=>m.userData.cam=c);
   cams.push(c);return c;
 }
-makeCam(14.5,2.85,11.5,-3*Math.PI/4,0.78,9,0,15,0.45);
-makeCam(-4,2.85,-12.45,-3*Math.PI/4,0.78,8,1.6,12,0.45);
+makeCam(14.15,2.85,11.15,-3*Math.PI/4,0.78,9,0,15,0.45);
+makeCam(-4,2.85,-12.75,-3*Math.PI/4,0.78,8,1.6,12,0.45);
 
 /* ================= guards ================= */
 function alertTex(color){return tex(64,64,(g)=>{g.fillStyle="rgba(0,0,0,0)";g.fillRect(0,0,64,64);g.fillStyle=color;g.beginPath();g.moveTo(32,4);g.lineTo(60,58);g.lineTo(4,58);g.closePath();g.fill();g.fillStyle="#0a0d12";g.fillRect(29,20,6,22);g.fillRect(29,46,6,6);});}
@@ -385,10 +497,10 @@ const TEX_AMBER=alertTex("#f4ab3d"),TEX_RED=alertTex("#ff4b3e");
 const TEX_HEAR=tex(64,64,(g)=>{g.clearRect(0,0,64,64);g.strokeStyle="#f4ab3d";g.lineWidth=5;g.beginPath();g.arc(32,32,26,0,7);g.stroke();g.fillStyle="#f4ab3d";g.font="bold 38px Arial";g.textAlign="center";g.textBaseline="middle";g.fillText("?",32,34);});
 
 class Guard{
-  constructor(route,pause){this.route=route;this.pause=pause;this.build();this.reset();this.kind="guard";this.base=0.28;}
+  constructor(route,pause,opts){this.route=route;this.pause=pause;this.security=!!(opts&&opts.security);this.build();this.reset();this.kind="guard";this.base=0.28;}
   build(){
     const root=new THREE.Group(),body=new THREE.Group();root.add(body);scene.add(root);
-    const part=(geo,mat,x,y,z,parent)=>{const m=new THREE.Mesh(geo,mat);m.position.set(x,y,z);m.castShadow=true;(parent||body).add(m);return m;};
+    const part=(geo,mat,x,y,z,parent)=>{const m=new THREE.Mesh(geo,mat);m.position.set(x,y,z);m.castShadow=true;m.userData.guard=this;(parent||body).add(m);return m;};
     const legL=new THREE.Group(),legR=new THREE.Group();legL.position.set(-0.11,0.86,0);legR.position.set(0.11,0.86,0);body.add(legL,legR);
     part(new THREE.BoxGeometry(0.18,0.86,0.2),M.pants,0,-0.43,0,legL);part(new THREE.BoxGeometry(0.18,0.86,0.2),M.pants,0,-0.43,0,legR);
     part(new THREE.BoxGeometry(0.5,0.62,0.28),M.uni,0,1.17,0);
@@ -396,10 +508,13 @@ class Guard{
     part(new THREE.BoxGeometry(0.13,0.6,0.14),M.uni,0,-0.3,0,armL);part(new THREE.BoxGeometry(0.13,0.6,0.14),M.uni,0,-0.3,0,armR);
     armR.rotation.x=-0.9;
     part(new THREE.BoxGeometry(0.06,0.06,0.24),M.pole,0,-0.55,0.08,armR);
-    part(new THREE.BoxGeometry(0.26,0.28,0.26),M.skin,0,1.63,0);
-    part(new THREE.BoxGeometry(0.29,0.09,0.3),M.cap,0,1.8,0);part(new THREE.BoxGeometry(0.29,0.03,0.14),M.cap,0,1.76,0.2);
+    // head hitbox is a little generous so headshots feel fair
+    [part(new THREE.BoxGeometry(0.3,0.3,0.3),M.skin,0,1.63,0),
+     part(new THREE.BoxGeometry(0.31,0.09,0.32),M.cap,0,1.8,0),part(new THREE.BoxGeometry(0.29,0.03,0.14),M.cap,0,1.76,0.2)]
+     .forEach(m=>m.userData.head=true);
     part(new THREE.BoxGeometry(0.08,0.08,0.02),M.badge,-0.13,1.32,0.15);
-    const spot=new THREE.SpotLight(0xffeccc,1.5,15,0.42,0.55,1.6);spot.position.set(0.32,1.25,0.35);body.add(spot);
+    const spot=new THREE.SpotLight(0xffeccc,1.5,15,0.42,0.55,1.6);spot.position.set(0.32,1.18,0.56);body.add(spot);
+    spot.castShadow=true;spot.shadow.mapSize.set(256,256);spot.shadow.camera.near=0.3;spot.shadow.camera.far=15;spot.shadow.bias=-0.0005;spot.shadow.normalBias=0.05;
     const tgt=new THREE.Object3D();tgt.position.set(0.1,0,7);body.add(tgt);spot.target=tgt;
     const sprite=new THREE.Sprite(new THREE.SpriteMaterial({map:TEX_AMBER,depthTest:false,transparent:true}));sprite.scale.set(0.42,0.42,0.42);sprite.position.y=2.25;sprite.renderOrder=9;root.add(sprite);
     Object.assign(this,{root,body,legL,legR,armL,spot,sprite});
@@ -408,14 +523,27 @@ class Guard{
     this.x=this.route[0][0];this.z=this.route[0][1];this.wp=1;
     const n=this.route[1];this.yaw=Math.atan2(n[0]-this.x,n[1]-this.z);
     this.wait=0;this.down=false;this.sus=0;this.seeDist=-1;this.fall=0;this.chase=false;this.last=null;this.phase=0;this.speedNow=0;
-    this.heard=null;this.wasSeeing=false;
+    this.heard=null;this.wasSeeing=false;this.hp=2;this.dead=false;this.wounded=0;this.face=null;
+    this.bagged=false;this.bodyDist=-1;this.bodyAt=null;this.sawBody=false;this.root.visible=true;
+    const r0=this.route[0];if(r0[2]!=null){this.face=r0[2];this.yaw=r0[2];this.wait=r0[3]||0;}
+    if(this.item){this.item.state="none";this.item.mesh.visible=false;}
     this.body.rotation.x=0;this.spot.intensity=1.5;this.sprite.visible=false;this.sync(0);
   }
   hearCheck(){
-    if(G.noise<=0)return null;
-    const d=Math.hypot(P.x-this.x,P.z-this.z);
-    const eff=blocked(this.x,this.z,P.x,P.z,2.0)?d*1.7:d;
-    return eff<G.noise?{x:P.x,z:P.z}:null;
+    const srcs=[];
+    const n=Math.max(G.noise,G.shotNoise);
+    if(n>0&&exposed())srcs.push({x:P.x,z:P.z,r:n});
+    if(G.drilling)srcs.push({x:DRILL_POS.x,z:DRILL_POS.z,r:DRILL_NOISE}); // a running drill is never innocent
+    for(const s of srcs){
+      const d=Math.hypot(s.x-this.x,s.z-this.z);
+      const eff=blocked(this.x,this.z,s.x,s.z,2.0)?d*1.7:d;
+      if(eff<s.r)return {x:s.x,z:s.z};
+    }
+    return null;
+  }
+  knockDown(killed){
+    this.down=true;this.dead=killed;this.wounded=0;this.spot.intensity=0;this.sprite.visible=false;this.seeDist=-1;this.bodyDist=-1;this.heard=null;
+    if(this.security&&G.secAlert>0&&!G.alarm){G.secAlert=0;toast("Security guard down. The cameras are yours","good",2200);}
   }
   turn(target,rate,dt){const d=wrap(target-this.yaw);this.yaw+=clamp(d,-rate*dt,rate*dt);return Math.abs(d);}
   walk(nx,nz,speed,dt,collide){
@@ -425,18 +553,34 @@ class Guard{
     }else this.speedNow=0;
   }
   patrol(dt,speed,collide){
-    if(this.wait>0){this.wait-=dt;this.speedNow=0;return;}
+    if(this.wait>0){this.wait-=dt;this.speedNow=0;if(this.face!=null)this.turn(this.face,1.8,dt);return;}
     const t=this.route[this.wp],dx=t[0]-this.x,dz=t[1]-this.z,d=Math.hypot(dx,dz);
-    if(d<0.15){this.wait=this.pause;this.wp=(this.wp+1)%this.route.length;return;}
+    // waypoint = [x, z, optional facing while waiting, optional wait time]
+    if(d<0.15){this.wait=t[3]!=null?t[3]:this.pause;this.face=t[2]!=null?t[2]:null;this.wp=(this.wp+1)%this.route.length;return;}
     this.walk(dx/d,dz/d,Math.min(speed,d/Math.max(dt,1e-4)),dt,collide);
   }
   nearestWaypoint(){let b=0,bd=1e9;this.route.forEach((p,i)=>{const d=Math.hypot(p[0]-this.x,p[1]-this.z);if(d<bd&&!blocked(this.x,this.z,p[0],p[1],0.5)){bd=d;b=i;}});return b;}
   update(dt,simOnly){
     if(this.down){this.fall=Math.min(1,this.fall+dt*2.6);this.body.rotation.x=this.fall*Math.PI/2*0.96;this.speedNow=0;this.sync(dt);return;}
-    if(simOnly){this.seeDist=-1;this.patrol(dt,1.45,false);this.sync(dt);return;}
+    if(simOnly){this.seeDist=-1;this.bodyDist=-1;this.patrol(dt,1.45,false);this.sync(dt);return;}
+    const radioing=this.wounded>0||(this.security&&G.secAlert>0);
+    if(radioing&&!G.alarm){
+      // wounded guard, or the operator who saw a feed die: reaches for the radio
+      this.speedNow=0;this.seeDist=-1;this.bodyDist=-1;
+      if(this.wounded>0){
+        this.wounded-=dt;this.turn(Math.atan2(P.x-this.x,P.z-this.z),3,dt);
+        if(this.wounded<=0)triggerAlarm("A wounded guard radioed it in. Alarm!");
+      }
+      this.armL.rotation.x=-2.2;
+      this.sprite.visible=true;this.sprite.material.map=TEX_RED;
+      this.root.position.set(this.x,0,this.z);this.root.rotation.y=this.yaw;
+      return;
+    }
     const range=G.alarm?18:14,half=G.alarm?1.05:0.85;
     this.seeDist=canSee(this.x,this.z,this.yaw,half,range);
     const seeing=this.seeDist>=0;
+    const fb=G.alarm?null:findBody(this.x,this.z,this.yaw,half,range,this);
+    this.bodyDist=fb?fb.d:-1;this.bodyAt=fb;
     if(G.alarm){
       if(seeing){this.last={x:P.x,z:P.z};this.chase=true;}
       if(this.chase&&this.last){
@@ -449,6 +593,9 @@ class Guard{
       if(seeing){
         if(!this.wasSeeing)SFX.spot(this.x,this.z);
         this.sus=2.4;this.heard=null;this.speedNow=0;this.turn(Math.atan2(P.x-this.x,P.z-this.z),2.6,dt);
+      }else if(fb){
+        if(!this.sawBody)SFX.spot(this.x,this.z);
+        this.sus=2.4;this.heard=null;this.speedNow=0;this.turn(Math.atan2(fb.x-this.x,fb.z-this.z),2.6,dt);
       }else{
         const hd=this.hearCheck();
         if(hd){if(!this.heard)SFX.hear(this.x,this.z);this.heard=hd;this.sus=3.2;}
@@ -459,9 +606,9 @@ class Guard{
         }else this.patrol(dt,1.45,false);
       }
     }
-    this.wasSeeing=seeing;
+    this.wasSeeing=seeing;this.sawBody=!!fb;
     if(G.alarm){this.sprite.visible=this.chase;this.sprite.material.map=TEX_RED;}
-    else if(seeing){this.sprite.visible=true;this.sprite.material.map=TEX_AMBER;}
+    else if(seeing||fb){this.sprite.visible=true;this.sprite.material.map=TEX_AMBER;}
     else if(this.heard){this.sprite.visible=true;this.sprite.material.map=TEX_HEAR;}
     else this.sprite.visible=false;
     this.sync(dt);
@@ -480,8 +627,13 @@ class Guard{
 const guards=[
   new Guard([[-12,8],[12,8],[12,1.5],[-12,1.5]],1.1),
   new Guard([[-12,-2],[-7,-2],[-7,-10],[-10.7,-10],[-10.7,-16],[-10.7,-10]],1.2),
-  new Guard([[10,-9],[13,-3],[10,-2],[10,1.5],[0,1.5],[0,-2.5],[-3.5,-3],[3.5,-3],[0,-2.5],[0,1.5],[10,1.5],[10,-2]],1.0)
+  new Guard([[10,-9],[13,-3],[10,-2],[10,1.5],[0,1.5],[0,-2.5],[-3.5,-3],[3.5,-3],[0,-2.5],[0,1.5],[10,1.5],[10,-2]],1.0),
+  // security room operator: watches the monitors, now and then turns to check the door
+  new Guard([[12.1,-9.1,Math.PI/2,9],[10.6,-5.2,0.15,3.5]],2,{security:true})
 ];
+const secGuard=guards.find(g=>g.security);
+// office chair for the operator
+addBox(12.0,-9.95,12.5,-9.45,0.5,M.cabinet,{collide:false});
 
 /* ================= loot bags ================= */
 function makeBag(){
@@ -493,8 +645,70 @@ function makeBag(){
 }
 const BAG_SPOTS=[[-3,-9.6],[0,-10.6],[3,-9.6]];
 const VAN_SLOTS=[[-18.2,-17.4],[-19.1,-16.6],[-20.1,-17.2]];
-const bags=BAG_SPOTS.map(()=>{const m=makeBag();scene.add(m);return {mesh:m,state:"vault"};});
-const viewBag=makeBag();viewBag.position.set(0.34,-0.42,-0.62);viewBag.rotation.set(0.3,0.5,0.2);viewBag.scale.setScalar(0.8);viewBag.visible=false;camera.add(viewBag);
+const bags=BAG_SPOTS.map(()=>{const m=makeBag();m.userData.noHit=true;scene.add(m);return {kind:"loot",mesh:m,state:"ground"};});
+const bodyBagMat=phong(0x23271f,{shininess:25,specular:0x222222});
+function makeBodyBag(){
+  const g=new THREE.Group();
+  const b=new THREE.Mesh(new THREE.CylinderGeometry(0.2,0.2,1.7,12),bodyBagMat);b.rotation.z=Math.PI/2;b.scale.set(1,1,1.35);b.castShadow=true;g.add(b);
+  for(const x of [-0.85,0.85]){const cap=new THREE.Mesh(new THREE.SphereGeometry(0.2,10,8),bodyBagMat);cap.position.x=x;cap.scale.set(0.6,1,1.35);g.add(cap);}
+  const zip=new THREE.Mesh(new THREE.BoxGeometry(1.5,0.012,0.025),M.strap);zip.position.y=0.2;g.add(zip);
+  return g;
+}
+guards.forEach(g=>{const m=makeBodyBag();m.visible=false;m.userData.noHit=true;scene.add(m);g.item={kind:"body",guard:g,mesh:m,state:"none"};});
+
+/* ================= first-person view models (own scene, drawn on top so they never clip into walls) ================= */
+const vmScene=new THREE.Scene();
+const vmCam=new THREE.PerspectiveCamera(60,innerWidth/innerHeight,0.01,10);
+vmScene.add(new THREE.HemisphereLight(0x8090b0,0x101216,0.9));
+const vmKey=new THREE.DirectionalLight(0xffe2b8,0.6);vmKey.position.set(1,2,1);vmScene.add(vmKey);
+addEventListener("resize",()=>{vmCam.aspect=innerWidth/innerHeight;vmCam.updateProjectionMatrix();});
+const viewBag=makeBag();viewBag.position.set(-0.36,-0.4,-0.62);viewBag.rotation.set(0.3,-0.5,-0.2);viewBag.scale.setScalar(0.8);viewBag.visible=false;vmScene.add(viewBag);
+const viewBody=makeBodyBag();viewBody.position.set(-0.42,-0.3,-0.5);viewBody.rotation.set(0.15,1.25,0.35);viewBody.scale.setScalar(0.55);viewBody.visible=false;vmScene.add(viewBody);
+function showCarry(){viewBag.visible=!!P.carry&&P.carry.kind==="loot";viewBody.visible=!!P.carry&&P.carry.kind==="body";}
+
+const gunMat=phong(0x1c1e21,{shininess:50,specular:0x2a2a2a}),gunMat2=phong(0x2c2f33,{shininess:30});
+const gun=new THREE.Group();vmScene.add(gun);
+const gunParts=new THREE.Group();gun.add(gunParts);
+const gp=(geo,mat,x,y,z,rx)=>{const m=new THREE.Mesh(geo,mat);m.position.set(x,y,z);if(rx)m.rotation.x=rx;gunParts.add(m);return m;};
+gp(new THREE.BoxGeometry(0.034,0.034,0.2),gunMat,0,0.02,-0.02);          // slide
+gp(new THREE.BoxGeometry(0.03,0.022,0.17),gunMat2,0,-0.006,-0.01);       // frame
+gp(new THREE.BoxGeometry(0.03,0.1,0.046),gunMat2,0,-0.06,0.055,-0.28);   // grip
+gp(new THREE.BoxGeometry(0.008,0.03,0.04),gunMat2,0,-0.03,0.01);         // trigger guard
+const supp=gp(new THREE.CylinderGeometry(0.019,0.019,0.18,14),gunMat,0,0.018,-0.21,Math.PI/2); // suppressor
+// suppressor-height three-dot iron sights: rear notch (two posts) + front post, tops at y=0.054
+const dotWhite=new THREE.MeshBasicMaterial({color:0xf2f2ea}),dotGreen=new THREE.MeshBasicMaterial({color:0x7dff9a});
+gp(new THREE.BoxGeometry(0.026,0.005,0.012),gunMat,0,0.0395,0.07);          // rear sight base
+for(const sx of [-0.0068,0.0068]){
+  gp(new THREE.BoxGeometry(0.0042,0.015,0.008),gunMat,sx,0.0465,0.07);      // rear posts (notch between)
+  gp(new THREE.BoxGeometry(0.0019,0.0019,0.001),dotWhite,sx,0.0495,0.0745); // rear dots
+}
+gp(new THREE.BoxGeometry(0.008,0.004,0.012),gunMat,0,0.039,-0.105);         // front sight base
+gp(new THREE.BoxGeometry(0.0034,0.015,0.006),gunMat,0,0.0465,-0.105);       // front post
+gp(new THREE.BoxGeometry(0.0032,0.0032,0.001),dotGreen,0,0.0495,-0.1015);   // front dot (tritium green)
+const glove=phong(0x15171a);
+gp(new THREE.BoxGeometry(0.06,0.06,0.09),glove,0.004,-0.075,0.1,-0.28);   // hand
+gp(new THREE.BoxGeometry(0.05,0.05,0.16),glove,0.024,-0.095,0.2,-0.1);  // forearm
+const flash=new THREE.Mesh(new THREE.SphereGeometry(0.028,8,6),new THREE.MeshBasicMaterial({color:0xffd27a,transparent:true,opacity:.9,blending:THREE.AdditiveBlending,depthWrite:false}));
+flash.position.set(0,0.018,-0.31);flash.visible=false;gunParts.add(flash);
+// ADS puts the front dot exactly on the screen centre, sitting in the rear notch
+const HIP=new THREE.Vector3(0.17,-0.17,-0.42),ADS=new THREE.Vector3(0,-0.0495,-0.31);
+gun.position.copy(HIP);gun.visible=false;
+const muzzleLight=new THREE.PointLight(0xffc070,0,6,2);muzzleLight.position.set(0.15,-0.1,-0.6);camera.add(muzzleLight);
+
+// everything a bullet can hit (static level, guards, cameras)
+const hitList=[];
+scene.traverse(o=>{
+  if(!o.isMesh)return;
+  for(let p=o;p;p=p.parent){if(p===camera||(p.userData&&p.userData.noHit))return;}
+  hitList.push(o);
+});
+const raycaster=new THREE.Raycaster();raycaster.far=70;
+
+// impact sparks
+const sparks=[];
+for(let i=0;i<8;i++){const s=new THREE.Mesh(new THREE.SphereGeometry(0.035,6,4),new THREE.MeshBasicMaterial({color:0xffc86a,transparent:true,blending:THREE.AdditiveBlending,depthWrite:false}));s.visible=false;s.life=0;scene.add(s);sparks.push(s);}
+let sparkI=0;
+function spark(pt,big){const s=sparks[sparkI++%sparks.length];s.position.copy(pt);s.life=big?0.35:0.12;s.scale.setScalar(big?2.2:1);s.visible=true;}
 
 /* ================= collision & sight ================= */
 function resolve(p,r){
@@ -516,13 +730,40 @@ function segBox(ax,az,bx,bz,c){
   else{let a=(c.minZ-az)/dz,b=(c.maxZ-az)/dz;if(a>b){const t=a;a=b;b=t;}if(a>t0)t0=a;if(b<t1)t1=b;if(t0>t1)return false;}
   return true;
 }
-function blocked(ax,az,bx,bz,minH){for(const c of colliders){if(c.h<minH)continue;if(segBox(ax,az,bx,bz,c))return true;}return false;}
+function blocked(ax,az,bx,bz,minH){for(const c of colliders){if(c.h<minH||c.see)continue;if(segBox(ax,az,bx,bz,c))return true;}return false;}
+const BANK={minX:-15,maxX:15,minZ:-12,maxZ:12};
+// the bank is closed at night: anywhere inside is off limits
+function restricted(x,z){return x>BANK.minX&&x<BANK.maxX&&z>BANK.minZ&&z<BANK.maxZ;}
+// unmasked outside you're just someone on the street: nobody reacts
+function exposed(){return G.alarm||P.masked||restricted(P.x,P.z);}
 function canSee(ox,oz,yaw,half,range){
+  if(!exposed())return -1;
   const dx=P.x-ox,dz=P.z-oz,d=Math.hypot(dx,dz);
   if(d>range)return -1;
   if(Math.abs(wrap(Math.atan2(dx,dz)-yaw))>half)return -1;
   if(blocked(ox,oz,P.x,P.z,P.crouch?1.0:1.6))return -1;
   return d;
+}
+// bodies on the floor and body bags left in the open
+function collectBodies(){
+  const out=[];
+  for(const g of guards){
+    if(g.down&&!g.bagged)out.push({x:g.x,z:g.z,src:g});
+    if(g.item.state==="ground")out.push({x:g.item.mesh.position.x,z:g.item.mesh.position.z,src:g});
+  }
+  return out;
+}
+function findBody(ox,oz,yaw,half,range,self){
+  let best=null;
+  for(const b of G.bodies){
+    if(b.src===self)continue;
+    const dx=b.x-ox,dz=b.z-oz,d=Math.hypot(dx,dz);
+    if(d>range||(best&&d>=best.d))continue;
+    if(d>0.5&&Math.abs(wrap(Math.atan2(dx,dz)-yaw))>half)continue;
+    if(blocked(ox,oz,b.x,b.z,0.7))continue;
+    best={x:b.x,z:b.z,d};
+  }
+  return best;
 }
 
 /* ================= audio (Web Audio, all synthesized) ================= */
@@ -605,19 +846,44 @@ const SFX={
   load(){noiseHit({type:"lowpass",freq:260,dur:.25,vol:.7});tone({f0:660,dur:.15,vol:.12,delay:.12});tone({f0:990,dur:.3,vol:.1,delay:.24});},
   vault(){tone({type:"sawtooth",f0:70,f1:40,dur:1.4,vol:.25,lp:400});noiseHit({type:"lowpass",freq:300,dur:.6,vol:.8});tone({type:"square",f0:220,f1:170,dur:1.6,vol:.04,lp:900,delay:.3});},
   alarmHit(){tone({type:"square",f0:880,dur:.18,vol:.18});tone({type:"square",f0:660,dur:.25,vol:.18,delay:.2});},
+  shot(){
+    noiseHit({type:"highpass",freq:2200,q:.5,dur:.07,vol:.55,attack:.002});
+    noiseHit({type:"lowpass",freq:420,dur:.12,vol:.6,attack:.002});
+    tone({type:"square",f0:2600,f1:1800,dur:.03,vol:.06,delay:.045});
+    noiseHit({freq:3600,q:4,dur:.03,vol:.12,delay:.06});
+  },
+  dry(){noiseHit({freq:3000,q:5,dur:.03,vol:.25});},
+  door(x,z,opening){
+    const s=spatial(x,z,22);if(!s)return;
+    if(opening){noiseHit({freq:2200,q:6,dur:.05,vol:.25*s.vol,pan:s.pan,lp:s.lp});tone({type:"sawtooth",f0:140,f1:95,dur:.45,vol:.035*s.vol,pan:s.pan,lp:700,delay:.05});}
+    else{noiseHit({type:"lowpass",freq:260,dur:.18,vol:.65*s.vol,pan:s.pan});noiseHit({freq:1900,q:5,dur:.04,vol:.25*s.vol,pan:s.pan,delay:.04});}
+  },
+  drillSet(){noiseHit({type:"lowpass",freq:400,dur:.15,vol:.5});noiseHit({freq:2400,q:4,dur:.05,vol:.3,delay:.15});noiseHit({freq:2000,q:4,dur:.05,vol:.3,delay:.32});},
+  zip(){for(let i=0;i<14;i++)noiseHit({freq:2600+i*90,q:3,dur:.025,vol:.12,delay:.4+i*.07});for(let i=0;i<4;i++)noiseHit({freq:700,q:.7,dur:.12,vol:.15,attack:.04,delay:i*.1});},
+  drop(x,z){const s=spatial(x,z,20)||{vol:1,pan:0};noiseHit({type:"lowpass",freq:240,dur:.22,vol:.6*s.vol,pan:s.pan});},
+  binDump(x,z){const s=spatial(x,z,20)||{vol:1,pan:0};noiseHit({type:"lowpass",freq:200,dur:.3,vol:.8*s.vol,pan:s.pan});tone({type:"triangle",f0:180,f1:150,dur:.5,vol:.15*s.vol,pan:s.pan,delay:.35});noiseHit({freq:1400,q:6,dur:.25,vol:.25*s.vol,pan:s.pan,delay:.35});},
+  reload(){noiseHit({freq:1800,q:3,dur:.05,vol:.3,delay:.15});noiseHit({type:"lowpass",freq:500,dur:.08,vol:.3,delay:.55});noiseHit({freq:2600,q:4,dur:.05,vol:.35,delay:1.15});noiseHit({freq:1500,q:3,dur:.06,vol:.3,delay:1.25});},
+  mask(){for(let i=0;i<6;i++)noiseHit({freq:900+Math.random()*900,q:.6,dur:.09,vol:.14,attack:.03,delay:i*.12});},
+  maskOn(){tone({type:"sawtooth",f0:55,f1:48,dur:1.2,vol:.18,lp:300});tone({type:"sine",f0:110,f1:104,dur:1.4,vol:.12});noiseHit({type:"lowpass",freq:300,dur:.2,vol:.4});},
+  impact(pt){const s=spatial(pt.x,pt.z,30);if(!s)return;noiseHit({freq:2400+Math.random()*1200,q:2,dur:.05,vol:.3*s.vol+.03,pan:s.pan,lp:s.lp});},
+  flesh(x,z){const s=spatial(x,z,30)||{vol:.5,pan:0};noiseHit({type:"lowpass",freq:350,dur:.12,vol:.6*s.vol+.1,pan:s.pan});},
+  wound(x,z){const s=spatial(x,z,30)||{vol:.5,pan:0};tone({type:"sawtooth",f0:190,f1:120,dur:.35,vol:.18*s.vol+.04,pan:s.pan,lp:900});},
+  camBreak(x,z){const s=spatial(x,z,30)||{vol:.5,pan:0};for(let i=0;i<7;i++)noiseHit({type:"highpass",freq:3500,q:.7,dur:.03,vol:(.25*s.vol+.05)*(1-i/8),pan:s.pan,delay:i*.04+Math.random()*.03});tone({type:"square",f0:900,f1:120,dur:.4,vol:.05*s.vol+.02,pan:s.pan,lp:1500});},
   win(){[523,659,784,1046].forEach((f,i)=>tone({type:"triangle",f0:f,dur:.5,vol:.18,delay:i*.14}));},
   lose(){[392,330,262].forEach((f,i)=>tone({type:"sawtooth",f0:f,f1:f*0.97,dur:.6,vol:.12,lp:1200,delay:i*.22}));}
 };
 function drillOn(){
   if(!A.ctx||A.drill)return;
   const c=A.ctx,t=c.currentTime;
-  const out=c.createGain();out.gain.setValueAtTime(0.0001,t);out.gain.exponentialRampToValueAtTime(0.32,t+.15);out.connect(A.master);
+  const out=c.createGain();out.gain.setValueAtTime(0.0001,t);
+  const pan=c.createStereoPanner?c.createStereoPanner():null;
+  if(pan){out.connect(pan);pan.connect(A.master);}else out.connect(A.master);
   const o=c.createOscillator();o.type="sawtooth";o.frequency.setValueAtTime(60,t);o.frequency.exponentialRampToValueAtTime(110,t+.4);
   const of=c.createBiquadFilter();of.type="lowpass";of.frequency.value=900;const og=c.createGain();og.gain.value=.35;o.connect(of).connect(og).connect(out);
   const n=c.createBufferSource();n.buffer=A.noise;n.loop=true;
   const nf=c.createBiquadFilter();nf.type="bandpass";nf.frequency.value=3200;nf.Q.value=2;const ng=c.createGain();ng.gain.value=.25;n.connect(nf).connect(ng).connect(out);
   const lfo=c.createOscillator();lfo.frequency.value=21;const lg=c.createGain();lg.gain.value=.2;lfo.connect(lg).connect(ng.gain);
-  o.start(t);n.start(t);lfo.start(t);A.drill={out,nodes:[o,n,lfo]};
+  o.start(t);n.start(t);lfo.start(t);A.drill={out,pan,nodes:[o,n,lfo]};
 }
 function drillOff(silent){
   if(!A.drill)return;
@@ -652,24 +918,40 @@ function updateAudio(){
   const t=A.ctx.currentTime,inn=inside();
   A.amb.gain.setTargetAtTime(inn?0.05:0.14,t,0.4);
   A.hum.gain.setTargetAtTime(inn?0.012:0,t,0.4);
+  if(A.drill){
+    // the drill sits at the vault: louder up close, panned, muffled by distance
+    const s=spatial(DRILL_POS.x,DRILL_POS.z,32);
+    A.drill.out.gain.setTargetAtTime(s?0.04+0.34*s.vol:0.0001,t,0.12);
+    if(A.drill.pan)A.drill.pan.pan.setTargetAtTime(s?s.pan:0,t,0.08);
+  }
   if(A.alarm)A.alarm.siren.gain.setTargetAtTime(0.03+0.17*(1-G.alarmT/ALARM_TIME),t,0.3);
 }
 
 /* ================= game state ================= */
+const MAG=12,MASK_TIME=1.0,RELOAD_TIME=1.4;
 const P={x:2,z:20.5,yaw:0,pitch:0,crouch:false,eye:1.65,bobT:0,carry:null,sprinting:false,kick:0};
-const G={time:0,world:0,susp:0,unseen:0,alarm:false,alarmT:60,drill:0,drillWas:false,vaultOpen:false,doorAnim:0,secured:0,takedowns:0,everAlarm:false,lastSpotter:"guard"};
+const G={time:0,world:0,susp:0,unseen:0,alarm:false,alarmT:60,drill:0,drillWas:false,vaultOpen:false,doorAnim:0,secured:0,takedowns:0,everAlarm:false,lastSpotter:"guard",lastCause:"player",noise:0,shotNoise:0,blipT:0,bodies:[],secAlert:0,bagT:0,binned:0};
+const BAG_TIME=2.0;
 let state="menu",locked=false,everLocked=false,fallback=false,pendingStart=false,pressedE=false;
 const keys={};
-const DRILL_TIME=10,ALARM_TIME=60;
+const DRILL_TIME=20,ALARM_TIME=60;
+const DRILL_POS={x:0.45,z:-4.5},DRILL_NOISE=6;
 
 function resetGame(){
-  Object.assign(P,{x:2,z:20.5,yaw:0,pitch:0,crouch:false,eye:1.65,bobT:0,carry:null,sprinting:false,kick:0});
-  Object.assign(G,{time:0,susp:0,unseen:0,alarm:false,alarmT:ALARM_TIME,drill:0,drillWas:false,vaultOpen:false,doorAnim:0,secured:0,takedowns:0,everAlarm:false,noise:0,blipT:0});
+  Object.assign(P,{x:2,z:20.5,yaw:0,pitch:0,crouch:false,eye:1.65,bobT:0,carry:null,sprinting:false,kick:0,
+    masked:false,maskT:0,mag:MAG,reserve:MAG*3,reload:0,fireCD:0,aim:false,aimT:0,recoil:0,raise:0,wasRestricted:false});
+  Object.assign(G,{time:0,susp:0,unseen:0,alarm:false,alarmT:ALARM_TIME,drill:0,drillWas:false,vaultOpen:false,doorAnim:0,secured:0,takedowns:0,kills:0,camsShot:0,shots:0,everAlarm:false,noise:0,shotNoise:0,blipT:0,bodies:[],secAlert:0,bagT:0,binned:0});
+  cams.forEach(c=>{c.dead=false;c.cone.visible=true;c.spot.intensity=1.6;c.head.rotation.set(0.24,0,0);c.body.material=M.camBody;});
+  bins.forEach(b=>{b.count=0;b.openT=0;b.piv.rotation.x=0;});
+  doors.forEach(d=>{d.open=false;d.byGuard=false;d.t=0;d.leaves.forEach(l=>l.piv.rotation.y=0);if(!colliders.includes(d.col))colliders.push(d.col);});
+  G.drilling=false;
+  gun.visible=false;camera.fov=72;camera.updateProjectionMatrix();
+  $("maskEdge").hidden=true;
   drillOff(true);alarmOff();
   vaultPivot.rotation.y=0;if(!colliders.includes(vaultCol))colliders.push(vaultCol);
   drillGroup.visible=false;drillLight.intensity=0;
-  bags.forEach((b,i)=>{b.state="vault";b.mesh.visible=true;b.mesh.position.set(BAG_SPOTS[i][0],0.22,BAG_SPOTS[i][1]);b.mesh.rotation.set(0,i*0.7,0);});
-  viewBag.visible=false;
+  bags.forEach((b,i)=>{b.state="ground";b.mesh.visible=true;b.mesh.position.set(BAG_SPOTS[i][0],0.22,BAG_SPOTS[i][1]);b.mesh.rotation.set(0,i*0.7,0);});
+  showCarry();
   guards.forEach(g=>g.reset());
   $("alarmEdge").hidden=true;
   hideToast();
@@ -682,6 +964,10 @@ addEventListener("keydown",e=>{
   if(state!=="playing")return;
   if(e.code==="KeyE"&&!e.repeat)pressedE=true;
   if(e.code==="KeyC"&&!e.repeat)P.crouch=!P.crouch;
+  if(e.code==="KeyF"&&!e.repeat)tryTakedown();
+  if(e.code==="KeyR"&&!e.repeat)startReload();
+  if(e.code==="KeyQ"&&!e.repeat)dropCarry();
+  if(e.code==="KeyG"&&!e.repeat&&!P.masked)SFX.mask();
   if(e.code==="KeyM"&&!e.repeat){setMuted(!A.muted);toast(A.muted?"Sound off":"Sound on","",1200);}
   if(e.code==="Escape"&&!locked)setState("paused");
 });
@@ -690,12 +976,16 @@ addEventListener("blur",()=>{for(const k in keys)keys[k]=false;if(state==="playi
 document.addEventListener("mousemove",e=>{
   if(state!=="playing")return;
   if(!locked&&!fallback)return;
-  P.yaw-=(e.movementX||0)*0.0022;P.pitch=clamp(P.pitch-(e.movementY||0)*0.0022,-1.45,1.45);
+  const sens=0.0022*(1-0.4*P.aimT);
+  P.yaw-=(e.movementX||0)*sens;P.pitch=clamp(P.pitch-(e.movementY||0)*sens,-1.45,1.45);
 });
 canvas.addEventListener("mousedown",e=>{
   if(state!=="playing")return;
-  if(e.button===0)tryTakedown();
+  if(e.button===0)shoot();
+  if(e.button===2)P.aim=true;
 });
+addEventListener("mouseup",e=>{if(e.button===2)P.aim=false;});
+canvas.addEventListener("contextmenu",e=>e.preventDefault());
 
 function requestLock(){
   try{const r=canvas.requestPointerLock();if(r&&typeof r.catch==="function")r.catch(lockFailed);}catch(err){lockFailed();}
@@ -731,7 +1021,7 @@ function setState(s){
   $("pause").hidden=s!=="paused";
   $("end").hidden=s!=="ended";
   $("hud").hidden=!(s==="playing"||s==="paused");
-  if(s!=="playing"){for(const k in keys)keys[k]=false;}
+  if(s!=="playing"){for(const k in keys)keys[k]=false;P.aim=false;P.maskT=0;}
   if(A.ctx){
     if(s==="playing"&&A.ctx.state!=="running")A.ctx.resume().catch(()=>{});
     if(s==="paused"){drillOff(true);A.ctx.suspend().catch(()=>{});}
@@ -766,7 +1056,7 @@ function updatePlayer(dt){
   if(shift&&P.crouch&&len>0)P.crouch=false;
   P.sprinting=!!(shift&&len>0);
   let speed=P.crouch?1.7:(P.sprinting?5.4:3.1);
-  if(P.carry)speed*=0.62;
+  if(P.carry)speed*=P.carry.kind==="body"?0.5:0.62;
   if(len>0){
     mx/=len;mz/=len;
     const p={x:P.x+mx*speed*dt,z:P.z+mz*speed*dt};
@@ -781,16 +1071,19 @@ function updatePlayer(dt){
     }
   }
   G.noise=len>0?(P.sprinting?7:P.crouch?0:1.8):0;
-  if(G.drillWas)G.noise=Math.max(G.noise,3.5);
   const targetEye=P.crouch?1.05:1.65;
   P.eye+=(targetEye-P.eye)*Math.min(1,dt*10);
   const reduce=matchMedia("(prefers-reduced-motion: reduce)").matches;
   const bob=reduce||len===0?0:Math.sin(P.bobT)*0.035;
   P.kick=Math.max(0,P.kick-dt*4);
   camera.position.set(P.x,P.eye+bob,P.z);
-  camera.rotation.set(P.pitch-P.kick*0.12,P.yaw,0);
+  camera.rotation.set(P.pitch-P.kick*0.12+P.recoil*0.012,P.yaw,0);
+  const r=restricted(P.x,P.z);
+  if(r&&!P.wasRestricted&&!P.masked&&!G.alarm)toast("The bank is closed. Don't let anyone see you inside","warn",2400);
+  P.wasRestricted=r;
 }
 function tryTakedown(){
+  if(!P.masked){toast("Put on your mask first. Hold G","warn");return;}
   const fx=-Math.sin(P.yaw),fz=-Math.cos(P.yaw);
   let best=null,bd=1e9;
   for(const g of guards){if(g.down)continue;const dx=g.x-P.x,dz=g.z-P.z,d=Math.hypot(dx,dz);
@@ -800,48 +1093,159 @@ function tryTakedown(){
   const tx=(P.x-best.x)/bd,tz=(P.z-best.z)/bd;
   const facing=Math.sin(best.yaw)*tx+Math.cos(best.yaw)*tz;
   if(facing<-0.15&&!blocked(P.x,P.z,best.x,best.z,0.9)){
-    best.down=true;best.spot.intensity=0;best.sprite.visible=false;best.seeDist=-1;best.heard=null;G.takedowns++;
+    best.knockDown(false);G.takedowns++;
     SFX.takedown(best.x,best.z);
-    toast("Guard down","good");
+    toast("Guard knocked out","good");
   }else{SFX.whiff();toast("Get behind them first","warn");}
+}
+
+/* ================= silenced pistol ================= */
+const CAM_DEAD=phong(0x3a3c3e);
+const _v2=new THREE.Vector2();
+function shoot(){
+  if(!P.masked){toast("Put on your mask first. Hold G","warn",1400);return;}
+  if(P.raise<0.9||P.reload>0||P.fireCD>0)return;
+  if(P.mag<=0){SFX.dry();P.fireCD=0.25;if(P.reserve>0)startReload();else toast("Out of ammo","bad");return;}
+  P.mag--;P.fireCD=0.3;P.recoil=1;G.shots++;
+  G.shotNoise=4.5; // suppressed, but still audible up close
+  SFX.shot();
+  flash.visible=true;flash.rotation.z=Math.random()*3;muzzleLight.intensity=2.2;setTimeout(()=>{flash.visible=false;muzzleLight.intensity=0;},45);
+  // spread: tight when aiming and still, wider from the hip or on the move
+  const moving=keys.KeyW||keys.KeyA||keys.KeyS||keys.KeyD;
+  const spread=(P.aimT>0.8?0.002:0.016)+(moving?0.012:0)+(P.sprinting?0.03:0);
+  const ndc=1/Math.tan(THREE.MathUtils.degToRad(camera.fov/2)); // radians -> NDC
+  _v2.set((Math.random()-.5)*2*spread*ndc/camera.aspect,(Math.random()-.5)*2*spread*ndc);
+  scene.updateMatrixWorld(); // hitboxes must match where guards are right now
+  raycaster.setFromCamera(_v2,camera);
+  const hit=raycaster.intersectObjects(hitList,false)[0];
+  if(!hit)return;
+  const ud=hit.object.userData;
+  if(ud.guard){
+    const g=ud.guard;
+    if(g.down){SFX.flesh(g.x,g.z);return;}
+    g.hp-=ud.head?2:1;
+    SFX.flesh(g.x,g.z);
+    if(g.hp<=0){
+      g.knockDown(true);G.kills++;
+      toast(ud.head?"Headshot":"Guard down","good",1300);
+    }else{
+      g.wounded=2.0;SFX.wound(g.x,g.z);
+      toast("Wounded! Finish him before he radios in","bad",1800);
+    }
+  }else if(ud.cam){
+    const c=ud.cam;
+    spark(hit.point,true);
+    if(!c.dead){
+      c.dead=true;c.seeDist=-1;c.bodyDist=-1;c.cone.visible=false;c.spot.intensity=0;c.led.visible=false;c.head.rotation.set(0.95,0,0.35);c.body.material=CAM_DEAD;G.camsShot++;
+      SFX.camBreak(c.x,c.z);
+      if(!secGuard.down&&!G.alarm){
+        if(!(G.secAlert>0))G.secAlert=3;
+        toast("The security guard saw the feed die! Take him out","bad",2600);
+      }else toast("Camera down","good",1200);
+    }
+  }else{
+    spark(hit.point,false);SFX.impact(hit.point);
+  }
+}
+function dropCarry(){
+  if(!P.carry)return;
+  const it=P.carry,fx=-Math.sin(P.yaw),fz=-Math.cos(P.yaw);
+  let p={x:P.x+fx*0.9,z:P.z+fz*0.9};
+  if(blocked(P.x,P.z,p.x,p.z,0.3))p={x:P.x,z:P.z};
+  resolve(p,0.3);
+  it.mesh.position.set(p.x,it.kind==="body"?0.2:0.22,p.z);
+  it.mesh.rotation.set(0,P.yaw+(it.kind==="body"?Math.PI/2:0.4),0);
+  it.mesh.visible=true;it.state="ground";P.carry=null;showCarry();SFX.drop(p.x,p.z);
+  if(it.kind==="body")toast("A body bag in the open is still suspicious","warn",2000);
+}
+function startReload(){
+  if(!P.masked||P.reload>0||P.mag>=MAG||P.reserve<=0)return;
+  P.reload=RELOAD_TIME;SFX.reload();
+}
+function updateWeapon(dt){
+  // mask: hold G
+  if(!P.masked){
+    if(keys.KeyG){
+      P.maskT+=dt;
+      if(P.maskT>=MASK_TIME){
+        P.masked=true;P.maskT=0;SFX.maskOn();$("maskEdge").hidden=false;
+        toast("Mask on. Everyone who sees you is a threat now","bad",2600);
+      }
+    }else P.maskT=0;
+  }
+  P.fireCD=Math.max(0,P.fireCD-dt);
+  if(P.reload>0){
+    P.reload-=dt;
+    if(P.reload<=0){P.reload=0;const n=Math.min(MAG-P.mag,P.reserve);P.mag+=n;P.reserve-=n;}
+  }
+  const canAim=P.masked&&P.reload<=0&&!P.sprinting&&!P.carry;
+  P.aimT=clamp(P.aimT+(P.aim&&canAim?dt:-dt)*7,0,1);
+  P.raise=clamp(P.raise+(P.masked?dt*2.2:-dt*4),0,1);
+  P.recoil=Math.max(0,P.recoil-dt*9);
+  const fov=72-24*P.aimT;
+  if(Math.abs(camera.fov-fov)>0.01){camera.fov=fov;camera.updateProjectionMatrix();}
+  gun.visible=P.raise>0.01;
+  gun.position.lerpVectors(HIP,ADS,P.aimT);
+  const t=G.world,bobA=(1-P.aimT);
+  const moving=keys.KeyW||keys.KeyA||keys.KeyS||keys.KeyD;
+  gun.position.x+=moving?Math.cos(P.bobT*0.5)*0.008*bobA:0;
+  gun.position.y+=(moving?Math.abs(Math.sin(P.bobT*0.5))*0.008:Math.sin(t*1.6)*0.002)*bobA-(1-P.raise)*0.3+P.recoil*(0.012-0.006*P.aimT);
+  gun.position.z+=P.recoil*(0.035-0.015*P.aimT);
+  const rl=P.reload>0?Math.sin(Math.PI*(1-P.reload/RELOAD_TIME)):0;
+  gun.rotation.set(P.recoil*0.18+rl*0.5,0,rl*0.5+(P.sprinting?0.3:0)*bobA);
 }
 
 /* ================= world updates ================= */
 function updateCams(dt,simOnly){
   for(const c of cams){
+    if(c.dead){c.seeDist=-1;c.bodyDist=-1;continue;}
     c.yaw=c.center+c.amp*Math.sin(G.world*2*Math.PI/c.period+c.phase);
     c.g.rotation.y=c.yaw;
     c.seeDist=simOnly?-1:canSee(c.x,c.z,c.yaw,c.half,c.range);
-    const seeing=c.seeDist>=0;
-    c.coneMat.color.setHex(G.alarm?0xff5040:seeing?0xffb048:0x9fc0ff);
-    c.coneMat.opacity=seeing?0.14:0.07;
+    const fb=simOnly?null:findBody(c.x,c.z,c.yaw,c.half,c.range);
+    c.bodyDist=fb?fb.d:-1;
+    const seeing=c.seeDist>=0||c.bodyDist>=0;
+    const col=G.alarm?0xff5040:seeing?0xffb048:0x9fc0ff;
+    c.coneMat.color.setHex(col);c.spot.color.setHex(col);
+    c.coneMat.opacity=seeing?0.2:0.1;
     c.led.visible=(Math.floor(G.world*2)%2)===0||seeing;
   }
 }
 function updateDetection(dt){
   if(G.alarm)return;
-  let gain=0,spotter=null;
+  let gain=0,bodyGain=0,spotter=null,bodySpotter=null;
   const obs=[...guards,...cams];
   for(const o of obs){
-    if(o.seeDist<0)continue;
     const range=o.kind==="camera"?o.range:14;
-    let r=o.base*(1+2.2*(1-o.seeDist/range));
-    if(P.sprinting)r*=1.7;if(P.crouch)r*=0.65;
-    gain+=r;spotter=o.kind;
+    if(o.seeDist>=0){
+      let r=o.base*(1+2.2*(1-o.seeDist/range));
+      if(P.sprinting)r*=1.7;if(P.crouch)r*=0.65;
+      if(!P.masked)r*=0.6; // a lost customer gets a little benefit of the doubt
+      gain+=r;spotter=o.kind;
+    }
+    if(o.bodyDist>=0){bodyGain+=0.45*(1+1.5*(1-o.bodyDist/range));bodySpotter=o.kind;}
   }
   G.blipT-=dt;
-  if(gain>0){
-    G.susp=Math.min(1,G.susp+gain*dt);G.unseen=0;G.lastSpotter=spotter;
+  const total=gain+bodyGain;
+  if(total>0){
+    G.susp=Math.min(1,G.susp+total*dt);G.unseen=0;
+    if(bodyGain>gain){G.lastCause="body";G.lastSpotter=bodySpotter;}else{G.lastCause="player";G.lastSpotter=spotter;}
     if(G.blipT<=0){SFX.blip(G.susp);G.blipT=0.42-0.3*G.susp;}
   }
   else{G.unseen+=dt;if(G.unseen>0.8)G.susp=Math.max(0,G.susp-0.16*dt);}
-  if(G.susp>=1)triggerAlarm();
+  G.bodyWatched=bodyGain>0;
+  if(G.susp>=1){
+    const who=G.lastSpotter==="camera"?"A camera":"A guard";
+    if(G.lastCause==="body")triggerAlarm(`${who} found a body. Alarm!`);
+    else triggerAlarm(P.masked?`${who} spotted you. Alarm!`:`${who} caught you inside the closed bank. Alarm!`);
+  }
 }
-function triggerAlarm(){
+function triggerAlarm(msg){
+  if(G.alarm)return;
   G.alarm=true;G.everAlarm=true;G.alarmT=ALARM_TIME;G.susp=1;
   $("alarmEdge").hidden=false;
   SFX.alarmHit();alarmOn();
-  toast(G.lastSpotter==="camera"?"A camera spotted you. Alarm!":"A guard spotted you. Alarm!","bad",3000);
+  toast(msg||"Alarm!","bad",3000);
 }
 function updateInteraction(dt){
   const fx=-Math.sin(P.yaw),fz=-Math.cos(P.yaw);
@@ -852,43 +1256,101 @@ function updateInteraction(dt){
   if(!G.vaultOpen){
     const d=facing(0,-4.7,2.3);
     const inRange=d>=0&&P.z>-4.8;
-    let drilling=false;
-    if(inRange){
-      prompt="Hold <kbd>E</kbd> to drill the vault door";prog=G.drill;
-      if(keys.KeyE){
-        drilling=true;
-        G.drill=Math.min(1,G.drill+dt/DRILL_TIME);drillGroup.visible=true;
-        drillBit.rotation.y+=dt*40;drillLight.intensity=0.8+Math.random()*0.8;
-        prompt="Drilling… keep holding <kbd>E</kbd>";
-        if(G.drill>=1){G.vaultOpen=true;drilling=false;drillLight.intensity=0;drillGroup.visible=false;const i=colliders.indexOf(vaultCol);if(i>=0)colliders.splice(i,1);drillOff(true);SFX.vault();toast("Vault open","good");}
-        else drillOn();
+    if(inRange&&G.drilling){prompt=`Drill running · ${Math.round(G.drill*100)}%`;prog=G.drill;}
+    else if(inRange&&!P.masked){prompt="Put on your mask to set up the drill. Hold <kbd>G</kbd>";}
+    else if(inRange){
+      prompt="Press <kbd>E</kbd> to set up the drill";
+      if(pressedE){
+        G.drilling=true;drillGroup.visible=true;SFX.drillSet();
+        toast("Drill running. Guards nearby will hear it","warn",2400);
       }
     }
-    if(!drilling){
-      drillLight.intensity=0;drillOff(G.vaultOpen);
-      if(G.drillWas&&G.drill>0&&G.drill<1)toast(inRange?"Drill paused":"Drill interrupted","warn");
-    }
-    G.drillWas=drilling;
   }
 
-  // bags
+  // bodies: hold E on a guard on the floor to bag him
+  let bagTarget=null;
+  if(!prompt&&P.masked){
+    let bd=1e9;
+    for(const g of guards){if(!g.down||g.bagged||g.fall<1)continue;const d=facing(g.x,g.z,2.1);if(d>=0&&d<bd){bagTarget=g;bd=d;}}
+    if(bagTarget){
+      if(P.carry){prompt="Drop what you're carrying first. Press <kbd>Q</kbd>";}
+      else{
+        prompt="Hold <kbd>E</kbd> to bag the body";
+        if(keys.KeyE){
+          if(G.bagT===0)SFX.zip();
+          G.bagT+=dt;prompt="Bagging the body…";
+          if(G.bagT>=BAG_TIME){
+            G.bagT=0;bagTarget.bagged=true;bagTarget.root.visible=false;
+            const it=bagTarget.item;it.state="carried";P.carry=it;showCarry();SFX.pickup();
+            toast("Body bagged. Dump it in a bin","warn",2200);
+          }
+        }
+        prog=G.bagT/BAG_TIME;
+      }
+    }
+  }
+  if(!bagTarget||!keys.KeyE)G.bagT=0;
+
   if(!P.carry){
+    // pick up loot or a body bag lying around
     let best=null,bd=1e9;
-    for(const b of bags){if(b.state!=="vault")continue;const d=facing(b.mesh.position.x,b.mesh.position.z,2.0);if(d>=0&&d<bd){best=b;bd=d;}}
-    if(best&&!prompt){prompt="Press <kbd>E</kbd> to pick up the bag";if(pressedE){best.state="carried";best.mesh.visible=false;P.carry=best;viewBag.visible=true;SFX.pickup();toast("Bag picked up. Get it to the van.","warn");}}
-  }else{
+    const items=[...bags,...guards.map(g=>g.item)];
+    for(const it of items){if(it.state!=="ground")continue;const d=facing(it.mesh.position.x,it.mesh.position.z,2.0);if(d>=0&&d<bd){best=it;bd=d;}}
+    if(best&&!prompt&&!P.masked)prompt="Put on your mask first. Hold <kbd>G</kbd>";
+    else if(best&&!prompt){
+      prompt=best.kind==="body"?"Press <kbd>E</kbd> to pick up the body bag":"Press <kbd>E</kbd> to pick up the loot";
+      if(pressedE){
+        best.state="carried";best.mesh.visible=false;P.carry=best;showCarry();SFX.pickup();
+        if(best.kind==="loot")toast("Loot picked up. Get it to the van","warn");
+      }
+    }
+  }else if(P.carry.kind==="loot"){
     const d=Math.hypot(SECURE.x-P.x,SECURE.z-P.z);
-    if(d<2.6){
+    if(d<2.6&&!prompt){
       prompt="Press <kbd>E</kbd> to load the bag into the van";
       if(pressedE){
         const b=P.carry,slot=VAN_SLOTS[G.secured];b.state="secured";b.mesh.visible=true;b.mesh.position.set(slot[0],0.82,slot[1]);b.mesh.rotation.set(0,G.secured*0.9,0);
-        P.carry=null;viewBag.visible=false;G.secured++;SFX.load();
+        P.carry=null;showCarry();G.secured++;SFX.load();
         if(G.secured>=3){endGame(true);return;}
         toast(`Bag secured ${G.secured}/3`,"good");
       }
     }
+  }else{
+    // carrying a body: find a bin
+    let bin=null,bd=1e9;
+    for(const b of bins){const reach=Math.max(b.w,b.d)/2+1.2;const d=facing(b.x,b.z,reach);if(d>=0&&d<bd){bin=b;bd=d;}}
+    if(bin&&!prompt){
+      prompt="Press <kbd>E</kbd> to dump the body in the bin";
+      if(pressedE){
+        const it=P.carry;it.state="binned";it.mesh.visible=false;P.carry=null;showCarry();
+        bin.count++;bin.openT=1;G.binned++;SFX.binDump(bin.x,bin.z);
+        toast("Body hidden","good",1400);
+      }
+    }else if(!prompt&&Math.hypot(SECURE.x-P.x,SECURE.z-P.z)<2.6)prompt="Bodies go in a bin, not the van";
   }
+  // doors
+  if(!prompt){
+    let door=null,bd=1e9;
+    for(const dr of doors){const d=facing(dr.x,dr.z,Math.max(1.9,dr.w/2+0.9));if(d>=0&&d<bd){door=dr;bd=d;}}
+    if(door){
+      prompt=`Press <kbd>E</kbd> to ${door.open?"close":"open"} the ${door.name}`;
+      if(pressedE){if(door.open)closeDoor(door);else openDoor(door,P.x,P.z,false);}
+    }
+  }
+  if(!P.masked&&P.maskT>0){prompt="Putting on your mask…";prog=P.maskT/MASK_TIME;}
+  else if(P.reload>0&&!prompt){prompt="Reloading…";prog=1-P.reload/RELOAD_TIME;}
   setPrompt(prompt,prog);
+}
+function updateDrill(dt){
+  if(!G.drilling){drillLight.intensity=0;return;}
+  G.drill=Math.min(1,G.drill+dt/DRILL_TIME);
+  drillBit.rotation.y+=dt*40;drillLight.intensity=0.8+Math.random()*0.8;
+  drillOn();
+  if(G.drill>=1){
+    G.drilling=false;G.vaultOpen=true;drillLight.intensity=0;drillGroup.visible=false;
+    const i=colliders.indexOf(vaultCol);if(i>=0)colliders.splice(i,1);
+    drillOff(true);SFX.vault();toast("Vault open","good");
+  }
 }
 function updateAlarm(dt){
   if(!G.alarm)return;
@@ -899,21 +1361,34 @@ const fmt=s=>{s=Math.max(0,Math.ceil(s));return String(Math.floor(s/60)).padStar
 const fmtUp=s=>{s=Math.floor(s);return String(Math.floor(s/60)).padStart(2,"0")+":"+String(s%60).padStart(2,"0");};
 function inside(){return P.x>-15&&P.x<15&&P.z>-12&&P.z<12;}
 function updateHUD(){
-  const watched=!G.alarm&&[...guards,...cams].some(o=>o.seeDist>=0);
-  const hud=$("hud");hud.classList.toggle("alarm",G.alarm);hud.classList.toggle("watched",watched);
+  const watched=!G.alarm&&([...guards,...cams].some(o=>o.seeDist>=0)||G.bodyWatched);
+  const radio=!G.alarm&&(G.secAlert>0||guards.some(g=>g.wounded>0&&!g.down));
+  const hud=$("hud");hud.classList.toggle("alarm",G.alarm||radio);hud.classList.toggle("watched",watched);
   $("detectFill").style.width=((G.alarm?1:G.susp)*100).toFixed(1)+"%";
-  $("detectLbl").textContent=G.alarm?"Alarm raised":watched?"Being watched":"Detection";
+  $("detectLbl").textContent=G.alarm?"Alarm raised":radio?"A guard is reaching for his radio":G.bodyWatched?"Body spotted":watched?"Being watched":"Detection";
   $("seenEdge").style.opacity=G.alarm?0:(G.susp*0.55).toFixed(3);
   $("clockLbl").textContent=G.alarm?"Police arrive in":"Elapsed";
   $("clockVal").textContent=G.alarm?fmt(G.alarmT):fmtUp(G.time);
   let obj;
-  if(!G.vaultOpen)obj=!inside()&&G.drill===0?"Get into the bank unseen. The vault is behind the lobby, past the tellers.":`Drill the vault door. Hold E. ${Math.round(G.drill*100)}% done`;
+  const loose=G.bodies.length;
+  if(P.carry&&P.carry.kind==="body")obj="Dump the body in a bin: the two dumpsters behind the bank or the linen cart in the office. Q drops it.";
+  else if(loose&&!G.alarm)obj=`Hide ${loose>1?"the bodies":"the body"}. Hold E on a body to bag it, then dump it in a bin.`;
+  else if(!P.masked&&!G.vaultOpen)obj=restricted(P.x,P.z)?"You're inside a closed bank without a mask. Anyone who sees you will raise the alarm.":"Case the bank from the street. Watch the guards through the front windows. Hold G to put on your mask when you're ready.";
+  else if(!G.vaultOpen)obj=G.drilling?`Drill running: ${Math.round(G.drill*100)}%. Keep guards away from the vault.`:G.drill===0?"Get to the vault behind the tellers and set up the drill.":`Drill stopped at ${Math.round(G.drill*100)}%.`;
   else if(P.carry)obj="Carry the bag to the van in the back alley (northwest corner).";
   else obj="Grab a loot bag from the vault.";
   $("objText").textContent=obj;
   $("bagsVal").textContent=`${G.secured}/3`;
-  $("stance").textContent=G.drillWas?"DRILLING · NOISY":P.crouch?"CROUCHED · SILENT":P.sprinting?"SPRINTING · LOUD":"STANDING";
-  $("carry").hidden=!P.carry;
+  $("stance").textContent=P.crouch?"CROUCHED · SILENT":P.sprinting?"SPRINTING · LOUD":"STANDING";
+  const cc=$("carry");cc.hidden=!P.carry;
+  if(P.carry){const t=P.carry.kind==="body"?"CARRYING BODY · Q DROP":"CARRYING LOOT · Q DROP";if(cc.textContent!==t)cc.textContent=t;}
+  const mc=$("maskChip"),r=restricted(P.x,P.z);
+  if(P.masked){mc.textContent="MASKED";mc.className="chip bad";}
+  else if(r){mc.textContent="UNMASKED · TRESPASSING";mc.className="chip warn";}
+  else{mc.textContent="UNMASKED · OUTSIDE";mc.className="chip ok";}
+  const am=$("ammo");am.hidden=!P.masked;
+  if(P.masked){const t=P.reload>0?"RELOADING":`PISTOL ${P.mag} / ${P.reserve}`;if(am.textContent!==t)am.textContent=t;am.className=P.mag===0&&P.reload<=0?"chip bad":"chip";}
+  $("crosshair").hidden=!P.masked||P.aimT>0.6;
 }
 
 /* ================= end ================= */
@@ -927,7 +1402,7 @@ function endGame(won,reason){
   $("endTitle").textContent=won?(stealth?"Clean job":"Loud, but paid"):"Busted";
   $("endTitle").className=won?"good":"bad";
   $("endReason").textContent=won?(stealth?"All three bags are in the van and nobody ever knew you were there.":"All three bags made it out, but the whole street heard the alarm."):reason;
-  const rows=[["Time",fmtUp(G.time)],["Bags secured",`${G.secured}/3`],["Stealth",stealth?"Kept":"Broken"],["Guards taken down",String(G.takedowns)]];
+  const rows=[["Time",fmtUp(G.time)],["Bags secured",`${G.secured}/3`],["Stealth",stealth?"Kept":"Broken"],["Guards knocked out",String(G.takedowns)],["Guards shot",String(G.kills)],["Bodies hidden",String(G.binned)],["Cameras shot",String(G.camsShot)],["Shots fired",String(G.shots)]];
   $("endStats").innerHTML=rows.map(([a,b],i)=>`<dt>${a}</dt><dd class="${i===2?(stealth?"good":"bad"):""}">${b}</dd>`).join("");
 }
 
@@ -935,6 +1410,14 @@ function endGame(won,reason){
 function stepGame(dt){
   G.time+=dt;G.world+=dt;
   updatePlayer(dt);
+  updateWeapon(dt);
+  updateDoors(dt,false);
+  updateDrill(dt);
+  G.bodies=collectBodies();
+  if(G.secAlert>0&&!G.alarm){
+    G.secAlert-=dt;
+    if(G.secAlert<=0){G.secAlert=0;triggerAlarm("The security guard saw a camera go dark. Alarm!");}
+  }
   updateCams(dt,false);
   for(const g of guards){g.update(dt,false);if(state!=="playing")return;}
   updateDetection(dt);
@@ -943,10 +1426,11 @@ function stepGame(dt){
   updateAlarm(dt);
   updateAudio();
   updateHUD();
-  pressedE=false;
+  pressedE=false;G.shotNoise=0;
 }
 function stepMenu(dt){
   G.world+=dt;
+  updateDoors(dt,false);
   updateCams(dt,true);
   for(const g of guards)g.update(dt,true);
   const a=G.world*0.05;
@@ -957,7 +1441,10 @@ function animate(dt){
   if(G.vaultOpen&&G.doorAnim<1){G.doorAnim=Math.min(1,G.doorAnim+dt/1.6);const e=1-Math.pow(1-G.doorAnim,3);vaultPivot.rotation.y=e*1.75;}
   ring.material.opacity=P.carry&&state==="playing"?0.45+0.25*Math.sin(G.world*5):0.22;
   wheel.rotation.z=G.vaultOpen?G.doorAnim*3:0;
+  for(const b of bins){if(b.openT>0){b.openT=Math.max(0,b.openT-dt*1.3);b.piv.rotation.x=-1.4*Math.sin(Math.PI*(1-b.openT));}}
+  for(const s of sparks){if(!s.visible)continue;s.life-=dt;s.material.opacity=clamp(s.life*8,0,1);if(s.life<=0)s.visible=false;}
 }
+renderer.autoClear=false;
 let last=performance.now();
 function frame(now){
   requestAnimationFrame(frame);
@@ -965,7 +1452,9 @@ function frame(now){
   if(state==="playing")stepGame(dt);
   else if(state==="menu")stepMenu(dt);
   animate(dt);
+  renderer.clear();
   renderer.render(scene,camera);
+  if(state==="playing"||state==="paused"){renderer.clearDepth();renderer.render(vmScene,vmCam);}
 }
 resetGame();
 setState("menu");
