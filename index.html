@@ -126,8 +126,9 @@ button{font:inherit;cursor:pointer}
 .job-time{font-family:var(--f-mono);font-size:11px;letter-spacing:.16em;color:var(--sodium)}
 .job-time.day{color:#8fd0ff}
 .job-time.club{color:#ff7ad9}
-.job.club,.job.manor,.job.casino,.job.port{grid-column:1/-1}
+.job.club,.job.manor,.job.casino,.job.port,.job.tower{grid-column:1/-1}
 .job-time.port{color:#7fd0ff}
+.job-time.tower{color:#c9a8ff}
 .job-time.casino{color:#f4d27a}
 .job-time.manor{color:#9fc4ff}
 .job-name{font-family:var(--f-display);font-size:28px;line-height:1}
@@ -220,6 +221,12 @@ details.help .keys{margin-bottom:14px}
         <span class="job-place">Port Halvard · MV Kestrel</span>
         <span class="job-meta">Container port and a cargo ship · crawl under the fence · read the manifest · open the hold from the bridge · climb and run the dock crane (loud) · open the right container · escape by speedboat · 9 guards · 6 cameras incl. the ship's searchlight · 7 bags</span>
       </button>
+      <button class="job tower" type="button" role="radio" aria-checked="false" data-map="tower">
+        <span class="job-time tower">NIGHT · 02:20 · LONG JOB</span>
+        <span class="job-name">Glass Ceiling</span>
+        <span class="job-place">Halcyon Tower</span>
+        <span class="job-meta">Office tower, lobby to roof · ride the elevator (the executive floors need a card) or the window cleaners' gondola up the outside · record the CEO's voice for the vault · server-room override · pull the fire alarm to empty the building · bags down the garbage chute · helicopter off the roof · 13 guards · 9 cameras · 8 bags</span>
+      </button>
     </div>
     <label class="dev" for="devToggle"><input type="checkbox" id="devToggle"><span>Dev mode<small>Press V during a job for noclip: fly through walls, invisible to guards and cameras. SPACE up, CTRL or C down, SHIFT faster. Shows your position.</small></span></label>
     <div class="row"><button class="btn" id="startBtn">Start the job</button></div>
@@ -234,7 +241,7 @@ details.help .keys{margin-bottom:14px}
         <dt>C</dt><dd>Crouch on/off (hide behind counters, cars, crates, window sills)</dd>
         <dt>HOLD G</dt><dd>Put on your mask</dd>
         <dt>E</dt><dd>Interact: doors, the drill, loot. At a ladder: grab it, then W/S to climb and SPACE to let go. Hold it to pick a lock, loop a camera (stand under it and look up), bag a body, answer a pager or zip-tie a civilian. Tap it to make a tied hostage follow you or stay</dd>
-        <dt>0–9</dt><dd>Type a code on a keypad (Backspace erases)</dd>
+        <dt>0–9</dt><dd>Type a code on a keypad (Backspace erases). In an elevator or on a gondola: pick the floor</dd>
         <dt>HOLD E</dt><dd>At the van, with nothing in your hands: drive off with whatever you've got</dd>
         <dt>Q</dt><dd>Drop what you're carrying</dd>
         <dt>J</dt><dd>Put down a jammer: for 15 seconds no radio, phone or pager can raise the alarm (2 per job)</dd>
@@ -993,6 +1000,7 @@ class Civilian extends Guard{
     else if(tx==null)this.sus=Math.max(0,this.sus-0.3*dt);
     if(tx!=null){this.lx=tx;this.lz=tz;}
     if(this.sus>0){this.speedNow=0;this.turn(Math.atan2(this.lx-this.x,this.lz-this.z),3,dt);}
+    else if(this.talk)this.speedNow=0;
     else this.patrol(dt,1.2,false);
     this.seeDist=gain>0?sd:-1;
     if(this.sus>=1){this.panic();this.sync(dt);return;}
@@ -1003,7 +1011,7 @@ class Civilian extends Guard{
   sync(dt){
     this.root.position.set(this.x,this.ly,this.z);this.root.rotation.y=this.yaw;
     const st=this.state,behind=st==="tied";
-    this.phone.visible=st==="calling";
+    this.phone.visible=st==="calling"||(!!this.talk&&st==="idle");
     if(st==="asleep"){this.body.rotation.x=-Math.PI/2;this.body.position.y=this.opts.bedY||0.74;this.legL.rotation.x=this.legR.rotation.x=0;this.armL.rotation.x=this.armR.rotation.x=0;this.armL.rotation.z=this.armR.rotation.z=0;return;}
     this.body.rotation.x=0;
     this.armL.rotation.z=0;this.armR.rotation.z=0;
@@ -1031,7 +1039,7 @@ class Civilian extends Guard{
     const s=this.speedNow>0?Math.sin(this.phase)*0.55:0;
     this.legL.rotation.x=s;this.legR.rotation.x=-s;
     if(behind)this.armL.rotation.x=this.armR.rotation.x=0.55;
-    else{this.armL.rotation.x=-s*0.6;if(st==="calling"){this.armR.rotation.x=-2.15;this.armR.rotation.z=-0.55;}else this.armR.rotation.x=s*0.6;}
+    else{this.armL.rotation.x=-s*0.6;if(st==="calling"||(this.talk&&st==="idle")){this.armR.rotation.x=-2.15;this.armR.rotation.z=-0.55;}else this.armR.rotation.x=s*0.6;}
   }
 }
 const SHOUTS=["Down! Everybody down!","On the floor! Hands on your head!","Nobody move! This is a very professional robbery!","Get down! And put the phone away!","Floor! Now! It's clean, I checked.","Down! Nobody's a hero today!","Hands where I can see them! No, the other hands!"];
@@ -3055,7 +3063,712 @@ const MAP_PORT={
   }
 };
 function X_lifted(def,row){return def.X.rows[row].lifted;}
-const MAPS={harbor:MAP_HARBOR,meridian:MAP_MERIDIAN,harborDay:MAP_HARBOR_DAY,meridianDay:MAP_MERIDIAN_DAY,club:MAP_CLUB,manor:MAP_MANOR,casino:MAP_CASINO,port:MAP_PORT};
+function X_vane(){return MAP_TOWER.X&&MAP_TOWER.X.vane;}
+
+/* ================= MAP 9 · Glass Ceiling · Halcyon Tower ================= */
+// a six-storey office tower at night: lobby, offices, trading floor + server room, private bank, vault floor, penthouse, roof
+const VOICE_VANE={f0:118,radio:true,vib:3};
+const TW_B=[-16,-12,16,12],TW_CAR=[-4.8,-2.0,-1.8,1.0],TW_GON=[16.1,-4,18.2,4],TW_GONF=[15.95,-4,18.2,4],TW_STAIR=[0.4,-5,5,6.2],TW_ENCL=[0.4,-5,5,6.2];
+const TW_EXEC=[3,4,5],TW_FLOOR=["the lobby","floor 1","floor 2","floor 3","floor 4","floor 5","the roof"];
+const VANE_CALLS=[
+  "No, Martin, I don't care what the board thinks. The bonds stay in the vault until Monday.",
+  "The voice print? Yes, it's set up. I just say the phrase and the vault opens. Very secure, apparently.",
+  "Of course I'm still at the office. Where else would a man like me be at two in the morning?",
+  "Sell. No, buy. No, sell! …Just do whatever makes the line go up.",
+  "Tell the pilot to stay on standby. I might fly home. Or to Monaco. I haven't decided.",
+  "Mother, I'm in a meeting. With myself. It's very important.",
+  "The time lock? It holds till eight. Unless IT overrides it, and IT is one very tired woman named Priya.",
+  "Halcyon, open for Vane. …No, I'm not talking to you, Martin. I'm practising."
+];
+const twWood=floorMat((g,w,h)=>{g.fillStyle="#3a2a1e";g.fillRect(0,0,w,h);for(let y=0;y<h;y+=32){g.fillStyle=`rgba(0,0,0,${0.1+Math.random()*0.15})`;g.fillRect(0,y,w,2);for(let x=(y/32%2)*64;x<w;x+=128)g.fillRect(x,y,2,32);}noise(g,w,h,4000,.08);},6,4,{shininess:40,specular:0x222222});
+const twMarble=floorMat((g,w,h)=>{g.fillStyle="#cfcbc3";g.fillRect(0,0,w,h);g.strokeStyle="rgba(90,80,70,.25)";g.lineWidth=2;g.strokeRect(1,1,w-2,h-2);for(let i=0;i<6;i++){g.strokeStyle=`rgba(120,110,100,${0.08+Math.random()*0.1})`;g.beginPath();g.moveTo(Math.random()*w,0);g.bezierCurveTo(Math.random()*w,h/3,Math.random()*w,h*2/3,Math.random()*w,h);g.stroke();}noise(g,w,h,2500,.06);},8,6,{shininess:70,specular:0x444444});
+const twRack=new THREE.MeshPhongMaterial({map:tex(64,128,(g,w,h)=>{g.fillStyle="#15181c";g.fillRect(0,0,w,h);for(let y=4;y<h;y+=8){g.fillStyle="#22272d";g.fillRect(3,y,w-6,6);for(let x=6;x<w-6;x+=6){const r=Math.random();if(r<.35){g.fillStyle=r<.2?"#3aff8a":r<.3?"#3fa9ff":"#ffb23f";g.fillRect(x,y+2,2,2);}}}}),shininess:40,emissive:0x0a0d10});
+const twScreens=new THREE.MeshBasicMaterial({map:tex(256,64,(g,w,h)=>{g.fillStyle="#06090c";g.fillRect(0,0,w,h);for(let i=0;i<4;i++){const x0=i*64+3;g.fillStyle="#0b1622";g.fillRect(x0,3,58,h-6);g.strokeStyle=i%2?"#3aff8a":"#ff5a4a";g.lineWidth=2;g.beginPath();let y=h/2;g.moveTo(x0+2,y);for(let x=x0+2;x<x0+58;x+=4){y=Math.max(8,Math.min(h-8,y+(Math.random()-.5)*10));g.lineTo(x,y);}g.stroke();}})});
+const twArt=[0x8a3a2a,0x2a4a7a,0x3a6a3a,0xb88a3a,0x5b4a7a].map((c,i)=>new THREE.MeshBasicMaterial({map:tex(128,96,(g,w,h)=>{const col="#"+c.toString(16).padStart(6,"0");g.fillStyle="#d8cfb8";g.fillRect(0,0,w,h);g.fillStyle=col;for(let k=0;k<5+i;k++){g.globalAlpha=0.35+Math.random()*0.5;if(Math.random()<.5)g.fillRect(Math.random()*w,Math.random()*h,10+Math.random()*60,10+Math.random()*50);else{g.beginPath();g.arc(Math.random()*w,Math.random()*h,8+Math.random()*30,0,7);g.fill();}}g.globalAlpha=1;g.strokeStyle="#6a5228";g.lineWidth=8;g.strokeRect(0,0,w,h);})}));
+const MAP_TOWER={
+  id:"tower",job:"Glass Ceiling",place:"Halcyon Tower",time:"02:20",multi:true,levels:[0,6],codeLen:6,zipTies:5,
+  spawn:{x:-3,z:27,yaw:0},moon:44,cardMsg:"Keycard. It opens the server room on floor 2",
+  bagValue:[35000,60000],goldValue:[110000,160000],cashValue:[400,2400],jewelValue:[4000,12000],
+  bagSpots:[
+    {x:-14.6,z:-10.4,y:0.34,ry:0.2,lvl:4,gold:true,box:"vault"},{x:-11.2,z:-10.6,y:0.34,ry:-0.1,lvl:4,gold:true,box:"vault"},
+    {x:-9.0,z:-10.5,y:0.22,ry:0.4,lvl:4,box:"vault"},{x:-8.4,z:-7.6,y:0.22,ry:1.3,lvl:4,box:"vault"},
+    {x:14.4,z:-10.95,y:0.3,ry:0,lvl:3,box:"msafe"},{x:14.4,z:-10.95,y:0.3,ry:0,lvl:5,box:"psafe"},
+    {x:12.5,z:-8.8,y:1.07,ry:0.2,lvl:4},{x:14.8,z:-8.5,y:0.22,ry:0.6,lvl:2}
+  ],
+  cash:[[-13,1.11,6.4],[-11.2,0.81,-8.5,"jewel"],[14.4,0.81,-10.4],
+        [13.6,4.81,-10.5],[-12.5,5.01,-11.25],[-13.4,4.81,10.2],
+        [12.2,8.81,-10.3],[11.5,8.81,3.5],[-12,8.81,9.5],
+        [-12.4,12.81,6.1,"jewel"],[-12.4,12.81,10.1,"jewel"],[11.4,12.81,9.8],
+        [-11.0,16.87,-8.2,"jewel"],[-10.4,16.87,-8.2,"jewel"],[-9.8,16.87,-8.2],[11.6,16.87,-8.6],[13.4,16.87,-8.4],
+        [12.6,20.81,-6.9,"jewel"],[9.6,21.06,-11.3],[-15.2,21.06,-6.5,"jewel"],[-11,20.81,8.1]],
+  isInside:(x,z)=>inR(x,z,TW_B),
+  restricted(x,z,lvl){return lvl>=1||inR(x,z,TW_B);},
+  trespassMsg(){return inR(P.x,P.z,TW_GON)&&P.level>=1?"You're hanging off the side of Halcyon Tower. Anyone looking out can see you":P.level===6?"You're on the roof. Don't let anyone see you up here":"Halcyon Tower is closed for the night. Don't let anyone see you inside";},
+  hasFloor(x,z,lvl){
+    const p=G.t;
+    if(p&&inR(x,z,TW_GONF)&&p.gon.lvl===lvl&&!p.gon.moving)return true;
+    if(lvl===0)return true;
+    if(!inR(x,z,TW_B))return false;
+    if(lvl<=5&&inR(x,z,[-4.9,-2.1,-1.7,1.1]))return !!(p&&p.el.lvl===lvl&&!p.el.moving);
+    return lvl<=6;
+  },
+  ceil(x,z,lvl){
+    if(lvl<=5&&inR(x,z,TW_CAR))return 2.55;
+    if(lvl===6)return inR(x,z,TW_ENCL)?3.0:null;
+    return inR(x,z,TW_B)?3.5:null;
+  },
+  surface(x,z,lvl){
+    if(inR(x,z,TW_GON)&&lvl>=1)return "steel";
+    if(!inR(x,z,TW_B))return "asphalt";
+    if(inR(x,z,TW_STAIR)||inR(x,z,TW_CAR))return "steel";
+    return ["tile","carpet","carpet","tile","tile","carpet","gravel"][lvl]||"tile";
+  },
+  fly(a){camera.position.set(Math.sin(a)*46,20+Math.sin(a*0.7)*6,Math.cos(a)*46+6);camera.lookAt(0,12,0);},
+  text:{
+    case:"Halcyon Tower at 02:20. Six floors of money: a private bank, a vault, and Victor Vane's penthouse office on top. The tower is closed: the lobby doors and the service door in the alley can be picked, and the window cleaners left their gondola on the east side. Hold G to put on your mask when you're ready.",
+    vault:"",
+    van:"Get the bag to the van in the alley behind the tower, or send it down the garbage chute (by the elevators on every floor) and pick it up from the skip in the alley.",
+    bins:"Dump the body in a dumpster in the alley, or down the garbage chute. Q drops it."
+  },
+  extraGetaways(){
+    const p=G.t;if(!p||p.heli.state!=="landed")return [];
+    return [p.heliGw];
+  },
+  build(){
+    const self=this,Y=ROOF_Y,WH=3.62;
+    const fm={ground:floorMat(drawAsphalt,30,24,{polygonOffset:true,polygonOffsetFactor:4,polygonOffsetUnits:4}),walk:floorMat(drawConcrete,30,4),
+      carpet:floorMat(drawCarpet,8,6),carpet2:floorMat((g,w,h)=>{g.fillStyle="#2c2a34";g.fillRect(0,0,w,h);noise(g,w,h,6000,.12);},8,6),
+      conc:floorMat(drawConcrete,8,6),gravel:floorMat(drawGravel,10,8),tile:floorMat(drawTiles,8,6,{shininess:30}),steel:floorMat(drawPlate,2,4,{shininess:40})};
+    const outer=phong(0x3a4048,{shininess:30}),core=phong(0x8b8780),wall=phong(0x9a968c),stairM=phong(0x6a6d70),rail=M.trim,
+      walnut=phong(0x4a3022,{shininess:30}),vaultM=phong(0x5a5f64,{shininess:50,specular:0x333333}),white=phong(0xd8d6cf,{shininess:30}),
+      glassWall=new THREE.MeshPhongMaterial({color:0x9fb8c8,transparent:true,opacity:.14,shininess:90,specular:0x666666,depthWrite:false,side:THREE.DoubleSide}),
+      deskM=phong(0x5a5048),deskTop=phong(0xb9b3a5,{shininess:30}),partM=phong(0x3e4a56),sofaM=phong(0x2a3442),chairM=phong(0x1c1e22),
+      brass=phong(0xc9a24a,{shininess:80,specular:0x664422}),red=phong(0xa8261c),yellow=phong(0xd9a724,{shininess:40}),greenM=phong(0x2f4a2c);
+    const wX=(l,z,a,b,h,m,o)=>addBox(a,z-0.2,b,z+0.2,h,m,Object.assign({lvl:l},o||{}));
+    const wZ=(l,x,a,b,h,m,o)=>addBox(x-0.2,a,x+0.2,b,h,m,Object.assign({lvl:l},o||{}));
+    const segX=(l,z,a,b,gaps,h,m)=>{let x=a;for(const [g0,g1,top] of gaps){if(g0>x)wX(l,z,x,g0,h,m);addBox(g0,z-0.2,g1,z+0.2,h,m,{lvl:l,y0:top,collide:false});x=g1;}if(b>x)wX(l,z,x,b,h,m);};
+    const segZ=(l,x,a,b,gaps,h,m)=>{let z=a;for(const [g0,g1,top] of gaps){if(g0>z)wZ(l,x,z,g0,h,m);addBox(x-0.2,g0,x+0.2,g1,h,m,{lvl:l,y0:top,collide:false});z=g1;}if(b>z)wZ(l,x,z,b,h,m);};
+    const box=(l,x1,z1,x2,z2,h,m,o)=>addBox(x1,z1,x2,z2,h,m,Object.assign({lvl:l},o||{}));
+    const SHAFT=[-4.8,-2.0,-1.8,1.0];
+    const holesAt=l=>STAIRS.filter(s=>s.hi===l).map(s=>[s.minX,s.minZ,s.maxX,s.maxZ]);
+    const fl=(l,r,mat,extra)=>{for(const q of rectMinus(r,holesAt(l).concat(extra||[])))floor(q[0],q[1],q[2],q[3],mat,l*Y+0.03);};
+    const slab=(l,r,m,extra)=>{for(const q of rectMinus(r,holesAt(l).concat(extra||[])))addBox(q[0],q[1],q[2],q[3],l*Y,m||M.ceil,{y0:l*Y-0.38,collide:false});};
+    const light=(l,x,z,i,d,col)=>pointLight(x,l*Y+3.3,z,col||0xf0f4ff,i,d,true);
+    const desk=(l,x1,z1,x2,z2,top)=>{box(l,x1,z1,x2,z2,0.74,deskM);box(l,x1,z1,x2,z2,0.78,top||deskTop,{y0:0.74,collide:false});};
+    const monitor=(l,x,z,ry,mat)=>{const g=new THREE.Group();g.position.set(x,l*Y+1.0,z);g.rotation.y=ry||0;lvAdd(g);g.add(new THREE.Mesh(new THREE.BoxGeometry(0.55,0.34,0.04),M.cabinet));const sc=new THREE.Mesh(new THREE.PlaneGeometry(0.5,0.29),mat||M.monitor);sc.position.z=0.021;g.add(sc);};
+    const plant=(l,x,z)=>{box(l,x-0.3,z-0.3,x+0.3,z+0.3,0.5,phong(0x5a4636));const p=new THREE.Mesh(new THREE.SphereGeometry(0.5,8,6),greenM);p.position.set(x,l*Y+1.0,z);p.scale.y=1.3;lvAdd(p);};
+    const chair=(l,x,z)=>box(l,x-0.25,z-0.25,x+0.25,z+0.25,0.48,chairM,{collide:false});
+    const sofa=(l,x1,z1,x2,z2)=>{box(l,x1,z1,x2,z2,0.45,sofaM);};
+    const art=(l,x,z,ry,i,w,h)=>{const p=new THREE.Mesh(new THREE.PlaneGeometry(w||1.4,h||1.0),twArt[i%twArt.length]);p.position.set(x,l*Y+1.7,z);p.rotation.y=ry;lvAdd(p);return p;};
+    // a small free-standing safe, door on the +z side; returns its state
+    const smallSafe=(x,z,lvl,label)=>{
+      const hs={pickT:0,open:false,t:0,pivot:null,x,z,lvl},W=1.2,D=0.7,Hh=1.4,t=0.07;
+      addBox(x-W/2,z-D,x+W/2,z-D+t,Hh,safeMat,{lvl,collide:false});addBox(x-W/2,z-D,x-W/2+t,z,Hh,safeMat,{lvl,collide:false});addBox(x+W/2-t,z-D,x+W/2,z,Hh,safeMat,{lvl,collide:false});
+      addBox(x-W/2,z-D,x+W/2,z,t,safeIn,{lvl,collide:false});addBox(x-W/2,z-D,x+W/2,z,Hh,safeMat,{lvl,y0:Hh-t,collide:false});
+      colliders.push({minX:x-W/2,maxX:x+W/2,minZ:z-D,maxZ:z+0.12,h:Hh,lvl});
+      hs.pivot=new THREE.Group();hs.pivot.position.set(x-W/2,lvl*Y,z+0.06);lvAdd(hs.pivot);
+      const dm=new THREE.Mesh(new THREE.BoxGeometry(W,Hh,0.1),safeMat);dm.position.set(W/2,Hh/2,0);hs.pivot.add(dm);
+      const dial=new THREE.Mesh(new THREE.CylinderGeometry(0.1,0.1,0.04,20),M.steel);dial.rotation.x=Math.PI/2;dial.position.set(W*0.62,0.8,0.07);hs.pivot.add(dial);
+      if(label){const pl=new THREE.Mesh(new THREE.PlaneGeometry(0.5,0.12),new THREE.MeshBasicMaterial({map:signTex(label,256,64,"#2a2010","#c9a24a","bold 30px Arial")}));pl.position.set(W/2,1.22,0.052);hs.pivot.add(pl);}
+      hs.pivot.traverse(o=>o.userData.dyn=1);
+      return hs;
+    };
+    // facade: sill, glass you can break, spandrel; 8 m panes with mullions every 2 m
+    const SILL=[0.25,0.9,0.9,0.9,0.9,0.9],WTOP=[3.4,2.9,2.9,2.9,2.9,2.9];
+    const facX=(l,z,a,b)=>{const n=Math.max(1,Math.round((b-a)/8));for(let i=0;i<n;i++){const x0=a+(b-a)*i/n,x1=a+(b-a)*(i+1)/n;
+        addBox(x0,z-0.2,x1,z+0.2,SILL[l],outer,{lvl:l});addBox(x0,z-0.2,x1,z+0.2,Y,outer,{lvl:l,y0:WTOP[l],collide:false});
+        const g=new THREE.Mesh(new THREE.PlaneGeometry(x1-x0,WTOP[l]-SILL[l]),winGlass);g.position.set((x0+x1)/2,l*Y+(SILL[l]+WTOP[l])/2,z);lvAdd(g);
+        colliders.push({minX:x0,maxX:x1,minZ:z-0.05,maxZ:z+0.05,h:WTOP[l],see:true,lvl:l});fixedWindow(g,colliders[colliders.length-1]);
+        for(let m=x0;m<=x1+0.01;m+=(x1-x0)/4)addBox(m-0.04,z-0.08,m+0.04,z+0.08,WTOP[l],outer,{lvl:l,y0:SILL[l],collide:false});}};
+    const facZ=(l,x,a,b)=>{const n=Math.max(1,Math.round((b-a)/8));for(let i=0;i<n;i++){const z0=a+(b-a)*i/n,z1=a+(b-a)*(i+1)/n;
+        addBox(x-0.2,z0,x+0.2,z1,SILL[l],outer,{lvl:l});addBox(x-0.2,z0,x+0.2,z1,Y,outer,{lvl:l,y0:WTOP[l],collide:false});
+        const g=new THREE.Mesh(new THREE.PlaneGeometry(z1-z0,WTOP[l]-SILL[l]),winGlass);g.position.set(x,l*Y+(SILL[l]+WTOP[l])/2,(z0+z1)/2);g.rotation.y=Math.PI/2;lvAdd(g);
+        colliders.push({minX:x-0.05,maxX:x+0.05,minZ:z0,maxZ:z1,h:WTOP[l],see:true,lvl:l});fixedWindow(g,colliders[colliders.length-1]);
+        for(let m=z0;m<=z1+0.01;m+=(z1-z0)/4)addBox(x-0.08,m-0.04,x+0.08,m+0.04,WTOP[l],outer,{lvl:l,y0:SILL[l],collide:false});}};
+
+    // ---------- stairs: one switchback stairwell, lobby to roof ----------
+    for(let l=0;l<6;l++){
+      if(l%2===0)makeStairs({minX:0.55,maxX:2.45,minZ:-2.4,maxZ:3.6,axis:"z",up:-1,lo:l,mat:stairM,railMat:rail});
+      else makeStairs({minX:2.65,maxX:4.5,minZ:-2.4,maxZ:3.6,axis:"z",up:1,lo:l,mat:stairM,railMat:rail});
+    }
+
+    // ---------- the street, the alley, the neighbours ----------
+    for(const q of rectMinus([-40,-28,34,34],[[-16,-12,16,12]]))floor(q[0],q[1],q[2],q[3],fm.ground,0);
+    floor(-40,12.2,34,15.5,fm.walk,0.035);floor(-40,28.5,34,31,fm.walk,0.035);
+    for(let x=-38;x<34;x+=6)addBox(x,21.4,x+3,21.6,0.02,phong(0xd9d2b0),{collide:false});
+    const nb=phong(0x23262b),nbWin=new THREE.MeshBasicMaterial({map:tex(128,128,(g,w,h)=>{g.fillStyle="#14171b";g.fillRect(0,0,w,h);for(let y=6;y<h;y+=16)for(let x=6;x<w;x+=16){const r=Math.random();g.fillStyle=r<.12?"#d8b56a":r<.18?"#7a8fb0":"#0b0d10";g.fillRect(x,y,9,10);}})});
+    nbWin.map.repeat.set(4,3);
+    for(const [x1,z1,x2,z2,h,f] of [[-52,-40,-40,44,30,"e"],[34,-40,46,44,22,"w"],[-40,-40,34,-28,26,"s"],[-40,31,34,44,18,"n"]]){
+      addBox(x1,z1,x2,z2,h,nb);
+      const p=new THREE.Mesh(new THREE.PlaneGeometry(f==="e"||f==="w"?z2-z1:x2-x1,h-1),nbWin);p.userData.noHit=true;lvAdd(p);
+      if(f==="e"){p.position.set(x2+0.02,h/2,(z1+z2)/2);p.rotation.y=Math.PI/2;}
+      if(f==="w"){p.position.set(x1-0.02,h/2,(z1+z2)/2);p.rotation.y=-Math.PI/2;}
+      if(f==="s"){p.position.set((x1+x2)/2,h/2,z2+0.02);}
+      if(f==="n"){p.position.set((x1+x2)/2,h/2,z1-0.02);p.rotation.y=Math.PI;}
+    }
+    for(const x of [-30,-14,2,18])lamp(x,13.6,0xffb050);
+    lamp(-24,-14,0xffc070);lamp(24,-14,0xffc070);lamp(26,0,0xffc070);
+    // parked cars on the street
+    for(const [x,z] of [[-22,17],[-9,17.2],[14,25.6],[24,17.3]]){addBox(x-2.1,z-0.9,x+2.1,z+0.9,0.95,M.car);addBox(x-1.2,z-0.85,x+1.0,z+0.85,1.45,M.glass,{y0:0.95,collide:false});}
+    // the alley: van, the skip under the garbage chute, dumpsters
+    makeVan(6,-19.5,1);
+    {const sk=phong(0x9a6a1e,{shininess:20});
+      box(0,-2.6,-15.8,1.6,-15.6,1.5,sk);box(0,-2.6,-12.6,1.6,-12.4,1.5,sk);box(0,-2.6,-15.8,-2.4,-12.4,1.5,sk);box(0,1.4,-15.8,1.6,-12.4,1.5,sk);
+      box(0,-2.4,-15.6,1.4,-12.6,0.7,phong(0x2a2c2a),{collide:false});
+      for(let i=0;i<7;i++){const b=new THREE.Mesh(new THREE.SphereGeometry(0.35+Math.random()*0.2,7,5),phong(0x16181a,{shininess:60}));b.position.set(-2+Math.random()*3,0.85,-15.2+Math.random()*2.4);lvAdd(b);}
+      plaque(signTex("CHUTE · DO NOT STAND UNDER",512,64,"#0b0d10","#f4ab3d","bold 30px Arial"),2.4,0.3,-0.5,1.2,-15.82,Math.PI);
+      // the chute itself: a pipe down the back of the tower into the skip
+      addBox(-1.0,-12.9,0.0,-12.2,6*Y-0.5,phong(0x5a5f64),{y0:2.2,collide:false});addBox(-1.0,-14.2,0.0,-12.9,2.6,phong(0x5a5f64),{y0:2.0,collide:false});}
+    makeBin(-9,-13.4,1.8,1.2,1.3,M.dumpster,lidMat,"WASTE");makeBin(-13,-13.4,1.8,1.2,1.3,M.dumpster,lidMat,"WASTE");makeBin(20,-13.4,1.8,1.2,1.3,M.dumpster,lidMat,"RECYCLE");
+    box(0,12,-24,14,-22,1.2,M.crate);box(0,-24,-25,-21,-23,1.0,M.crate);
+
+    // ---------- the tower: core (elevator shaft, garbage chute, stairwell) on every floor ----------
+    for(let l=0;l<6;l++){
+      box(l,-5,-4.8,0.4,-2.0,WH,core);box(l,-5,1.0,0.4,6.0,WH,core);box(l,-1.8,-2.0,0.4,1.0,WH,core);
+      box(l,-5.2,-2.0,-4.8,-1.2,WH,core);box(l,-5.2,0.2,-4.8,1.0,WH,core);addBox(-5.2,-1.2,-4.8,0.2,WH,core,{lvl:l,y0:2.5,collide:false});
+      // stairwell walls; the door is on the south landing on even floors, the north landing on odd floors
+      wX(l,-4.8,0.4,5.0,WH,core);wX(l,6.0,0.4,5.0,WH,core);
+      segZ(l,4.8,-5.0,6.2,l%2?[[-4.3,-2.9,2.4]]:[[3.9,5.3,2.4]],WH,core);
+      {const sd=makeDoorZ(4.8,l%2?-4.3:3.9,l%2?-2.9:5.3,2.38,{lvl:l,mat:staffDoorMat,name:"stairwell door"});
+        if(TW_EXEC.includes(l)){makeReader(sd,5.03,l*Y+1.25,l%2?-2.55:5.65,Math.PI/2);sd.exec=true;sd.name="executive stairwell door";}}
+      // elevator call button, fire alarm pull station, chute hopper
+      {const b=new THREE.Mesh(new THREE.BoxGeometry(0.04,0.22,0.12),brass);b.position.set(-5.22,l*Y+1.2,0.6);lvAdd(b);}
+      {const f=new THREE.Mesh(new THREE.BoxGeometry(0.06,0.28,0.2),red);f.position.set(5.03,l*Y+1.35,0.8);lvAdd(f);
+        plaque(signTex("FIRE",128,48,"#ffffff","#a8261c","bold 30px Arial"),0.2,0.08,5.07,l*Y+1.62,0.8,Math.PI/2);}
+      {const h=new THREE.Mesh(new THREE.BoxGeometry(1.0,0.7,0.06),M.steel);h.position.set(-0.6,l*Y+1.15,-4.83);lvAdd(h);
+        plaque(signTex("GARBAGE CHUTE",256,48,"#0b0d10","#c9d2d6","bold 26px Arial"),0.8,0.15,-0.6,l*Y+1.7,-4.84,Math.PI);}
+      plaque(signTex(l===0?"LOBBY":"FLOOR "+l,256,64,"#e8e4d8","#1c2228","bold 34px Arial"),1.0,0.25,-5.22,l*Y+2.8,-0.5,-Math.PI/2);
+      plaque(signTex(l===0?"STAIRS · LOBBY":"STAIRS · "+l,256,64,"#e8e4d8","#1c2228","bold 30px Arial"),0.9,0.22,5.03,l*Y+2.75,l%2?-3.6:4.6,Math.PI/2);
+    }
+    // roof: stair enclosure and the lift machine room
+    box(6,0.4,-5.0,5.0,-4.6,3.2,core);box(6,0.4,5.8,5.0,6.2,3.2,core);segZ(6,4.8,-5.0,6.2,[[3.9,5.3,2.4]],3.2,core);
+    makeDoorZ(4.8,3.9,5.3,2.38,{lvl:6,mat:staffDoorMat,name:"roof door",pick:true});
+    addBox(0.4,-5.0,5.0,6.2,6*Y+3.4,core,{y0:6*Y+3.2,collide:false});
+    box(6,-5.2,-4.8,0.4,6.0,3.0,core);
+    plaque(signTex("LIFT MOTOR ROOM",256,48,"#0b0d10","#f4ab3d","bold 24px Arial"),1.2,0.22,-5.22,6*Y+2.2,0.6,-Math.PI/2);
+    // stairwell lights
+    for(let l=0;l<=5;l++)pointLight(2.6,l*Y+3.2,l%2?-3.5:4.6,0xe8f0ff,0.4,7);
+
+    // ---------- floors, ceilings, facade ----------
+    const floorMats=[twMarble,fm.carpet,fm.carpet2,twMarble,fm.conc,twWood];
+    for(let l=0;l<=6;l++){
+      const shaft=l>=1&&l<=5?[SHAFT]:[];
+      if(l>=1)slab(l,TW_B,M.ceil,shaft);
+      if(l<=5)fl(l,TW_B,floorMats[l],shaft.concat([[0.4,-5,5,6.2]]));
+      fl(l,[0.55,-4.6,4.5,5.8],fm.steel,shaft);
+    }
+    fl(6,TW_B,fm.gravel,[[0.4,-5,5,6.2],[-5.2,-4.8,0.4,6.0]]);
+    for(let l=0;l<=5;l++){
+      // south facade: main doors on the lobby
+      if(l===0){facX(0,12,-16,-2.2);facX(0,12,2.2,16);addBox(-2.2,11.8,2.2,12.2,Y,outer,{y0:2.6,collide:false});}
+      else facX(l,12,-16,16);
+      // north facade: service door into the alley on the lobby
+      if(l===0){facX(0,-12,-16,2.6);segX(0,-12,2.6,7,[[3.1,4.7,2.4]],Y,outer);facX(0,-12,7,16);}
+      else facX(l,-12,-16,16);
+      facZ(l,-16,-12,12);
+      // east facade: the gondola windows (you can pick these) between z -4 and 4
+      if(l===0)facZ(0,16,-12,12);
+      else{facZ(l,16,-12,-4);facZ(l,16,4,12);wZ(l,16,-4,-3.3,Y,outer);wZ(l,16,-0.7,0.7,Y,outer);wZ(l,16,3.3,4,Y,outer);
+        makeWindowAt(16,-2,2.6,true,Y,outer,"window",l);makeWindowAt(16,2,2.6,true,Y,outer,"window",l);}
+    }
+    // roof parapet (too high to climb), with a gap where the gondola docks
+    const par=phong(0x4a5058);
+    box(6,-16.2,-12.2,16.2,-11.8,1.3,par);box(6,-16.2,11.8,16.2,12.2,1.3,par);box(6,-16.2,-12.2,-15.8,12.2,1.3,par);
+    box(6,15.8,-12.2,16.2,-4,1.3,par);box(6,15.8,4,16.2,12.2,1.3,par);
+    const gonChain={minX:15.85,maxX:16.15,minZ:-4,maxZ:4,h:1.3,see:true,lvl:6};colliders.push(gonChain);
+    for(const z of [-3,-1,1,3]){const c=new THREE.Mesh(new THREE.BoxGeometry(0.04,0.04,1.9),phong(0xd9a724));c.position.set(16,6*Y+0.9,z);c.userData.noHit=true;lvAdd(c);}
+
+    // ---------- L0 · lobby ----------
+    // mailroom (NW), security office (NE), café (SW), reception desk
+    wX(0,-5,-15.8,-9,WH,wall);segZ(0,-9,-11.8,-5,[[-7.2,-5.8,2.4]],WH,wall);makeDoorZ(-9,-7.2,-5.8,2.38,{name:"mailroom door"});
+    for(const z of [-11.2,-9.6])box(0,-15.6,z-0.3,-13.4,z+0.3,2.2,M.cabinet);
+    desk(0,-12.8,-9.2,-10.6,-8.2);
+    wX(0,-5,9,15.8,WH,wall);segZ(0,9,-11.8,-5,[[-7.2,-5.8,2.4]],WH,wall);makeDoorZ(9,-7.2,-5.8,2.38,{mat:staffDoorMat,name:"security office door",pick:true});
+    desk(0,10.2,-10.9,14.8,-10.1);
+    const monTex=signTex("LOBBY · ALLEY · ENTRANCE · FL1 · FL2 · FL3 · VAULT · PENTHOUSE · ROOF",512,64,"#9fc4ff","#0d1a2c","bold 18px monospace");
+    for(let i=0;i<4;i++){const sc=new THREE.Mesh(new THREE.PlaneGeometry(1.2,0.7),new THREE.MeshBasicMaterial({map:monTex}));sc.position.set(10.4+i*1.35,1.75,-11.56);sc.userData.noHit=true;lvAdd(sc);}
+    {const fp=new THREE.Mesh(new THREE.BoxGeometry(0.7,0.9,0.12),phong(0x7a1a14));fp.position.set(14.2,1.5,-5.26);lvAdd(fp);
+      const sc=new THREE.Mesh(new THREE.PlaneGeometry(0.5,0.18),new THREE.MeshBasicMaterial({color:0x3aff8a}));sc.position.set(14.2,1.7,-5.19);sc.rotation.y=Math.PI;sc.userData.dyn=1;lvAdd(sc);self.firePanel=sc.material;
+      plaque(signTex("FIRE PANEL",256,48,"#ffffff","#7a1a14","bold 26px Arial"),0.6,0.12,14.2,2.08,-5.18,Math.PI);}
+    // café
+    box(0,-15.4,6.0,-11,6.8,1.05,walnut);box(0,-15.4,6.0,-11,6.8,1.1,M.counterTop,{y0:1.05,collide:false});
+    for(const [x,z] of [[-13.5,9],[-10.6,10.4],[-13.8,10.8]]){const t=new THREE.Mesh(new THREE.CylinderGeometry(0.45,0.45,0.75,14),walnut);t.position.set(x,0.375,z);lvAdd(t);colliders.push({minX:x-0.4,maxX:x+0.4,minZ:z-0.4,maxZ:z+0.4,h:0.75,lvl:0});}
+    plaque(signTex("CAFÉ HALCYON",256,64,"#e8d6a8","#2a1e16","bold 30px Georgia"),1.6,0.4,-13.2,2.6,6.03);
+    // reception
+    box(0,-3,7.4,3,8.2,1.1,walnut);box(0,-3.1,7.3,3.1,8.3,1.14,M.counterTop,{y0:1.1,collide:false});
+    plaque(signTex("HALCYON TOWER",512,96,"#e2c27a","#1a1d22","bold 54px Georgia"),4.6,0.85,0,2.6,6.03);
+    sofa(0,9,8.4,12.5,9.2);sofa(0,9,10.6,12.5,11.4);plant(0,14.6,10.6);plant(0,-7.4,10.8);plant(0,7.4,10.8);plant(0,14.6,-3.6);
+    light(0,0,9,0.75,13,0xffe8c8);light(0,-12,8,0.55,10,0xffd9a0);light(0,12,8,0.55,10,0xffe8c8);light(0,-7,-1,0.5,9);light(0,0,-8,0.5,11);light(0,12.4,-8.5,0.45,8,0x9fb8e8);light(0,-12.4,-8.5,0.4,8);light(0,11,0,0.45,10);
+    makeDoor(-2.2,2.2,12,2.6,{glass:true,pick:true,name:"lobby doors"});
+    makeDoor(3.1,4.7,-12,2.38,{mat:staffDoorMat,pick:true,name:"service door"});
+    pointLight(3.9,3.0,-13,0xffd9a0,0.4,7);
+
+    // ---------- L1 · offices (IT in the NE corner) ----------
+    wX(1,-5,9,15.8,WH,wall);segZ(1,9,-11.8,-5,[[-7.2,-5.8,2.4]],WH,wall);
+    desk(1,10.2,-11.0,15.2,-10.2);monitor(1,11.5,-10.6,0);monitor(1,12.6,-10.6,0);monitor(1,13.7,-10.6,0);chair(1,12.6,-9.5);
+    box(1,15.0,-9.6,15.6,-7.6,2.1,twRack);box(1,15.0,-7.4,15.6,-5.6,2.1,twRack);
+    const itNote=new THREE.Mesh(new THREE.PlaneGeometry(0.12,0.12),new THREE.MeshBasicMaterial({color:0xf2d65a}));itNote.position.set(12.85,Y+1.0,-10.57);itNote.userData.noHit=true;lvAdd(itNote);
+    plaque(signTex("IT · AUTHORISED STAFF",512,64,"#0b0d10","#c9d2d6","bold 30px Arial"),1.6,0.2,8.78,Y+2.75,-8.4,-Math.PI/2);
+    wX(1,-5,-15.8,-9,WH,wall);segZ(1,-9,-11.8,-5,[[-7.2,-5.8,2.4]],WH,wall);
+    box(1,-15.6,-11.6,-10.2,-11.0,0.95,white);box(1,-15.6,-11.6,-10.2,-11.0,1.0,M.counterTop,{y0:0.95,collide:false});box(1,-15.6,-10.4,-14.8,-9.4,1.9,M.steel);
+    desk(1,-13.6,-8.6,-11.4,-7.6);
+    wX(1,5,9,15.8,WH,wall);segZ(1,9,5,11.8,[[5.8,7.2,2.4]],WH,wall);makeDoorZ(9,5.8,7.2,2.38,{lvl:1,name:"meeting room door"});
+    desk(1,10.8,7.6,14.6,9.6,walnut);
+    // cubicles
+    for(const [x0,z0] of [[-15,3.4],[-15,6.6],[-15,9.8],[-11.6,3.4],[-11.6,6.6],[-11.6,9.8]]){desk(1,x0,z0,x0+2.6,z0+0.8);box(1,x0,z0+0.8,x0+2.6,z0+0.9,1.3,partM);monitor(1,x0+1.3,z0+0.25,0);}
+    for(const [x0,z0] of [[10,-3.6],[10,-0.4],[12.8,-3.6],[12.8,-0.4]]){desk(1,x0,z0,x0+2.4,z0+0.8);box(1,x0,z0+0.8,x0+2.4,z0+0.9,1.3,partM);monitor(1,x0+1.2,z0+0.25,0);}
+    plant(1,7.4,10.8);plant(1,-7.4,-10.8);
+    light(1,-12,7,0.55,11);light(1,12,-1,0.5,10);light(1,12.4,-8.4,0.45,8,0x9fb8e8);light(1,-12.4,-8.4,0.4,8);light(1,0,9,0.5,12);light(1,-7,-1,0.45,9);light(1,12,8.4,0.4,7);
+
+    // ---------- L2 · trading floor, server room (NW) ----------
+    wX(2,-5,-15.8,-9,WH,wall);segZ(2,-9,-11.8,-5,[[-7.6,-6.2,2.4]],WH,wall);
+    const srvDoor=makeDoorZ(-9,-7.6,-6.2,2.38,{lvl:2,mat:M.steel,name:"server room door"});makeReader(srvDoor,-8.78,2*Y+1.25,-5.9,Math.PI/2);
+    for(const z of [-11.0,-9.0])for(let x=-15.4;x<-10;x+=0.62)box(2,x,z-0.4,x+0.6,z+0.4,2.1,twRack);
+    box(2,-14.4,-5.6,-11.6,-5.2,0.78,deskM);
+    const term=new THREE.Mesh(new THREE.BoxGeometry(0.6,0.42,0.05),[M.cabinet,M.cabinet,M.cabinet,M.cabinet,M.cabinet,new THREE.MeshBasicMaterial({map:signTex("VAULT SYSTEMS · ADMIN",256,64,"#9fe8b0","#06140a","bold 22px monospace")})]);
+    term.position.set(-13,2*Y+1.05,-5.45);term.userData.dyn=1;lvAdd(term);
+    pointLight(-12.5,2*Y+3.2,-8,0x6aa8ff,0.6,10);
+    wX(2,-5,9,15.8,WH,wall);segZ(2,9,-11.8,-5,[[-7.2,-5.8,2.4]],WH,wall);makeDoorZ(9,-7.2,-5.8,2.38,{lvl:2,mat:walnut,name:"desk head's office",pick:true});
+    desk(2,10.8,-11.0,14.2,-10.0,walnut);monitor(2,12.5,-10.6,0,twScreens);
+    for(const [x0,z0] of [[-15.2,3.2],[-15.2,6.2],[-15.2,9.2],[8.4,3.2],[8.4,6.2],[8.4,9.2],[9,-3.6],[9,-0.6]]){desk(2,x0,z0,x0+6,z0+1.0);
+      for(let k=0;k<4;k++){const sc=new THREE.Mesh(new THREE.BoxGeometry(1.1,0.36,0.04),M.cabinet);sc.position.set(x0+0.8+k*1.45,2*Y+1.05,z0+0.25);lvAdd(sc);const sp=new THREE.Mesh(new THREE.PlaneGeometry(1.04,0.31),twScreens);sp.position.set(x0+0.8+k*1.45,2*Y+1.05,z0+0.271);lvAdd(sp);}}
+    {const tk=new THREE.Mesh(new THREE.PlaneGeometry(6,0.5),ledMat);tk.position.set(0,2*Y+3.0,11.75);tk.rotation.y=Math.PI;tk.userData.noHit=true;lvAdd(tk);}
+    light(2,-12,7,0.55,11);light(2,11.5,7,0.55,11);light(2,12,-2,0.45,9);light(2,0,9,0.5,12);light(2,-7,-1,0.45,9);light(2,12.4,-8.4,0.4,8,0xffe0b0);
+
+    // ---------- L3 · Halcyon Private Bank ----------
+    wX(3,-5,9,15.8,WH,wall);segZ(3,9,-11.8,-5,[[-7.2,-5.8,2.4]],WH,wall);makeDoorZ(9,-7.2,-5.8,2.38,{lvl:3,mat:walnut,name:"bank manager's office",pick:true});
+    desk(3,10.6,-9.6,13.4,-8.6,walnut);monitor(3,12,-9.3,0);art(3,11,-11.58,0,1);
+    const mgrSafe=smallSafe(14.4,-10.6,3,"HALCYON");
+    wX(3,4,-15.8,-9,WH,wall);wX(3,8,-15.8,-9,WH,wall);segZ(3,-9,4,11.8,[[5.2,6.6,2.4],[9.2,10.6,2.4]],WH,wall);
+    makeDoorZ(-9,5.2,6.6,2.38,{lvl:3,mat:walnut,name:"viewing room 1"});makeDoorZ(-9,9.2,10.6,2.38,{lvl:3,mat:walnut,name:"viewing room 2"});
+    desk(3,-13.4,5.6,-11.4,6.6,walnut);desk(3,-13.4,9.6,-11.4,10.6,walnut);
+    box(3,-12.6,-3.2,-10.6,1.4,1.1,walnut);box(3,-12.7,-3.3,-10.5,1.5,1.14,M.counterTop,{y0:1.1,collide:false});
+    plaque(signTex("HALCYON PRIVATE BANK",512,80,"#e2c27a","#1a1d22","bold 40px Georgia"),3.2,0.5,-15.78,3*Y+2.4,-1,Math.PI/2);
+    sofa(3,9.6,8.2,13.2,9.0);sofa(3,9.6,10.6,13.2,11.4);desk(3,10.4,9.4,12.4,10.2,M.counterTop);plant(3,14.6,6);plant(3,-7.4,10.8);
+    light(3,-11.5,-1,0.55,10,0xffe8c8);light(3,12,-8.4,0.45,8,0xffe0b0);light(3,-12.4,6,0.35,6,0xffe0b0);light(3,-12.4,10,0.35,6,0xffe0b0);light(3,11.5,9,0.5,10,0xffe8c8);light(3,0,9,0.5,12);light(3,11,0,0.45,10);
+
+    // ---------- L4 · the vault floor ----------
+    box(4,-7.4,-11.8,-6.6,-4.2,WH,vaultM);box(4,-15.8,-4.6,-12.8,-3.8,WH,vaultM);box(4,-9.8,-4.6,-6.6,-3.8,WH,vaultM);
+    addBox(-12.8,-4.6,-9.8,-3.8,WH,vaultM,{lvl:4,y0:2.8,collide:false});
+    makeVault(-11.3,-4.2,"HALCYON",4);VAULT.custom=true;
+    for(const [x1,z1,x2,z2] of [[-15.6,-11.6,-15.2,-5],[-15.6,-11.6,-7.6,-11.2]]){addBox(x1,z1,x2,z2,2.6,depositMat,{lvl:4,collide:false});colliders.push({minX:x1,maxX:x2,minZ:z1,maxZ:z2,h:2.6,lvl:4});}
+    box(4,-11.4,-8.6,-9.4,-7.8,0.85,M.steel);
+    pointLight(-11.4,4*Y+3.2,-8,0xfff0d8,0.6,9);
+    const voicePanel=new THREE.Mesh(new THREE.PlaneGeometry(0.3,0.42),new THREE.MeshBasicMaterial({map:tex(64,96,(g,w,h)=>{g.fillStyle="#0b0d10";g.fillRect(0,0,w,h);g.fillStyle="#2a3038";g.fillRect(6,6,w-12,40);g.strokeStyle="#7fd0ff";g.lineWidth=2;g.beginPath();for(let x=8;x<w-8;x+=3){const y=26+Math.sin(x*0.6)*10*Math.random();x===8?g.moveTo(x,y):g.lineTo(x,y);}g.stroke();g.fillStyle="#9aa3a8";g.font="bold 9px monospace";g.fillText("VOICE ID",10,62);g.beginPath();g.arc(w/2,80,8,0,7);g.fill();})}));
+    voicePanel.position.set(-9.2,4*Y+1.45,-3.78);voicePanel.userData.dyn=1;lvAdd(voicePanel);
+    const vLed=new THREE.MeshBasicMaterial({color:0xff3a30});{const l=new THREE.Mesh(new THREE.PlaneGeometry(0.06,0.03),vLed);l.position.set(-9.2,4*Y+1.72,-3.77);l.userData.dyn=1;lvAdd(l);}
+    // count room (NE), security post (SE)
+    wX(4,-5,9,15.8,WH,wall);segZ(4,9,-11.8,-5,[[-7.2,-5.8,2.4]],WH,wall);makeDoorZ(9,-7.2,-5.8,2.38,{lvl:4,mat:M.steel,name:"count room door",pick:true});
+    box(4,11,-9.4,14,-8.2,0.85,M.steel);for(const x of [10.4,14.6]){box(4,x-0.3,-11.4,x+0.3,-10.8,1.0,M.cabinet);}
+    desk(4,9.6,8.8,13.6,9.8);monitor(4,10.6,9.2,0);monitor(4,11.6,9.2,0);monitor(4,12.6,9.2,0);chair(4,11.6,10.4);
+    light(4,-8,-1,0.5,10);light(4,12.4,-8.6,0.5,8,0xfff0d8);light(4,11.5,9,0.45,9);light(4,0,9,0.5,12);light(4,11,0,0.45,10);light(4,-12,5,0.45,10);
+    for(const [x,z] of [[-14,3],[-14,9],[-10,9]])box(4,x-0.6,z-0.6,x+0.6,z+0.6,1.0,M.crate);
+
+    // ---------- L5 · Vane's penthouse office ----------
+    wZ(5,6,-11.8,-3.4,WH,walnut);wZ(5,6,-1.2,0,WH,walnut);addBox(5.8,-3.4,6.2,-1.2,WH,walnut,{lvl:5,y0:2.5,collide:false});wX(5,0,6,15.8,WH,walnut);
+    makeDoorZ(6,-3.4,-1.2,2.5,{lvl:5,mat:walnut,name:"Vane's office door"});
+    desk(5,11,-7.4,14.2,-6.4,walnut);monitor(5,12.6,-6.8,Math.PI,twScreens);chair(5,12.6,-8.1);
+    box(5,7,-11.6,10,-11.0,1.0,walnut);box(5,7,-11.6,10,-11.0,1.05,M.counterTop,{y0:1.0,collide:false});
+    for(let i=0;i<5;i++){const b=new THREE.Mesh(new THREE.CylinderGeometry(0.05,0.05,0.32,8),phong([0x6a2a10,0x2a5a2a,0xc9a24a,0x6a1020,0x1a3a5a][i],{shininess:90}));b.position.set(7.4+i*0.35,5*Y+1.21,-11.3);lvAdd(b);}
+    sofa(5,6.3,-6,7.3,-2.4);
+    const vaneSafe=smallSafe(14.4,-10.6,5,"V.V.");
+    art(5,8.4,-11.58,0,2,1.6,1.1);art(5,15.58,-8,-Math.PI/2,3,1.6,1.1);art(5,6.22,-7,Math.PI/2,4,1.4,1.0);
+    plaque(signTex("VICTOR VANE · CHIEF EXECUTIVE",512,64,"#e2c27a","#1a1d22","bold 28px Georgia"),2.2,0.28,5.78,5*Y+2.75,-2.3,-Math.PI/2);
+    // reception, assistant, lounge, boardroom, gallery
+    desk(5,7.2,1.4,9.8,2.2,walnut);monitor(5,8.5,1.8,0);
+    wX(5,4,-15.8,-7,WH,wall);segZ(5,-7,4,11.8,[[5.4,7,2.4]],WH,wall);makeDoorZ(-7,5.4,7,2.38,{lvl:5,mat:walnut,name:"boardroom door"});
+    desk(5,-13.6,6.4,-9.0,9.6,walnut);for(let x=-13;x<-9.2;x+=1.1){chair(5,x,5.9);chair(5,x,10.1);}
+    for(const z of [-11,-8.5,-6])art(5,-15.58,z,Math.PI/2,(z*7|0)+9,1.6,1.1);
+    for(const [x,z] of [[-12,-10.2],[-12,-7]]){box(5,x-0.3,z-0.3,x+0.3,z+0.3,1.05,white);}
+    {const st=new THREE.Mesh(new THREE.TorusKnotGeometry(0.16,0.05,40,6),brass);st.position.set(-12,5*Y+1.3,-7);lvAdd(st);}
+    box(5,-15.6,-6.8,-14.8,-6.2,1.05,white);
+    sofa(5,9.6,8.4,13.6,9.2);sofa(5,9.6,10.6,13.6,11.4);plant(5,14.6,6);plant(5,-7.4,-10.8);plant(5,5.6,10.8);
+    light(5,12,-6,0.85,13,0xffe0b0);light(5,8.5,-9.5,0.55,8,0xffd9a0);light(5,14.2,-2.5,0.45,8,0xffe8c8);light(5,8.5,3,0.45,9,0xffe8c8);light(5,-11,8,0.5,10,0xffe8c8);light(5,-12,-8,0.5,10,0xffe0b0);light(5,11.5,9.5,0.45,9,0xffe8c8);light(5,0,9,0.45,11);light(5,-7,-1,0.4,8);
+
+    // ---------- L6 · roof ----------
+    {const hp=new THREE.Mesh(new THREE.CircleGeometry(5,40),new THREE.MeshPhongMaterial({map:tex(256,256,(g,w,h)=>{g.fillStyle="#2a2e32";g.fillRect(0,0,w,h);g.strokeStyle="#e8e4d8";g.lineWidth=10;g.beginPath();g.arc(128,128,112,0,7);g.stroke();g.fillStyle="#e8e4d8";g.fillRect(84,64,22,128);g.fillRect(150,64,22,128);g.fillRect(84,118,88,22);}),shininess:20}));
+      hp.rotation.x=-Math.PI/2;hp.position.set(-10,6*Y+0.05,3);hp.userData.noHit=true;lvAdd(hp);}
+    {const pm=new THREE.MeshBasicMaterial({color:0x7fd0ff});for(let i=0;i<12;i++){const a=i/12*Math.PI*2,m=new THREE.Mesh(new THREE.BoxGeometry(0.16,0.08,0.16),pm);m.position.set(-10+Math.cos(a)*5.2,6*Y+0.06,3+Math.sin(a)*5.2);lvAdd(m);}}
+    box(6,-15.2,8.2,-14.4,9.4,0.9,yellow);
+    {const b=new THREE.Mesh(new THREE.SphereGeometry(0.12,8,6),new THREE.MeshBasicMaterial({color:0xff4b3e}));b.position.set(-14.8,6*Y+1.0,8.8);b.userData.dyn=1;lvAdd(b);self.beacon=b;}
+    for(const [x1,z1,x2,z2] of [[8,3.6,11,6.0],[8,6.8,11,9.4]])box(6,x1,z1,x2,z2,1.6,acMat);
+    box(6,11.8,-8.2,12.2,-7.8,9,M.pole);pointLight(12,6*Y+9.2,-8,0xff3a30,0.4,6);
+    pointLight(-10,6*Y+4,3,0xbfd4ff,0.35,14);pointLight(6,6*Y+3.4,4.6,0xffd9a0,0.4,8);
+    // the gondola davit
+    for(const z of [-4.4,4.4]){box(6,14.6,z-0.2,15.2,z+0.2,2.6,yellow);addBox(14.6,z-0.15,18.0,z+0.15,2.7,yellow,{lvl:6,y0:2.45,collide:false});}
+    {const cb=new THREE.Mesh(new THREE.BoxGeometry(0.4,0.6,0.25),yellow);cb.position.set(15.2,6*Y+1.1,-5.2);lvAdd(cb);}
+    {const cb=new THREE.Mesh(new THREE.BoxGeometry(0.4,0.6,0.25),yellow);cb.position.set(19.0,1.1,-5.2);lvAdd(cb);box(0,18.95,-5.3,19.05,-5.1,0.8,M.pole,{collide:false});}
+
+    // ---------- the elevator car (moves) and the shaft doors on every floor ----------
+    const car=new THREE.Group();lvAdd(car);
+    {const fl2=new THREE.Mesh(new THREE.BoxGeometry(3.0,0.1,3.0),brass);fl2.position.set(-3.3,0.0,-0.5);car.add(fl2);
+      const ce=new THREE.Mesh(new THREE.BoxGeometry(3.0,0.1,3.0),walnut);ce.position.set(-3.3,2.65,-0.5);car.add(ce);
+      for(const [x,z,w,d] of [[-1.85,-0.5,0.06,3.0],[-3.3,-1.98,3.0,0.06],[-3.3,0.98,3.0,0.06]]){const p=new THREE.Mesh(new THREE.BoxGeometry(w,2.6,d),walnut);p.position.set(x,1.35,z);car.add(p);}
+      const pan=new THREE.Mesh(new THREE.BoxGeometry(0.04,0.6,0.3),M.steel);pan.position.set(-1.9,1.3,-0.4);car.add(pan);
+      const lt=new THREE.PointLight(0xffe8c8,0.5,5,2);lt.position.set(-3.3,2.4,-0.5);car.add(lt);
+      car.traverse(o=>o.userData.dyn=1);}
+    const shaftDoors=[];
+    for(let l=0;l<6;l++){
+      const a=new THREE.Mesh(new THREE.BoxGeometry(0.08,2.5,0.72),M.steel),b=new THREE.Mesh(new THREE.BoxGeometry(0.08,2.5,0.72),M.steel);
+      a.position.set(-5.0,l*Y+1.25,-0.85);b.position.set(-5.0,l*Y+1.25,-0.15);a.userData.dyn=1;b.userData.dyn=1;lvAdd(a);lvAdd(b);
+      const col={minX:-5.1,maxX:-4.85,minZ:-1.2,maxZ:0.2,h:WH,lvl:l};colliders.push(col);
+      shaftDoors.push({a,b,col,t:0});
+    }
+
+    // ---------- the window cleaners' gondola (east side) ----------
+    const gon=new THREE.Group();lvAdd(gon);
+    {const deck=new THREE.Mesh(new THREE.BoxGeometry(2.0,0.14,8),M.steel);deck.position.set(17.2,0.07,0);gon.add(deck);
+      for(const [x,z,w,d] of [[18.15,0,0.06,8],[17.2,-3.97,2,0.06],[17.2,3.97,2,0.06]]){const r=new THREE.Mesh(new THREE.BoxGeometry(w,0.06,d),yellow);r.position.set(x,1.1,z);gon.add(r);
+        const p=new THREE.Mesh(new THREE.BoxGeometry(w,0.5,d),new THREE.MeshPhongMaterial({color:0xd9a724,transparent:true,opacity:.35}));p.position.set(x,0.4,z);gon.add(p);}
+      for(const [x,z] of [[18.15,-3.97],[18.15,3.97],[16.25,-3.97],[16.25,3.97],[18.15,0]]){const p=new THREE.Mesh(new THREE.BoxGeometry(0.06,1.1,0.06),yellow);p.position.set(x,0.6,z);gon.add(p);}
+      const ctl=new THREE.Mesh(new THREE.BoxGeometry(0.35,0.5,0.25),M.cabinet);ctl.position.set(17.9,1.1,-3.6);gon.add(ctl);
+      const ledg=new THREE.Mesh(new THREE.BoxGeometry(0.06,0.06,0.02),new THREE.MeshBasicMaterial({color:0x40ff80}));ledg.position.set(17.9,1.28,-3.47);gon.add(ledg);
+      gon.traverse(o=>o.userData.dyn=1);}
+    const cables=[-4.4,4.4].map(z=>{const c=new THREE.Mesh(new THREE.BoxGeometry(0.03,1,0.03),M.pole);c.userData.dyn=1;c.userData.noHit=true;lvAdd(c);return {c,z};});
+    const gonRails=[{minX:18.1,maxX:18.25,minZ:-4,maxZ:4,h:1.15,see:true,lvl:0},{minX:16.1,maxX:17.0,minZ:-4.05,maxZ:-3.9,h:1.15,see:true,lvl:0},{minX:16.1,maxX:18.25,minZ:3.9,maxZ:4.05,h:1.15,see:true,lvl:0},{minX:17.0,maxX:18.25,minZ:-4.05,maxZ:-3.9,h:1.15,see:true,lvl:-9,gate:true}];
+    gonRails.forEach(c=>colliders.push(c));
+
+    // ---------- helicopter (only shows up when you call it) ----------
+    const heli=new THREE.Group();lvAdd(heli);
+    {const hm=phong(0x1c2a3a,{shininess:60,specular:0x333333}),hw=phong(0xd8d6cf,{shininess:40});
+      const body=new THREE.Mesh(new THREE.SphereGeometry(1.3,14,10),hm);body.scale.set(1.0,0.85,1.7);body.position.set(0,1.4,0);heli.add(body);
+      const glass=new THREE.Mesh(new THREE.SphereGeometry(1.0,12,8),M.glass);glass.scale.set(0.95,0.7,0.9);glass.position.set(0,1.6,-1.3);heli.add(glass);
+      const tail=new THREE.Mesh(new THREE.BoxGeometry(0.3,0.3,4.2),hm);tail.position.set(0,1.7,3.6);heli.add(tail);
+      const fin=new THREE.Mesh(new THREE.BoxGeometry(0.08,0.9,0.6),hw);fin.position.set(0,2.1,5.5);heli.add(fin);
+      for(const x of [-0.8,0.8]){const s=new THREE.Mesh(new THREE.BoxGeometry(0.08,0.08,3.0),M.pole);s.position.set(x,0.05,0);heli.add(s);const l=new THREE.Mesh(new THREE.BoxGeometry(0.06,0.5,0.06),M.pole);l.position.set(x,0.3,0.6);heli.add(l);const l2=l.clone();l2.position.z=-0.6;heli.add(l2);}
+      const mast=new THREE.Mesh(new THREE.CylinderGeometry(0.08,0.08,0.5,8),M.pole);mast.position.set(0,2.6,0);heli.add(mast);
+      const rot=new THREE.Group();rot.position.set(0,2.85,0);heli.add(rot);
+      for(let i=0;i<2;i++){const bl=new THREE.Mesh(new THREE.BoxGeometry(0.25,0.03,9),phong(0x111316));bl.rotation.y=i*Math.PI/2;rot.add(bl);}
+      const nav=new THREE.Mesh(new THREE.SphereGeometry(0.08,6,4),new THREE.MeshBasicMaterial({color:0xff3030}));nav.position.set(0,0.4,5.6);heli.add(nav);
+      heli.traverse(o=>{o.userData.dyn=1;o.userData.noHit=true;});heli.visible=false;self.heliRot=rot;}
+
+    // ---------- keycard (server room) ----------
+    makeKeycard([[-12,0.81,-8.6],[10.8,0.81,-10.4],[10.6,Y+0.81,-10.5],[-14.4,Y+0.79,6.7],[-12.6,Y+0.81,-8.0],[12.2,2*Y+0.81,-10.7]]);
+    // ---------- cameras ----------
+    makeCam(1.2,3.9,12.5,0,0.7,10,0,24,0.45,0,{shadow:false});                       // street, over the doors
+    makeCam(0,3.3,6.35,0.2,0.8,11,1,22,0.45,0,{shadow:false});                         // lobby
+    makeCam(6,3.8,-12.5,Math.PI,0.6,10,0.6,22,0.45,0);                                 // alley
+    makeCam(-5.3,Y+3.3,-4.95,-Math.PI*0.75,0.5,9,0.4,18,0.45,1,{shadow:false});        // L1 corridor
+    makeCam(-5.3,2*Y+3.3,-9.5,-Math.PI/2,0.4,8,0.2,14,0.45,2,{shadow:false});          // server room door
+    makeCam(-5.3,3*Y+3.3,4.0,-Math.PI*0.4,0.5,9,0.3,18,0.45,3,{shadow:false});         // bank reception
+    makeCam(-6.8,4*Y+3.3,-3.0,-Math.PI/2,0.5,9,0.8,16,0.45,4,{shadow:false});          // vault door
+    makeCam(5.3,5*Y+3.3,-5.0,Math.PI*0.35,0.5,10,0.5,18,0.45,5,{shadow:false});        // penthouse corridor
+    makeCam(-5.3,6*Y+2.7,2.0,-Math.PI/2,0.7,12,0,22,0.45,6,{shadow:false});            // roof, helipad
+    // ---------- security ----------
+    new Guard([[12.2,-9.5,Math.PI,0]],0,{security:true,seated:true,name:"Okafor",flashShadow:false});
+    new Guard([[-7,9.6,null,2],[7.4,9.6],[7.4,-7.2,null,2],[-7,-7.2]],1.0,{name:"Brandt",flashShadow:false});
+    new Guard([[-30,-19.5,null,3],[-4,-19.5],[-4,-17],[24,-17,null,3],[-4,-17],[-4,-19.5]],1.0,{name:"Silva"});
+    new Guard([[-7,8.6,null,2],[7.3,8.6],[7.3,-7.2,null,2],[-7,-7.2]],1.0,{name:"Ruiz",level:1,flashShadow:false});
+    new Guard([[-12.4,-3.6,null,3],[-12.4,1.8,null,3]],1.0,{name:"Tate",level:1,flashShadow:false});
+    const hale=new Guard([[7.3,-7.2,null,2],[7.3,10.2,null,2],[-7,10.2,null,2],[-7,-7.2]],1.2,{name:"Hale",level:2,flashShadow:false});
+    new Guard([[-7.4,-10.8,Math.PI,5],[-7.4,-3.2,0,5]],1.0,{name:"Okoye",level:2,flashShadow:false});
+    new Guard([[-7,-7.2,null,2],[7.3,-7.2],[7.3,9.2,null,2],[-7,9.2]],1.0,{name:"Dunn",level:3,flashShadow:false});
+    new Guard([[-9.8,-0.9,Math.PI/2,0]],0,{name:"Price",level:3,flashShadow:false});
+    new Guard([[7.3,-7.2,null,2],[7.3,9.6,null,2],[-4,9.6,null,3],[7.3,9.6]],1.0,{name:"Krieger",level:4,flashShadow:false});
+    new Guard([[-14.6,-2.6,null,4],[-5.8,-2.6,null,4]],1.0,{name:"Moreau",level:4,flashShadow:false});
+    new Guard([[5.4,-6.5,null,2],[5.4,8.8,null,2],[-6.2,8.8],[-6.2,-7.4,null,2],[5.4,-7.4]],1.0,{name:"Bishop",level:5,flashShadow:false});
+    new Guard([[-13.6,-9.6,null,2],[13.6,-9.6,null,2],[13.6,10.6,null,2],[-13.6,10.6,null,2]],1.0,{name:"Cole",level:6});
+    // ---------- the night shift (each knows the way to the stairs when the fire alarm goes) ----------
+    const N=l=>[5.45,l%2?-3.6:4.6];
+    new Civilian([[-12,9.2,null,4],[-3,9.6,null,4],[-12,3.0,null,3]],1.5,{worker:true,label:"A cleaner",evac:()=>[[-7,9.6],[6.2,9.6],N(0)]});
+    const priya=new Civilian([[12.6,-9.2,Math.PI,9],[10,-6.5],[-10,-6.5],[-10.4,-9.6,Math.PI,6],[-10,-6.5],[10,-6.5]],1.2,{worker:true,label:"Priya, the sysadmin",level:1,
+      evac:(x,z)=>x>9?[[10,-6.5],[6.2,-6.5],N(1)]:x<-9?[[-10,-6.5],[6.2,-6.5],N(1)]:[[6.2,-6.5],N(1)]});
+    new Civilian([[6.4,-3.6,null,3],[6.4,8.8,null,3],[-6.4,8.8,null,3],[6.4,8.8]],1.4,{worker:true,label:"A cleaner",level:1,evac:(x,z)=>x<6?[[6.4,8.8],[6.4,-3.6],N(1)]:[[6.4,-3.6],N(1)]});
+    new Civilian([[11.2,4.7,Math.PI,0]],0,{seated:true,worker:true,label:"An analyst",level:2,evac:()=>[[7.2,5.0],[6.0,5.0],N(2)]});
+    new Civilian([[-12,2.2,null,5],[-12,-3.4,null,5]],1.5,{worker:true,label:"An analyst",level:2,evac:()=>[[-7,-3.4],[-7,9.4],[6.2,9.4],N(2)]});
+    new Civilian([[-12.4,5.0,0,0]],0,{seated:true,label:"A private client",level:3,evac:()=>[[-10,5.9],[-7,5.9],[-7,-7],[6.2,-7],N(3)]});
+    const vane=new Civilian([[12.6,-8.1,0,9],[14.6,-9.8,null,1],[14.6,-2.0,Math.PI/2,6],[10.0,-3.0,null,2],[8.6,-10.0,Math.PI,6]],1.2,{label:"Victor Vane",level:5});
+    new Civilian([[8.5,3.0,Math.PI,0]],0,{seated:true,worker:true,label:"Vane's assistant",level:5,evac:()=>[[5.45,3.0],N(5)]});
+    Object.assign(self,{X:{car,shaftDoors,gon,cables,gonRails,gonChain,heli,hale,vane,priya,mgrSafe,vaneSafe,vLed,srvDoor,itNote}});
+  },
+  reset(){
+    const X=this.X;if(!X)return;
+    G.t={exec:false,know:false,rec:0,recTip:false,voice:false,override:null,ovT:0,lock:false,holdT:0,holdId:"",
+      el:{lvl:0,moving:false,riding:false,target:0,door:0,want:0,fire:false},
+      gon:{lvl:0,moving:false,target:0},
+      fire:{on:false,t:0,rang:0,reset:false},heli:{state:"none",t:0},heliGw:null,
+      call:{next:12+Math.random()*10,on:false,t:0,line:0},bell:0,strobe:0};
+    G.t.heliGw={x:-12.2,z:3.0,lvl:6,y:6*ROOF_Y+0.95,name:"helicopter",verb:"lift off",slots:[[-10.4,2.5],[-9.6,2.5],[-10.4,3.5],[-9.6,3.5]],n:0};
+    X.car.position.y=0;X.shaftDoors.forEach(d=>{d.t=0;d.a.position.z=-0.85;d.b.position.z=-0.15;if(!colliders.includes(d.col))colliders.push(d.col);});
+    X.gon.position.y=0;X.gonRails.forEach(c=>c.lvl=0);if(!colliders.includes(X.gonChain))colliders.push(X.gonChain);this.cable();
+    X.heli.visible=false;
+    for(const s of [X.mgrSafe,X.vaneSafe]){s.open=false;s.t=0;s.pickT=0;s.pivot.rotation.y=0;}
+    X.vLed.color.setHex(0xff3a30);
+    VAULT.keypadTitle="VAULT SYSTEMS · ADMIN PASSWORD";VAULT.failMsg="Three wrong passwords. The server locked out and called security!";
+    VAULT.onCode=()=>{const t=G.t;t.override="uploading";t.ovT=20;toast("Password accepted. Uploading the time-lock override: 20 s","good",2600);};
+    // the stairwell doors on the executive floors need the card (or a fire alarm)
+    doors.forEach(d=>{if(d.exec){d.locked=true;d.reader.flash=0;}});
+    civs.forEach(c=>{c.gone=false;c.evac=false;c.level=c.opts.level||0;if(c.homeRoute)c.route=c.homeRoute;c.homeRoute=c.route;c.talk=false;c.pause=c.homePause!=null?c.homePause:c.pause;c.homePause=c.pause;});
+    if(this.firePanel)this.firePanel.color.setHex(0x3aff8a);
+  },
+  cable(){const X=this.X;for(const k of X.cables){const top=6*ROOF_Y+2.5,bot=X.gon.position.y+1.2;k.c.position.set(17.2,(top+bot)/2,k.z);k.c.scale.y=Math.max(0.05,top-bot);}},
+  // number keys: elevator panel or gondola controls
+  onDigit(d){
+    const t=G.t;if(!t||state!=="playing"||P.climb||P.ladder||G.keypad)return false;
+    if(t.el.lvl===P.level&&!t.el.moving&&inR(P.x,P.z,TW_CAR)){
+      if(t.el.fire){SFX.denied();toast("Fire service mode. The elevator won't move","warn",1800);return true;}
+      if(d>5){SFX.denied();toast("The elevator stops at floor 5. The stairs go to the roof","warn",1800);return true;}
+      if(d===P.level){SFX.kpKey(d);return true;}
+      if(TW_EXEC.includes(d)&&!t.exec){SFX.denied();toast(`Floor ${d} needs an executive card`,"warn",2000);return true;}
+      SFX.kpKey(d);this.ride(d);return true;
+    }
+    if(t.gon.lvl===P.level&&!t.gon.moving&&inR(P.x,P.z,TW_GON)){
+      if(d>6){SFX.denied();return true;}
+      if(d===P.level){SFX.kpKey(d);return true;}
+      if(P.carry&&(P.carry.gold||P.carry.kind==="body")){}
+      SFX.kpKey(d);this.gonRide(d);return true;
+    }
+    return false;
+  },
+  ride(d){
+    const t=G.t,e=t.el;e.moving=true;e.riding=true;e.target=d;e.from=P.level;e.pending=0.75;P.locked=true;
+    toast(`Going to ${TW_FLOOR[d]}…`,"",1400);
+    followersStay();
+  },
+  gonRide(d){
+    const t=G.t,g=t.gon;g.moving=true;g.from=P.level;g.target=d;
+    toast(`The gondola winches toward ${TW_FLOOR[d]}`,"warn",1600);followersStay();
+    startPath([[P.x,P.z,P.y],[P.x,P.z,d*ROOF_Y]],d,()=>{g.lvl=d;g.moving=false;});
+    if(P.climb)P.climb.dur=1.6+Math.abs(d-g.from)*2.0;
+  },
+  gonSend(d){const g=G.t.gon;if(g.moving||g.lvl===d)return;g.moving=true;g.from=g.lvl;g.target=d;g.ghostT=0;g.ghostDur=1.6+Math.abs(d-g.from)*2.0;},
+  elCall(l){const e=G.t.el;if(e.moving||e.fire&&l!==0)return;if(e.lvl===l)return;e.moving=true;e.from=e.lvl;e.target=l;e.ghostT=0;e.ghostDur=1.0+Math.abs(l-e.from)*1.2;},
+  startFire(){
+    const t=G.t,f=t.fire;if(f.on)return;f.on=true;f.t=0;f.reset=false;t.el.fire=true;
+    if(P.level===5)setTimeout(()=>{if(state==="playing")showSub("V","It's a drill. It's always a drill. I'm not walking down five floors for a drill.",4200,"VICTOR VANE");},1800);
+    toast("FIRE ALARM. Everyone's heading for the stairs. The stairwell doors just unlocked","warn",3600);
+    doors.forEach(d=>{if(d.exec&&d.locked){d.locked=false;d.reader.flash=0.6;}});
+    if(this.firePanel)this.firePanel.color.setHex(0xff3a30);
+    for(const c of civs){if(c.dead||c.gone||!c.opts.evac)continue;if(!(c.state==="idle"||c.state==="asleep"))continue;
+      c.state="idle";c.seated=false;c.talk=false;c.route=c.opts.evac(c.x,c.z).map(p=>[p[0],p[1]]);c.wp=0;c.pause=0;c.evac=true;c.face=null;c.wait=0;c.sus=0;}
+    if(!G.t.el.moving)this.elCall(0);
+  },
+  stopFire(by){
+    const t=G.t,f=t.fire;if(!f.on)return;f.on=false;t.el.fire=false;
+    if(this.firePanel)this.firePanel.color.setHex(0x3aff8a);
+    toast(by==="you"?"You silenced the fire alarm. The stairwell doors stay unlocked":"Security silenced the fire alarm from the lobby","good",2800);
+  },
+  tick(dt){
+    const X=this.X,t=G.t;if(!X||!t)return;
+    const Y=ROOF_Y,e=t.el,g=t.gon;
+    // elevator car follows you (or drives itself when called)
+    if(e.riding&&e.pending!=null){e.pending-=dt;if(e.pending<=0){e.pending=null;const d=e.target;
+      startPath([[P.x,P.z,P.y],[P.x,P.z,d*Y]],d,()=>{e.lvl=d;e.moving=false;e.riding=false;P.locked=false;tone({type:"sine",f0:1320,dur:.35,vol:.08});});
+      if(P.climb)P.climb.dur=1.0+Math.abs(d-e.from)*1.2;}}
+    if(e.riding&&P.climb)X.car.position.y=P.y;
+    else if(e.moving&&!e.riding&&e.ghostDur){
+      e.ghostT+=dt;const u=clamp(e.ghostT/e.ghostDur,0,1),s=u*u*(3-2*u);X.car.position.y=(e.from+(e.target-e.from)*s)*Y;
+      if(u>=1){e.lvl=e.target;e.moving=false;e.ghostDur=0;tone({type:"sine",f0:1320,dur:.35,vol:.05});}
+    }else X.car.position.y=e.lvl*Y;
+    // shaft doors: open on the car's floor while it isn't moving and someone wants them open
+    const want=!e.moving&&((P.level===e.lvl&&(Math.hypot(P.x+5.0,P.z+0.5)<2.8||inR(P.x,P.z,TW_CAR)))||(e.fire&&e.lvl===0));
+    X.shaftDoors.forEach((d,l)=>{const open=want&&e.lvl===l;d.t=clamp(d.t+(open?dt:-dt)/0.7,0,1);
+      d.a.position.z=-0.85-d.t*0.66;d.b.position.z=-0.15+d.t*0.66;
+      const i=colliders.indexOf(d.col);if(d.t>0.85&&i>=0)colliders.splice(i,1);else if(d.t<0.85&&i<0)colliders.push(d.col);});
+    // gondola
+    if(g.moving&&P.climb&&inR(P.x,P.z,TW_GON))X.gon.position.y=P.y;
+    else if(g.moving&&g.ghostDur){g.ghostT+=dt;const u=clamp(g.ghostT/g.ghostDur,0,1),s=u*u*(3-2*u);X.gon.position.y=(g.from+(g.target-g.from)*s)*Y;if(u>=1){g.lvl=g.target;g.moving=false;g.ghostDur=0;}}
+    else X.gon.position.y=g.lvl*Y;
+    X.gonRails.forEach(c=>c.lvl=g.moving||(c.gate&&g.lvl===0)?-9:g.lvl);
+    {const i=colliders.indexOf(X.gonChain),dock=!g.moving&&g.lvl===6;if(dock&&i>=0)colliders.splice(i,1);else if(!dock&&i<0)colliders.push(X.gonChain);}
+    this.cable();
+    if(state!=="playing")return;
+    if(g.moving){g.noise=(g.noise||0)-dt;if(g.noise<=0){g.noise=0.6;const s=spatial(17.2,0,30,levelOfY(X.gon.position.y+0.5));tone({type:"sawtooth",f0:110,f1:118,dur:.6,vol:.03*(s?s.vol:0.3)+.01,lp:600});G.bang={x:15,z:0,r:6,lvl:levelOfY(X.gon.position.y+0.5)};}}
+    // the server override uploads by itself
+    if(t.override==="uploading"){
+      if(G.alarm){t.override=null;toast("The alarm killed the override upload","bad",2400);}
+      else{t.ovT-=dt;if(t.ovT<=0){t.override="done";SFX.kpOk();toast("Time-lock override active. The vault will open for Vane's voice","good",3000);}}
+    }
+    if(G.alarm&&!G.vaultOpen&&!t.lock){t.lock=true;toast("Alarm! The vault went into lockdown","bad",2800);}
+    // Vane's phone calls (and your recorder)
+    const v=X.vane,c=t.call;
+    if(v.dead||v.gone||v.state!=="idle"||G.alarm){if(c.on){c.on=false;v.talk=false;}}
+    else{
+      c.next-=dt;
+      if(!c.on&&c.next<=0){c.on=true;c.t=13;v.talk=true;c.line=(c.line+1+(Math.random()*3|0))%VANE_CALLS.length;c.sub=0;
+        if(P.level===5&&Math.hypot(P.x-v.x,P.z-v.z)<12)toast("Vane's phone is ringing","",1400);}
+      if(c.on){
+        c.t-=dt;c.sub-=dt;
+        const d=Math.hypot(P.x-v.x,P.z-v.z),near=P.level===5&&d<5.5&&!blocked(P.x,P.z,v.x,v.z,1.5,5);
+        if(P.level===5&&d<12&&c.sub<=0){c.sub=6.5;speak(1.8,VOICE_VANE);showSub("V",VANE_CALLS[c.line],6000,"VICTOR VANE · ON THE PHONE");c.line=(c.line+1)%VANE_CALLS.length;}
+        if(near&&!t.voice){t.rec+=dt;if(!t.recTip){t.recTip=true;toast("Your recorder is picking up Vane's voice. Stay close","good",2200);}
+          if(t.rec>=8){t.voice=true;SFX.kpOk();toast("Got enough of Vane's voice for the vault's voice lock","good",2800);}}
+        if(c.t<=0){c.on=false;v.talk=false;c.next=28+Math.random()*16;}
+      }
+    }
+    // fire alarm: bells, strobes, evacuation, and the clock
+    const f=t.fire;
+    if(f.on){
+      f.t+=dt;t.bell-=dt;if(t.bell<=0){t.bell=0.32;tone({type:"square",f0:1900,f1:1850,dur:.12,vol:.045,lp:4000});}
+      if(this.firePanel)this.firePanel.color.setHex(Math.floor(G.world*3)%2?0xff3a30:0x3a0806);
+      if(!f.reset&&f.t>45&&secGuard&&!secGuard.down&&!G.alarm){f.reset=true;this.stopFire("sec");}
+      else if(f.on&&f.t>120&&!G.alarm)triggerAlarm("The fire brigade arrived. The building is swarming with people now. Alarm!");
+    }
+    for(const c2 of civs){if(!c2.evac||c2.gone)continue;const last=c2.route[c2.route.length-1];
+      if(c2.state!=="idle"){c2.evac=false;continue;}
+      if(Math.hypot(c2.x-last[0],c2.z-last[1])<0.7){c2.gone=true;c2.evac=false;c2.root.visible=false;c2.level=99;}}
+    // helicopter
+    const h=t.heli;
+    if(h.state==="inbound"){
+      h.t-=dt;const u=clamp(1-h.t/35,0,1);X.heli.visible=true;
+      X.heli.position.set(-10-90*(1-u),6*ROOF_Y+6+40*(1-u),3+40*(1-u));X.heli.rotation.y=Math.PI*0.8;
+      h.snd=(h.snd||0)-dt;if(h.snd<=0){h.snd=0.11;noiseHit({type:"lowpass",freq:160+u*80,dur:.09,vol:.02+u*.12});}
+      if(h.t<=0){h.state="landing";h.t=6;X.heli.rotation.y=0;toast("The helicopter is coming down on the pad. Everyone on the roof can hear it","warn",2600);}
+    }else if(h.state==="landing"||h.state==="landed"){
+      if(h.state==="landing"){h.t-=dt;const u=clamp(1-h.t/6,0,1),s=u*u*(3-2*u);X.heli.position.set(-10,6*ROOF_Y+6-5.9*s,3);if(h.t<=0){h.state="landed";toast("The helicopter is down. Load the bags and lift off","good",2600);}}
+      h.snd=(h.snd||0)-dt;if(h.snd<=0){h.snd=0.11;const s=spatial(-10,3,60,6);noiseHit({type:"lowpass",freq:220,dur:.09,vol:.04+(s?s.vol*.12:0)});}
+      h.bang=(h.bang||0)-dt;if(h.bang<=0){h.bang=1;G.bang={x:-10,z:3,r:22,lvl:6};}
+    }
+    if(X.heli.visible&&this.heliRot)this.heliRot.rotation.y+=dt*28;
+    if(this.beacon)this.beacon.visible=h.state==="none"||Math.floor(G.world*2)%2===0;
+  },
+  interact(dt,facing){
+    const X=this.X,t=G.t;if(!X||!t)return null;
+    const hold=(id,secs,label)=>{
+      if(!keys.KeyE){if(t.holdId===id)t.holdT=0;return null;}
+      if(t.holdId!==id){t.holdId=id;t.holdT=0;}
+      t.holdT+=dt;P.fiddle=Math.max(P.fiddle,0.3);
+      if(t.holdT>=secs){t.holdT=0;t.holdId="";return "done";}
+      return {p:label,prog:t.holdT/secs};
+    };
+    const lv=P.level,e=t.el,g=t.gon;
+    // in the elevator car
+    if(lv<=5&&inR(P.x,P.z,TW_CAR)&&e.lvl===lv&&!e.moving){
+      if(e.fire)return {p:"Fire service mode. The elevator is out of order"};
+      return {p:`Press <kbd>0</kbd>–<kbd>5</kbd> for a floor${t.exec?"":" · 3, 4 and 5 need an executive card"}`};
+    }
+    if(e.moving&&e.riding)return {p:`Going to ${TW_FLOOR[e.target]}…`};
+    // elevator call button
+    if(lv<=5&&facing(-5.3,0.4,1.7)>=0&&P.x<-5){
+      if(e.fire)return {p:"The elevator is in fire service mode"};
+      if(e.lvl===lv&&!e.moving)return {p:"The elevator is here"};
+      if(e.moving)return {p:"The elevator is on its way…"};
+      if(pressedE){this.elCall(lv);SFX.kpKey(3);}
+      return {p:"Press <kbd>E</kbd> to call the elevator"};
+    }
+    // on the gondola
+    if(inR(P.x,P.z,TW_GON)&&!g.moving&&g.lvl===lv&&!windows.some(w=>w.level===lv&&w.state==="closed"&&facing(w.x,w.z,1.8)>=0)){
+      return {p:`Gondola at ${TW_FLOOR[lv]} · press <kbd>0</kbd>–<kbd>6</kbd> to move it (the motor isn't quiet)`};
+    }
+    // gondola call boxes (street, roof)
+    if(lv===0&&!inR(P.x,P.z,TW_GON)&&facing(19.0,-5.2,1.6)>=0){if(g.moving)return {p:"The gondola is moving…"};if(g.lvl===0)return {p:"The gondola is down here"};if(pressedE)this.gonSend(0);return {p:"Press <kbd>E</kbd> to bring the gondola down"};}
+    if(lv===6&&!inR(P.x,P.z,TW_GON)&&facing(15.2,-5.2,1.6)>=0){if(g.moving)return {p:"The gondola is moving…"};if(g.lvl===6)return {p:"The gondola is up here"};if(pressedE)this.gonSend(6);return {p:"Press <kbd>E</kbd> to bring the gondola up to the roof"};}
+    // garbage chute
+    if(lv<=5&&P.carry&&facing(-0.6,-5.0,1.5)>=0){
+      const it=P.carry;
+      if(pressedE){
+        P.carry=null;showCarry();SFX.binDump(-0.6,-5);
+        if(it.kind==="body"){it.state="binned";it.mesh.visible=false;G.binned++;toast("Down the chute. Body hidden","good",1800);}
+        else{it.state="ground";it.level=0;it.mesh.visible=true;it.mesh.position.set(-1.8+Math.random()*2.8,0.95,-15.35+Math.random()*0.3);it.mesh.rotation.set(0,Math.random()*3,0);
+          G.bang={x:-0.5,z:-14,r:9,lvl:0};toast("Down the chute. It landed in the skip in the alley (with a crash)","good",2400);}
+        return null;
+      }
+      return {p:it.kind==="body"?"Press <kbd>E</kbd> to send the body down the garbage chute":"Press <kbd>E</kbd> to send the bag down the garbage chute"};
+    }
+    // fire alarm pull stations
+    if(lv<=5&&!t.fire.on&&facing(5.3,0.8,1.6)>=0&&P.x>5){
+      const r=hold("fire",1.0,"Pulling the fire alarm…");
+      if(r==="done"){this.startFire();return null;}
+      return r||{p:"Hold <kbd>E</kbd> to pull the fire alarm"};
+    }
+    // fire panel in the security office
+    if(lv===0&&t.fire.on&&facing(14.2,-5.4,1.6)>=0){
+      const r=hold("firereset",2.0,"Silencing the fire alarm…");
+      if(r==="done"){this.stopFire("you");return null;}
+      return r||{p:"Hold <kbd>E</kbd> to silence the fire alarm"};
+    }
+    // executive stairwell doors
+    for(const d of doors){
+      if(!d.exec||!d.locked||d.level!==lv)continue;
+      if(facing(d.x,d.z,1.9)<0)continue;
+      if(t.exec){if(pressedE){d.locked=false;openDoor(d,P.x,P.z,false);SFX.card();d.reader.flash=0.6;}return {p:"Press <kbd>E</kbd> to swipe the executive card"};}
+      if(pressedE){SFX.denied();d.reader.flash=-0.6;}
+      return {p:"Locked · executive floors: card only. (Fire alarms unlock these doors)"};
+    }
+    // Hale's executive card: lift it from his belt, or take it off him
+    const hl=X.hale;
+    if(!t.exec&&hl.level===lv&&!hl.bagged){
+      const dx=P.x-hl.x,dz=P.z-hl.z,d=Math.hypot(dx,dz);
+      if(d<1.6&&hl.down){if(pressedE){t.exec=true;SFX.card();toast("Hale's executive card: floors 3, 4 and 5","good",2400);}return {p:"Press <kbd>E</kbd> to take Hale's executive card"};}
+      const behind=Math.abs(wrap(Math.atan2(dx,dz)-hl.yaw))>2.0;
+      if(d<1.35&&behind&&!hl.chase&&hl.sus<0.3&&!G.alarm&&facing(hl.x,hl.z,1.6)>=0){
+        const r=hold("pp",1.6,"Unclipping the card from his belt…");
+        if(r==="done"){t.exec=true;SFX.card();toast("Got Hale's executive card. He didn't notice","good",2600);return null;}
+        return r||{p:"Hold <kbd>E</kbd> to lift Hale's executive card · stay behind him"};
+      }
+      if(t.holdId==="pp")t.holdT=0;
+    }
+    // the IT admin's sticky note
+    if(lv===1&&facing(12.85,-10.57,1.7)>=0){
+      if(pressedE&&!G.knowCode){G.knowCode=true;SFX.paper();toast(`A sticky note on Priya's monitor: "vault admin: ${G.safeCode}"`,"good",3400);}
+      return {p:G.knowCode?`The sticky note: "vault admin: ${G.safeCode}"`:"Press <kbd>E</kbd> to read the sticky note on the monitor"};
+    }
+    // server room terminal
+    if(lv===2&&facing(-13,-5.45,1.8)>=0&&P.z<-5){
+      if(t.override==="done")return {p:"Time-lock override: active"};
+      if(t.override==="uploading")return {p:`Uploading the override… ${Math.ceil(t.ovT)} s`,prog:1-t.ovT/20};
+      if(P.carry)return {p:"Drop what you're carrying to use the terminal. <kbd>Q</kbd>"};
+      if(pressedE)openKeypad();
+      return {p:`Press <kbd>E</kbd> to log in to the vault systems${G.knowCode?" · password "+G.safeCode:" · the password is written down somewhere"}`};
+    }
+    // Vane, tied up: make him say the phrase
+    const vn=X.vane;
+    if(!t.voice&&lv===5&&vn.state==="tied"&&Math.hypot(P.x-vn.x,P.z-vn.z)<1.8){
+      const r=hold("vane",4,"\"Halcyon… open for Vane…\" Recording…");
+      if(r==="done"){t.voice=true;SFX.kpOk();toast("You've got Vane's voice","good",2400);return null;}
+      return r||{p:"Hold <kbd>E</kbd> to make Vane say his vault phrase into your recorder"};
+    }
+    // safes: bank manager (3), Vane (5)
+    for(const [s,box,who] of [[X.mgrSafe,"msafe","the bank manager's safe"],[X.vaneSafe,"psafe","Vane's safe"]]){
+      if(lv!==s.lvl||s.open||facing(s.x,s.z+0.3,1.8)<0)continue;
+      if(keys.KeyE){if(pickTick(s,9,dt)){s.open=true;bags.forEach(b=>{if(b.state==="locked"&&b.box===box)b.state="ground";});SFX.unlock();toast(`${who[0].toUpperCase()+who.slice(1)} is open`,"good",1800);}
+        return {p:`Cracking the dial… ${Math.min(5,Math.floor(s.pickT/9*5)+1)}/5`,prog:s.pickT/9};}
+      return {p:`Hold <kbd>E</kbd> to crack ${who}`,prog:s.pickT>0?s.pickT/9:null};
+    }
+    // the vault's voice lock
+    if(lv===4&&!G.vaultOpen&&facing(-9.2,-3.6,1.8)>=0&&P.z>-3.8){
+      if(t.lock)return {p:"Lockdown. The vault won't open now"};
+      if(!t.voice)return {p:"VOICE ID · \"State your passphrase.\" You need Vane's voice"};
+      if(t.override!=="done")return {p:"The voice is right, but the time lock holds the vault shut until 08:00. Override it from the server room (floor 2)"};
+      const r=hold("voice",3,"Playing Vane's voice to the lock…");
+      if(r==="done"){X.vLed.color.setHex(0x40ff80);speak(1.2,VOICE_VANE);showSub("V","Halcyon, open for Vane.",2400,"VANE · RECORDING");openSafe();toast("Voice accepted. The vault is opening","good",2600);return null;}
+      return r||{p:"Hold <kbd>E</kbd> to play Vane's voice to the lock"};
+    }
+    // helicopter beacon on the roof
+    if(lv===6&&t.heli.state==="none"&&facing(-14.8,8.8,1.7)>=0){
+      const r=hold("heli",2.5,"Radioing the pilot…");
+      if(r==="done"){t.heli.state="inbound";t.heli.t=35;toast("The helicopter is 35 seconds out. It's going to be loud","warn",3000);return null;}
+      return r||{p:"Hold <kbd>E</kbd> to call the helicopter (loud, 35 s)"};
+    }
+    if(lv===6&&t.heli.state==="inbound"&&facing(-14.8,8.8,1.7)>=0)return {p:`Helicopter inbound · ${Math.ceil(t.heli.t)} s`};
+    return null;
+  },
+  chip(){
+    const t=G.t;if(!t)return "";const s=[];
+    if(t.exec)s.push("EXEC CARD");
+    if(t.voice&&!G.vaultOpen)s.push("VANE'S VOICE");else if(t.rec>0&&!G.vaultOpen)s.push(`VOICE ${t.rec.toFixed(1)}/8 s`);
+    if(t.override==="uploading")s.push(`OVERRIDE ${Math.ceil(t.ovT)} s`);else if(t.override==="done"&&!G.vaultOpen)s.push("OVERRIDE");
+    if(t.fire.on)s.push(`FIRE ALARM ${fmt(Math.max(0,120-t.fire.t))}`);
+    if(t.heli.state==="inbound")s.push(`HELI ${Math.ceil(t.heli.t)} s`);else if(t.heli.state==="landed")s.push("HELI ON THE PAD");
+    return s.join(" · ");
+  },
+  objective(){
+    const t=G.t;if(!t)return this.text.case;
+    if(P.carry&&P.carry.kind==="loot")return t.heli.state==="landed"?"Get the bag to the van in the alley or the helicopter on the roof. The garbage chute by the elevators drops it into the skip in the alley.":this.text.van;
+    if(t.lock)return "The vault locked down. Grab what you can (the safes on floors 3 and 5, the count room on 4, the desk head's office on 2) and get out.";
+    if(G.vaultOpen)return "The vault is open. Get the bags out: down the garbage chute, to the van in the alley, or call the helicopter from the roof.";
+    if(!P.masked&&!restricted(P.x,P.z)&&!t.exec&&!t.voice&&!t.override)return this.text.case;
+    const need=[];
+    if(!t.override)need.push(`the time-lock override: the vault-systems terminal in the server room (floor 2, keycard) with the IT password${G.knowCode?" "+G.safeCode:" (Priya keeps it on a sticky note in IT, floor 1)"}`);
+    if(!t.voice&&(X_vane()||{}).dead)return "Vane is dead. Without his voice the vault stays shut. Take what else you can: the safes on floors 3 and 5, the count room on 4, the desk head's office on 2.";
+    if(!t.voice)need.push(`Victor Vane's voice: he's in his office on floor 5. Get close while he's on the phone (${t.rec.toFixed(1)}/8 s), or tie him up and make him say it`);
+    if(!t.exec)need.push("a way up to floors 3 to 5: Hale's executive card (night supervisor, floor 2; lift it from behind), a fire alarm (unlocks the stairwell doors), or the window cleaners' gondola");
+    if(!need.length)return "Go to the vault on floor 4 and play Vane's voice to the lock by the vault door.";
+    return "For the vault (floor 4) you need: "+need.join("; ")+".";
+  }
+};
+
+const MAPS={harbor:MAP_HARBOR,meridian:MAP_MERIDIAN,harborDay:MAP_HARBOR_DAY,meridianDay:MAP_MERIDIAN_DAY,club:MAP_CLUB,manor:MAP_MANOR,casino:MAP_CASINO,port:MAP_PORT,tower:MAP_TOWER};
 
 // night: moonlight and sodium lamps. day: sun, blue sky, light haze
 function setSky(day){
@@ -3153,12 +3866,15 @@ const SB={chunks:[],items:[],CELL:18,mats:[]};
 const hx=c=>c?c.getHex():-1;
 function sbSig(m){return [m.type,hx(m.color),hx(m.emissive),hx(m.specular),m.shininess,m.map?m.map.id:0,m.emissiveMap?m.emissiveMap.id:0,m.side,m.opacity,m.flatShading?1:0,m.wireframe?1:0,m.fog?1:0,m.depthTest?1:0,m.depthWrite?1:0,m.emissiveIntensity,m.toneMapped?1:0,m.normalMap?1:0,m.bumpMap?1:0,m.alphaTest].join(",");}
 function sbMatSnap(m){const c=m.color,e=m.emissive;return [c?c.r:0,c?c.g:0,c?c.b:0,e?e.r:0,e?e.g:0,e?e.b:0,m.opacity,m.map,m.visible,m.emissiveIntensity,m.transparent];}
+function sbMatOk(m){return m&&!m.transparent&&!m.vertexColors&&(m.isMeshPhongMaterial||m.isMeshBasicMaterial||m.isMeshLambertMaterial||m.isMeshStandardMaterial);}
 function sbEligible(o){
   if(!o.isMesh||o.isInstancedMesh||o.isSkinnedMesh||o.renderOrder||!o.frustumCulled||o.layers.mask!==1)return false;
   for(const k in o.userData)return false;
   for(let p=o.parent;p&&p!==LV.group;p=p.parent){if(p.isSprite||p.isLight)return false;for(const k in p.userData)return false;}
-  const m=o.material;if(!m||Array.isArray(m)||m.transparent||m.vertexColors||!m.isMeshPhongMaterial&&!m.isMeshBasicMaterial&&!m.isMeshLambertMaterial&&!m.isMeshStandardMaterial)return false;
   const g=o.geometry;if(!g||!g.isBufferGeometry||!g.attributes.position||!g.attributes.normal)return false;
+  const m=o.material;
+  if(Array.isArray(m)){if(!g.index||!g.groups.length||!m.every(sbMatOk))return false;}   // multi-material box: each face group joins its own batch
+  else if(!sbMatOk(m))return false;
   if(g.morphAttributes&&Object.keys(g.morphAttributes).length)return false;
   for(const k in g.attributes)if(k!=="position"&&k!=="normal"&&k!=="uv")return false;
   if(g.drawRange.start!==0||g.drawRange.count!==Infinity)return false;
@@ -3169,7 +3885,7 @@ function sbEligible(o){
 function sbShown(o){for(;o;o=o.parent){if(o===LV.group)return true;if(!o.visible)return false;}return false;}
 function sbGeom(items){
   let nv=0,ni=0;
-  for(const it of items){const g=it.o.geometry;nv+=g.attributes.position.count;ni+=g.index?g.index.count:g.attributes.position.count;}
+  for(const it of items){const g=it.o.geometry;nv+=g.attributes.position.count;ni+=it.gi>=0?g.groups[it.gi].count:g.index?g.index.count:g.attributes.position.count;}
   const pos=new Float32Array(nv*3),nor=new Float32Array(nv*3),uv=new Float32Array(nv*2),idx=nv>65535?new Uint32Array(ni):new Uint16Array(ni);
   const v=new THREE.Vector3(),nm=new THREE.Matrix3();let ov=0,oi=0;
   for(const it of items){
@@ -3179,7 +3895,8 @@ function sbGeom(items){
       v.fromBufferAttribute(N,i).applyMatrix3(nm).normalize();nor[(ov+i)*3]=v.x;nor[(ov+i)*3+1]=v.y;nor[(ov+i)*3+2]=v.z;
       if(U){uv[(ov+i)*2]=U.getX(i);uv[(ov+i)*2+1]=U.getY(i);}
     }
-    if(g.index){const I=g.index;for(let i=0;i<I.count;i++)idx[oi+i]=I.getX(i)+ov;oi+=I.count;}
+    if(it.gi>=0){const I=g.index,gr=g.groups[it.gi];for(let i=0;i<gr.count;i++)idx[oi+i]=I.getX(gr.start+i)+ov;oi+=gr.count;}
+    else if(g.index){const I=g.index;for(let i=0;i<I.count;i++)idx[oi+i]=I.getX(i)+ov;oi+=I.count;}
     else{for(let i=0;i<c;i++)idx[oi+i]=ov+i;oi+=c;}
     ov+=c;
   }
@@ -3194,22 +3911,28 @@ function sbBuild(){
   LV.group.updateMatrixWorld(true);
   const groups=new Map(),c=new THREE.Vector3(),cand=[];
   LV.group.traverse(o=>{if(o!==LV.group&&sbEligible(o)&&sbShown(o))cand.push(o);});
+  const add=(o,gi,pm)=>{
+    c.copy(o.geometry.boundingSphere.center).applyMatrix4(o.matrixWorld);
+    const key=sbSig(pm)+"|"+(o.castShadow?1:0)+(o.receiveShadow?1:0)+"|"+Math.floor(c.x/SB.CELL)+","+Math.floor(c.z/SB.CELL)+","+Math.floor(c.y/12);
+    let a=groups.get(key);if(!a)groups.set(key,a=[]);a.push({o,gi,pm});
+  };
   for(const o of cand){
     const g=o.geometry;if(!g.boundingSphere)g.computeBoundingSphere();
-    c.copy(g.boundingSphere.center).applyMatrix4(o.matrixWorld);
-    const key=sbSig(o.material)+"|"+(o.castShadow?1:0)+(o.receiveShadow?1:0)+"|"+Math.floor(c.x/SB.CELL)+","+Math.floor(c.z/SB.CELL)+","+Math.floor(c.y/12);
-    let a=groups.get(key);if(!a)groups.set(key,a=[]);a.push(o);
+    if(Array.isArray(o.material))g.groups.forEach((gr,gi)=>add(o,gi,o.material[gr.materialIndex]));
+    else add(o,-1,o.material);
   }
+  const hidden=new Set();
   for(const a of groups.values()){
-    if(a.length<2)continue;
-    const ch={items:[],mesh:new THREE.Mesh(undefined,a[0].material)};
-    for(const o of a){const it={o,ch,mw:o.matrixWorld.elements.slice(),mat:o.material,geo:o.geometry,cs:o.castShadow,rs:o.receiveShadow};ch.items.push(it);SB.items.push(it);}
-    ch.mesh.geometry=sbGeom(ch.items);ch.mesh.castShadow=a[0].castShadow;ch.mesh.receiveShadow=a[0].receiveShadow;
+    if(a.length<2&&a[0].gi<0)continue;
+    const ch={items:[],mesh:new THREE.Mesh(undefined,a[0].pm)};
+    for(const e of a){const o=e.o;const it={o,gi:e.gi,pm:e.pm,ch,mw:o.matrixWorld.elements.slice(),mat:o.material,geo:o.geometry,cs:o.castShadow,rs:o.receiveShadow};ch.items.push(it);SB.items.push(it);}
+    ch.mesh.geometry=sbGeom(ch.items);ch.mesh.castShadow=a[0].o.castShadow;ch.mesh.receiveShadow=a[0].o.receiveShadow;
     ch.mesh.matrixAutoUpdate=false;ch.mesh.updateMatrix();
-    for(const o of a)o.layers.mask=0;  // the original stays in place (and keeps moving with its parent) but isn't drawn
+    for(const e of a)hidden.add(e.o);
     LV.group.add(ch.mesh);SB.chunks.push(ch);
   }
-  const ms=new Set();for(const it of SB.items)ms.add(it.mat);
+  for(const o of hidden)o.layers.mask=0;  // the original stays in place (and keeps moving with its parent) but isn't drawn
+  const ms=new Set();for(const it of SB.items)ms.add(it.pm);
   SB.mats=[...ms].map(m=>({m,s:sbMatSnap(m)}));
 }
 // runs right after a render (matrices are fresh): anything the game moved, hid or re-materialed goes back to drawing itself
@@ -3219,12 +3942,13 @@ function sbCheck(){
   for(const it of SB.items){
     const o=it.o,e=o.matrixWorld.elements,a=it.mw;let d=o.material!==it.mat||o.geometry!==it.geo||o.castShadow!==it.cs||o.receiveShadow!==it.rs||!sbShown(o);
     if(!d)for(let i=0;i<16;i++)if(e[i]!==a[i]){d=true;break;}
-    if(!d&&changed){const rep=it.ch.mesh.material;d=it.mat!==rep&&(changed.has(it.mat)||changed.has(rep));}
-    if(d)(dirty||(dirty=[])).push(it);
+    if(!d&&changed){const rep=it.ch.mesh.material;d=it.pm!==rep&&(changed.has(it.pm)||changed.has(rep));}
+    if(d)(dirty||(dirty=new Set())).add(o);
   }
   if(!dirty)return false;
   const chs=new Set();
-  for(const it of dirty){const ch=it.ch;ch.items.splice(ch.items.indexOf(it),1);chs.add(ch);SB.items.splice(SB.items.indexOf(it),1);it.o.layers.mask=1;}
+  for(let i=SB.items.length-1;i>=0;i--){const it=SB.items[i];if(!dirty.has(it.o))continue;const ch=it.ch;ch.items.splice(ch.items.indexOf(it),1);chs.add(ch);SB.items.splice(i,1);}
+  for(const o of dirty)o.layers.mask=1;
   for(const ch of chs){ch.mesh.geometry.dispose();if(ch.items.length)ch.mesh.geometry=sbGeom(ch.items);else ch.mesh.visible=false;}
   return true;
 }
@@ -3739,7 +4463,7 @@ function resetGame(){
   bags.forEach((b,i)=>{const sp=BAG_SPOTS[i];b.box=sp.box||(VAULT.safe?"vault":null);b.state=b.box?"locked":"ground";b.level=sp.lvl||0;b.mesh.visible=true;b.mesh.position.set(sp.x,b.level*ROOF_Y+(sp.y!=null?sp.y:0.22),sp.z);b.mesh.rotation.set(0,sp.ry!=null?sp.ry:i*0.7,0);});
   bags.forEach(b=>{b.value=rollValue(b.gold?(LV.def.goldValue||[80000,120000]):(LV.def.bagValue||[30000,50000]),100);});
   CASH.forEach(c=>{c.taken=false;c.mesh.visible=true;c.value=c.jewel?rollValue(LV.def.jewelValue||[2000,8000],100):c.chips?rollValue(LV.def.chipValue||[1000,5000],100):rollValue(LV.def.cashValue||[300,2000],50);});
-  G.vanTake=0;G.pocket=0;G.cashTaken=0;G.leaveT=0;G.leaveBlock=false;
+  G.vanTake=0;G.vanN=0;G.pocket=0;G.cashTaken=0;G.leaveT=0;G.leaveBlock=false;
   if(VAULT.openCol){const i=colliders.indexOf(VAULT.openCol);if(i>=0)colliders.splice(i,1);}if(VAULT.screen)VAULT.screen.color.setHex(0x3aff8a);
   {const n=LV.def.codeLen||4;G.safeCode=String(Math.floor(10**(n-1)+Math.random()*9*10**(n-1)));}G.knowCode=false;G.safeFails=0;G.keypad=false;KP.entry="";$("keypad").hidden=true;placeCodeNote();
   G.hasDiamond=false;G.diamondVal=0;P.ladder=null;P.onStair=false;
@@ -3766,6 +4490,7 @@ addEventListener("keydown",e=>{
     if(e.code==="KeyE"){if(!e.repeat)closeKeypad();return;}
     if(["KeyW","KeyA","KeyS","KeyD","Space"].includes(e.code))closeKeypad();
   }
+  if(/^(Digit|Numpad)[0-9]$/.test(e.code)&&!e.repeat&&LV.def.onDigit&&LV.def.onDigit(+e.code.slice(-1))){e.preventDefault();return;}
   if(e.code==="KeyE"&&!e.repeat)pressedE=true;
   if(e.code==="KeyC"&&!e.repeat&&!DEV.ghost)P.crouch=!P.crouch;
   if(e.code==="Space"&&!e.repeat)tryJump();
@@ -3867,6 +4592,11 @@ function setPrompt(html,progress){
 
 /* ================= player ================= */
 // an animated move along a path (stepping over a parapet, onto a ladder from the top)
+function nearGetaway(){
+  const list=LV.def.extraGetaways?[SECURE].concat(LV.def.extraGetaways()):[SECURE];
+  for(const g of list){if(P.level!==(g.lvl||0))continue;if(Math.hypot(g.x-P.x,g.z-P.z)<2.6)return g;}
+  return null;
+}
 function startPath(pts,lvl,done){
   const segs=[];let len=0;
   for(let i=1;i<pts.length;i++){const a=pts[i-1],b=pts[i],l=Math.hypot(b[0]-a[0],b[1]-a[1],b[2]-a[2]);segs.push(l);len+=l;}
@@ -4055,7 +4785,7 @@ function keypadEnter(){
   }
   G.safeFails++;SFX.kpBad();if(VAULT.screen){VAULT.screen.color.setHex(0xff3a30);setTimeout(()=>{if(!G.vaultOpen)VAULT.screen.color.setHex(0x3aff8a);},700);}
   KP.entry="";drawKeypad("bad","WRONG");KP.busy=true;
-  if(G.safeFails>=3){setTimeout(()=>{closeKeypad();},500);triggerAlarm("Three wrong codes. The safe tripped the alarm!");return;}
+  if(G.safeFails>=3){setTimeout(()=>{closeKeypad();},500);triggerAlarm(VAULT.failMsg||"Three wrong codes. The safe tripped the alarm!");return;}
   toast(G.safeFails===2?"Wrong code. One more and the safe trips the alarm":"Wrong code","bad",2000);
   setTimeout(()=>{KP.busy=false;if(G.keypad)drawKeypad();},700);
 }
@@ -4490,7 +5220,7 @@ function updateInteraction(dt){
     const kp=KEYCARD.mesh.position;
     if(facing(kp.x,kp.z,1.8)>=0){
       prompt="Press <kbd>E</kbd> to take the keycard";
-      if(pressedE){KEYCARD.mesh.visible=false;P.hasCard=true;SFX.card();toast("Keycard. It opens the security room","good",2000);}
+      if(pressedE){KEYCARD.mesh.visible=false;P.hasCard=true;SFX.card();toast(LV.def.cardMsg||"Keycard. It opens the security room","good",2000);}
     }
   }
   // loose cash: quick grab, anyone who sees you do it gets suspicious
@@ -4519,11 +5249,11 @@ function updateInteraction(dt){
       }
     }
     // at the van with empty hands: hold E to drive off with whatever you've got
-    const dv=P.level===0?Math.hypot(SECURE.x-P.x,SECURE.z-P.z):99;
+    const gwy=nearGetaway(),dv=gwy?0:99;
     if(!prompt&&dv<2.6&&LV.def.needDiamond&&!G.hasDiamond){prompt=`The van isn't going anywhere without ${LV.def.needDiamond}`;G.leaveT=0;}
     else if(!prompt&&dv<2.6){
       const take=G.vanTake+G.pocket+G.diamondVal,all=G.secured>=bags.length;
-      const vb=LV.def.leaveVerb||"drive off",gw=LV.def.getaway||"van";prompt=all?`Hold <kbd>E</kbd> to ${vb} · every bag is in the ${gw} · ${money(take)}`:`Hold <kbd>E</kbd> to ${vb} with ${money(take)} · ${G.secured}/${bags.length} bags`;
+      const vb=gwy.verb||LV.def.leaveVerb||"drive off",gw=gwy.name||LV.def.getaway||"van";prompt=all?`Hold <kbd>E</kbd> to ${vb} · every bag is in the ${gw} · ${money(take)}`:`Hold <kbd>E</kbd> to ${vb} with ${money(take)} · ${G.secured}/${bags.length} bags`;
       if(keys.KeyE&&!G.leaveBlock){
         if(G.leaveT===0)SFX.engine();
         G.leaveT+=dt;prompt="Starting the engine…";prog=G.leaveT/LEAVE_TIME;
@@ -4531,14 +5261,18 @@ function updateInteraction(dt){
       }else G.leaveT=0;
     }else G.leaveT=0;
   }else if(P.carry.kind==="loot"){
-    const d=P.level===0?Math.hypot(SECURE.x-P.x,SECURE.z-P.z):99;
-    if(d<2.6&&!prompt){
-      prompt=`Press <kbd>E</kbd> to load the bag into the ${LV.def.getaway||"van"}`;
+    const gwy=nearGetaway();
+    if(gwy&&!prompt){
+      const gw=gwy.name||LV.def.getaway||"van";
+      prompt=`Press <kbd>E</kbd> to load the bag into the ${gw}`;
       if(pressedE){
-        const b=P.carry,slot=VAN_SLOTS[G.secured%VAN_SLOTS.length];b.state="secured";b.mesh.visible=true;b.mesh.position.set(slot[0],VAN_Y+Math.floor(G.secured/VAN_SLOTS.length)*0.42,slot[1]);b.mesh.rotation.set(0,G.secured*0.9,0);
+        const b=P.carry;let slot,y;
+        if(gwy===SECURE){slot=VAN_SLOTS[G.vanN%VAN_SLOTS.length];y=VAN_Y+Math.floor(G.vanN/VAN_SLOTS.length)*0.42;G.vanN++;}
+        else{slot=gwy.slots[gwy.n%gwy.slots.length];y=gwy.y+Math.floor(gwy.n/gwy.slots.length)*0.42;gwy.n++;}
+        b.state="secured";b.mesh.visible=true;b.mesh.position.set(slot[0],y,slot[1]);b.mesh.rotation.set(0,G.secured*0.9,0);
         P.carry=null;showCarry();G.secured++;G.vanTake+=b.value;G.leaveBlock=true;SFX.load();
-        if(G.secured>=bags.length)toast(`Every bag is in the ${LV.def.getaway||"van"} · ${money(G.vanTake+G.pocket)}. Hold E here to ${LV.def.leaveVerb||"drive off"}`,"good",3200);
-        else toast(`Bag in the ${LV.def.getaway||"van"} · +${money(b.value)} · take ${money(G.vanTake+G.pocket)}`,"good",2200);
+        if(G.secured>=bags.length)toast(`Every bag is loaded · ${money(G.vanTake+G.pocket)}. Hold E here to ${gwy.verb||LV.def.leaveVerb||"drive off"}`,"good",3200);
+        else toast(`Bag in the ${gw} · +${money(b.value)} · take ${money(G.vanTake+G.pocket)}`,"good",2200);
       }
     }
   }else{
@@ -4552,7 +5286,7 @@ function updateInteraction(dt){
         bin.count++;bin.openT=1;G.binned++;SFX.binDump(bin.x,bin.z);
         toast("Body hidden","good",1400);
       }
-    }else if(!prompt&&P.level===0&&Math.hypot(SECURE.x-P.x,SECURE.z-P.z)<2.6)prompt=`Bodies go in a bin, not the ${LV.def.getaway||"van"}`;
+    }else if(!prompt&&nearGetaway())prompt=`Bodies go in a bin, not the ${nearGetaway().name||LV.def.getaway||"van"}`;
   }
   // cameras: stand under one, look up, hold E to loop the feed (again before it runs out to refresh it)
   let loopCam=null;
@@ -4581,7 +5315,7 @@ function updateInteraction(dt){
   // windows: hold E to pick the latch; shoot the glass to smash it; jump through once it's open
   if(!prompt){
     let win=null,bd=1e9;
-    for(const w of windows){if(w.level!==P.level)continue;const d=facing(w.x,w.z,1.8);if(d>=0&&d<bd){win=w;bd=d;}}
+    for(const w of windows){if(w.level!==P.level)continue;const px=w.alongZ?w.x:clamp(P.x,w.x-w.w/2+0.3,w.x+w.w/2-0.3),pz=w.alongZ?clamp(P.z,w.z-w.w/2+0.3,w.z+w.w/2-0.3):w.z;const d=facing(px,pz,1.8);if(d>=0&&d<bd){win=w;bd=d;}}
     if(win&&win.state==="closed"&&win.fixed){if(bd<1.6)prompt=P.masked?"Shoot the glass or press <kbd>F</kbd> to smash the window":"Press <kbd>F</kbd> to smash the window (loud)";}
     else if(win&&win.state==="closed"){
       if(P.carry)prompt="Drop what you're carrying to pick the window. <kbd>Q</kbd>";
