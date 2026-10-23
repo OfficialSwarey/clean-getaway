@@ -3072,7 +3072,7 @@ function setSky(day){
 function buildMap(id){
   const def=MAPS[id]||MAP_HARBOR;
   if(LV.group){
-    scene.remove(LV.group);
+    scene.remove(LV.group);sbClear();
     LV.group.traverse(o=>{if(o.geometry)o.geometry.dispose();if(o.shadow&&o.shadow.map){o.shadow.map.dispose();o.shadow.map=null;}});
   }
   colliders.length=0;doors.length=0;bins.length=0;cams.length=0;guards.length=0;civs.length=0;bags.length=0;transitions.length=0;hatches.length=0;windows.length=0;STAIRS.length=0;LADDERS.length=0;
@@ -3086,6 +3086,7 @@ function buildMap(id){
   for(const sp of (def.cash||[]))makeCashPile(sp);
   for(const g of guards.concat(civs)){const m=makeBodyBag();m.visible=false;m.userData.noHit=true;lvAdd(m);g.item={kind:"body",guard:g,mesh:m,state:"none",level:g.level};}
   const mb=def.moon||32;Object.assign(moon.shadow.camera,{left:-mb,right:mb,top:mb,bottom:-mb});moon.shadow.camera.updateProjectionMatrix();
+  sbBuild();lmBuild();
   rebuildHitList();
   try{localStorage.setItem("cg-map",def.id);}catch(e){}
 }
@@ -3141,6 +3142,143 @@ function rebuildHitList(){
   });
 }
 const raycaster=new THREE.Raycaster();raycaster.far=70;
+
+/* ================= performance: static batching, light budget, adaptive quality =================
+   Static meshes (plain walls, floors, props) are merged per material into spatial chunks, so a map
+   draws a few hundred batches instead of ~1500 meshes (and shadow passes shrink the same way).
+   If game code later moves, hides or re-materials a merged mesh, it is pulled back out on the next
+   frame and its chunk is rebuilt. */
+const SB={chunks:[],items:[],CELL:18,mats:[]};
+// identical-looking materials share a batch; if the game later recolours one of them, the batches are split again
+const hx=c=>c?c.getHex():-1;
+function sbSig(m){return [m.type,hx(m.color),hx(m.emissive),hx(m.specular),m.shininess,m.map?m.map.id:0,m.emissiveMap?m.emissiveMap.id:0,m.side,m.opacity,m.flatShading?1:0,m.wireframe?1:0,m.fog?1:0,m.depthTest?1:0,m.depthWrite?1:0,m.emissiveIntensity,m.toneMapped?1:0,m.normalMap?1:0,m.bumpMap?1:0,m.alphaTest].join(",");}
+function sbMatSnap(m){const c=m.color,e=m.emissive;return [c?c.r:0,c?c.g:0,c?c.b:0,e?e.r:0,e?e.g:0,e?e.b:0,m.opacity,m.map,m.visible,m.emissiveIntensity,m.transparent];}
+function sbEligible(o){
+  if(!o.isMesh||o.isInstancedMesh||o.isSkinnedMesh||o.renderOrder||!o.frustumCulled||o.layers.mask!==1)return false;
+  for(const k in o.userData)return false;
+  for(let p=o.parent;p&&p!==LV.group;p=p.parent){if(p.isSprite||p.isLight)return false;for(const k in p.userData)return false;}
+  const m=o.material;if(!m||Array.isArray(m)||m.transparent||m.vertexColors||!m.isMeshPhongMaterial&&!m.isMeshBasicMaterial&&!m.isMeshLambertMaterial&&!m.isMeshStandardMaterial)return false;
+  const g=o.geometry;if(!g||!g.isBufferGeometry||!g.attributes.position||!g.attributes.normal)return false;
+  if(g.morphAttributes&&Object.keys(g.morphAttributes).length)return false;
+  for(const k in g.attributes)if(k!=="position"&&k!=="normal"&&k!=="uv")return false;
+  if(g.drawRange.start!==0||g.drawRange.count!==Infinity)return false;
+  if(o.matrixWorld.determinant()<=0)return false;
+  return true;
+}
+// effectively drawn: visible all the way up to the map group
+function sbShown(o){for(;o;o=o.parent){if(o===LV.group)return true;if(!o.visible)return false;}return false;}
+function sbGeom(items){
+  let nv=0,ni=0;
+  for(const it of items){const g=it.o.geometry;nv+=g.attributes.position.count;ni+=g.index?g.index.count:g.attributes.position.count;}
+  const pos=new Float32Array(nv*3),nor=new Float32Array(nv*3),uv=new Float32Array(nv*2),idx=nv>65535?new Uint32Array(ni):new Uint16Array(ni);
+  const v=new THREE.Vector3(),nm=new THREE.Matrix3();let ov=0,oi=0;
+  for(const it of items){
+    const o=it.o,g=o.geometry,P=g.attributes.position,N=g.attributes.normal,U=g.attributes.uv,c=P.count,mw=o.matrixWorld;nm.getNormalMatrix(mw);
+    for(let i=0;i<c;i++){
+      v.fromBufferAttribute(P,i).applyMatrix4(mw);pos[(ov+i)*3]=v.x;pos[(ov+i)*3+1]=v.y;pos[(ov+i)*3+2]=v.z;
+      v.fromBufferAttribute(N,i).applyMatrix3(nm).normalize();nor[(ov+i)*3]=v.x;nor[(ov+i)*3+1]=v.y;nor[(ov+i)*3+2]=v.z;
+      if(U){uv[(ov+i)*2]=U.getX(i);uv[(ov+i)*2+1]=U.getY(i);}
+    }
+    if(g.index){const I=g.index;for(let i=0;i<I.count;i++)idx[oi+i]=I.getX(i)+ov;oi+=I.count;}
+    else{for(let i=0;i<c;i++)idx[oi+i]=ov+i;oi+=c;}
+    ov+=c;
+  }
+  const out=new THREE.BufferGeometry();
+  out.setAttribute("position",new THREE.BufferAttribute(pos,3));out.setAttribute("normal",new THREE.BufferAttribute(nor,3));out.setAttribute("uv",new THREE.BufferAttribute(uv,2));
+  out.setIndex(new THREE.BufferAttribute(idx,1));out.computeBoundingSphere();out.computeBoundingBox();
+  return out;
+}
+function sbClear(){SB.chunks.length=0;SB.items.length=0;}
+function sbBuild(){
+  sbClear();
+  LV.group.updateMatrixWorld(true);
+  const groups=new Map(),c=new THREE.Vector3(),cand=[];
+  LV.group.traverse(o=>{if(o!==LV.group&&sbEligible(o)&&sbShown(o))cand.push(o);});
+  for(const o of cand){
+    const g=o.geometry;if(!g.boundingSphere)g.computeBoundingSphere();
+    c.copy(g.boundingSphere.center).applyMatrix4(o.matrixWorld);
+    const key=sbSig(o.material)+"|"+(o.castShadow?1:0)+(o.receiveShadow?1:0)+"|"+Math.floor(c.x/SB.CELL)+","+Math.floor(c.z/SB.CELL)+","+Math.floor(c.y/12);
+    let a=groups.get(key);if(!a)groups.set(key,a=[]);a.push(o);
+  }
+  for(const a of groups.values()){
+    if(a.length<2)continue;
+    const ch={items:[],mesh:new THREE.Mesh(undefined,a[0].material)};
+    for(const o of a){const it={o,ch,mw:o.matrixWorld.elements.slice(),mat:o.material,geo:o.geometry,cs:o.castShadow,rs:o.receiveShadow};ch.items.push(it);SB.items.push(it);}
+    ch.mesh.geometry=sbGeom(ch.items);ch.mesh.castShadow=a[0].castShadow;ch.mesh.receiveShadow=a[0].receiveShadow;
+    ch.mesh.matrixAutoUpdate=false;ch.mesh.updateMatrix();
+    for(const o of a)o.layers.mask=0;  // the original stays in place (and keeps moving with its parent) but isn't drawn
+    LV.group.add(ch.mesh);SB.chunks.push(ch);
+  }
+  const ms=new Set();for(const it of SB.items)ms.add(it.mat);
+  SB.mats=[...ms].map(m=>({m,s:sbMatSnap(m)}));
+}
+// runs right after a render (matrices are fresh): anything the game moved, hid or re-materialed goes back to drawing itself
+function sbCheck(){
+  let dirty=null,changed=null;
+  for(const r of SB.mats){const n=sbMatSnap(r.m);for(let i=0;i<n.length;i++)if(n[i]!==r.s[i]){(changed||(changed=new Set())).add(r.m);r.s=n;break;}}
+  for(const it of SB.items){
+    const o=it.o,e=o.matrixWorld.elements,a=it.mw;let d=o.material!==it.mat||o.geometry!==it.geo||o.castShadow!==it.cs||o.receiveShadow!==it.rs||!sbShown(o);
+    if(!d)for(let i=0;i<16;i++)if(e[i]!==a[i]){d=true;break;}
+    if(!d&&changed){const rep=it.ch.mesh.material;d=it.mat!==rep&&(changed.has(it.mat)||changed.has(rep));}
+    if(d)(dirty||(dirty=[])).push(it);
+  }
+  if(!dirty)return false;
+  const chs=new Set();
+  for(const it of dirty){const ch=it.ch;ch.items.splice(ch.items.indexOf(it),1);chs.add(ch);SB.items.splice(SB.items.indexOf(it),1);it.o.layers.mask=1;}
+  for(const ch of chs){ch.mesh.geometry.dispose();if(ch.items.length)ch.mesh.geometry=sbGeom(ch.items);else ch.mesh.visible=false;}
+  return true;
+}
+
+/* Light budget: Phong shades every light on every pixel, so only the lights that can actually
+   reach what the camera sees stay on. The number of lights on never changes (no shader rebuilds). */
+const LM={pts:[],spots:[],sh:[],t:0,K:{p:14,s:9,sh:3}};
+const _lp=new THREE.Vector3(),_lc=new THREE.Vector3(),_lfr=new THREE.Frustum(),_lpm=new THREE.Matrix4(),_lsp=new THREE.Sphere();
+function lmBuild(){
+  LM.pts=[];LM.spots=[];LM.sh=[];LM.t=0;
+  LV.group.traverse(o=>{if(!o.isLight)return;if(o.isPointLight&&!o.castShadow)LM.pts.push(o);else if(o.isSpotLight)(o.castShadow?LM.sh:LM.spots).push(o);});
+  for(const a of [LM.pts,LM.spots,LM.sh])for(const l of a)l.visible=true;
+}
+function lmShown(o){for(o=o.parent;o;o=o.parent)if(!o.visible)return false;return true;}
+function lmUpdate(dt,force){
+  LM.t-=dt;if(LM.t>0&&!force)return;LM.t=0.12;
+  camera.updateMatrixWorld();_lpm.multiplyMatrices(camera.projectionMatrix,camera.matrixWorldInverse);_lfr.setFromProjectionMatrix(_lpm);
+  camera.getWorldPosition(_lc);
+  const K=LM.K;
+  for(const [arr,k] of [[LM.pts,K.p],[LM.spots,K.s],[LM.sh,K.sh]]){
+    if(arr.length<=k)continue;
+    for(const l of arr){
+      l.getWorldPosition(_lp);const r=l.distance||40;
+      const dd=_lp.distanceTo(_lc);let sc=Math.max(0,dd-r)*4+dd*0.25/Math.max(0.2,l.intensity);
+      _lsp.set(_lp,r);if(!_lfr.intersectsSphere(_lsp))sc+=300;
+      if(l.intensity<=0.001)sc+=600;
+      if(!lmShown(l))sc+=1200;
+      if(l.visible)sc-=2;
+      l._sc=sc;
+    }
+    arr.sort((a,b)=>a._sc-b._sc);
+    for(let i=0;i<arr.length;i++)arr[i].visible=i<k;
+  }
+}
+
+/* Adaptive quality: if frames run slow for a few seconds, step down once at a time
+   (shadow maps refresh every 2nd frame, then 1x resolution, then fewer lights). */
+const AQ={acc:0,n:0,level:0,cool:4,frame:0,shadowEvery:1};
+function aqApply(){
+  const L=AQ.level;
+  AQ.shadowEvery=L>=1?2:1;
+  renderer.shadowMap.autoUpdate=AQ.shadowEvery===1;
+  renderer.setPixelRatio(L>=2?1:Math.min(window.devicePixelRatio||1,1.5));renderer.setSize(innerWidth,innerHeight);
+  if(L>=3){LM.K.p=8;LM.K.s=5;LM.K.sh=2;AQ.shadowEvery=3;}
+  lmUpdate(0,true);
+}
+function aqTick(raw){
+  AQ.frame++;
+  if(AQ.shadowEvery>1)renderer.shadowMap.needsUpdate=AQ.frame%AQ.shadowEvery===0;
+  if(state!=="playing"||raw>0.25||AQ.level>=3)return;
+  if(AQ.cool>0){AQ.cool-=raw;return;}
+  AQ.acc+=raw;AQ.n++;
+  if(AQ.n>=120){const avg=AQ.acc/AQ.n;AQ.acc=0;AQ.n=0;if(avg>0.025){AQ.level++;aqApply();AQ.cool=3;}}
+}
 
 // impact sparks
 const sparks=[];
@@ -4757,12 +4895,14 @@ renderer.autoClear=false;
 let last=performance.now();
 function frame(now){
   requestAnimationFrame(frame);
-  const dt=Math.min(0.05,(now-last)/1000);last=now;
+  const raw=(now-last)/1000,dt=Math.min(0.05,raw);last=now;
   if(state==="playing")stepGame(dt);
   else if(state==="menu")stepMenu(dt);
   animate(dt);
+  lmUpdate(dt);aqTick(raw);
   renderer.clear();
   renderer.render(scene,camera);
+  sbCheck();
   if(state==="playing"||state==="paused"){renderer.clearDepth();renderer.render(vmScene,vmCam);}
 }
 buildMap(selectedMap);
