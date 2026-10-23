@@ -1,0 +1,977 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Quiet Hours</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Semi+Condensed:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&family=Saira+Stencil+One&display=swap">
+<style>
+/* Layout: full-bleed WebGL scene; HUD pinned to the corners like a CCTV overlay; menus as a centered job dossier card. Single deliberate night look. */
+:root{
+  --ink:#080b10;
+  --panel:rgba(10,14,20,.86);
+  --line:rgba(226,232,234,.16);
+  --fg:#e2e8ea;
+  --dim:#8f9ba0;
+  --sodium:#f4ab3d;
+  --alarm:#ff4b3e;
+  --secure:#78d8a3;
+  --f-display:"Saira Stencil One", Impact, "Arial Narrow Bold", sans-serif;
+  --f-body:"Barlow Semi Condensed", "Arial Narrow", "Helvetica Neue", Arial, sans-serif;
+  --f-mono:"JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  color-scheme:dark;
+}
+[hidden]{display:none!important}
+html,body{height:100%;margin:0;overflow:hidden;background:var(--ink);color:var(--fg);font-family:var(--f-body);font-size:16px}
+#game{position:fixed;inset:0}
+#game canvas{display:block;width:100%;height:100%;cursor:crosshair}
+.lbl{font-family:var(--f-mono);font-size:11px;letter-spacing:.14em;color:var(--dim);text-transform:uppercase}
+
+/* ---------- HUD ---------- */
+#hud{position:fixed;inset:0;pointer-events:none;font-variant-numeric:tabular-nums;z-index:2}
+#vignette{position:fixed;inset:0;pointer-events:none;z-index:1;background:radial-gradient(ellipse at center,transparent 55%,rgba(0,0,0,.6) 100%)}
+#seenEdge{position:fixed;inset:0;pointer-events:none;z-index:1;opacity:0;box-shadow:inset 0 0 120px 20px var(--sodium)}
+#alarmEdge{position:fixed;inset:0;pointer-events:none;z-index:1;box-shadow:inset 0 0 140px 30px var(--alarm);animation:pulse 1s ease-in-out infinite}
+@keyframes pulse{0%,100%{opacity:.25}50%{opacity:.7}}
+
+#detect{position:absolute;top:calc(16px + env(safe-area-inset-top,0px));left:50%;transform:translateX(-50%);width:min(380px,62vw);display:grid;gap:6px;text-align:center}
+#detect .bar{height:10px;background:rgba(255,255,255,.07);border:1px solid var(--line);position:relative;overflow:hidden}
+#detect .bar::after{content:"";position:absolute;inset:0;background:repeating-linear-gradient(90deg,transparent 0 calc(10% - 2px),rgba(8,11,16,.9) calc(10% - 2px) 10%)}
+#detectFill{position:absolute;inset:0 auto 0 0;width:0;background:var(--sodium)}
+#hud.alarm #detectFill{background:var(--alarm)}
+#hud.alarm #detectLbl{color:var(--alarm)}
+#hud.watched #detectLbl{color:var(--sodium)}
+
+#clock{position:absolute;top:calc(16px + env(safe-area-inset-top,0px));right:max(18px,env(safe-area-inset-right,0px));text-align:right;display:grid;gap:2px}
+#clockVal{font-family:var(--f-mono);font-weight:700;font-size:26px;letter-spacing:.04em}
+#hud.alarm #clockVal,#hud.alarm #clockLbl{color:var(--alarm)}
+
+#obj{position:absolute;left:max(18px,env(safe-area-inset-left,0px));bottom:calc(18px + env(safe-area-inset-bottom,0px));max-width:min(380px,44vw);display:grid;gap:6px;padding:12px 14px;background:var(--panel);border-left:3px solid var(--sodium)}
+#objText{font-size:17px;font-weight:600;line-height:1.3}
+#bagsRow{font-family:var(--f-mono);font-size:13px;color:var(--dim)}
+#bagsRow b{color:var(--secure);font-weight:700}
+
+#status{position:absolute;right:max(18px,env(safe-area-inset-right,0px));bottom:calc(18px + env(safe-area-inset-bottom,0px));display:flex;flex-direction:column;align-items:flex-end;gap:6px}
+.chip{font-family:var(--f-mono);font-size:12px;letter-spacing:.12em;padding:6px 10px;background:var(--panel);border:1px solid var(--line)}
+#carry{color:var(--sodium);border-color:var(--sodium)}
+
+#crosshair{position:absolute;left:50%;top:50%;width:4px;height:4px;margin:-2px 0 0 -2px;border-radius:50%;background:var(--fg);opacity:.8;box-shadow:0 0 0 1px rgba(0,0,0,.6)}
+#prompt{position:absolute;left:50%;top:calc(50% + 46px);transform:translateX(-50%);display:grid;gap:8px;justify-items:center;text-align:center}
+#promptText{font-size:17px;font-weight:600;padding:6px 12px;background:var(--panel);border:1px solid var(--line)}
+#promptText kbd{font-family:var(--f-mono);font-size:13px;color:var(--ink);background:var(--fg);padding:1px 6px;margin:0 2px}
+.pbar{width:220px;height:6px;background:rgba(255,255,255,.1);position:relative}
+.pbar i{position:absolute;inset:0 auto 0 0;width:0;background:var(--sodium)}
+#toast{position:absolute;left:50%;top:22%;transform:translateX(-50%);font-family:var(--f-display);font-size:clamp(22px,3vw,34px);letter-spacing:.04em;text-shadow:0 2px 12px rgba(0,0,0,.8);opacity:0;transition:opacity .25s;text-align:center;white-space:nowrap}
+#toast.show{opacity:1}
+#toast.warn{color:var(--sodium)}#toast.bad{color:var(--alarm)}#toast.good{color:var(--secure)}
+
+/* ---------- overlays ---------- */
+.overlay{position:fixed;inset:0;z-index:5;display:grid;place-items:center;overflow-y:auto;padding-block:24px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));background:linear-gradient(180deg,rgba(8,11,16,.55),rgba(8,11,16,.88))}
+.card{width:min(560px,100%);background:var(--panel);border:1px solid var(--line);padding:28px clamp(18px,4vw,34px);display:grid;gap:16px;backdrop-filter:blur(6px)}
+.card h1{margin:0;font-family:var(--f-display);font-weight:400;font-size:clamp(44px,8vw,72px);line-height:.95;letter-spacing:.02em;text-wrap:balance}
+.card h2{margin:0;font-family:var(--f-display);font-weight:400;font-size:clamp(36px,6vw,54px);line-height:1;text-wrap:balance}
+.card p{margin:0;line-height:1.5;max-width:62ch;color:#c7d0d3}
+.stamp{justify-self:start;font-family:var(--f-mono);font-size:11px;letter-spacing:.18em;color:var(--sodium);border:1px solid var(--sodium);padding:4px 8px}
+.keys{display:grid;grid-template-columns:auto 1fr;gap:6px 14px;margin:0;font-size:15px}
+.keys dt{font-family:var(--f-mono);font-size:12px;color:var(--ink);background:var(--fg);padding:2px 7px;justify-self:start;align-self:center}
+.keys dd{margin:0;color:#c7d0d3}
+.tips{margin:0;padding-left:18px;display:grid;gap:4px;color:#c7d0d3;line-height:1.45}
+.row{display:flex;flex-wrap:wrap;gap:10px}
+button{font:inherit;cursor:pointer}
+.btn{font-family:var(--f-display);font-size:22px;letter-spacing:.04em;padding:10px 22px;background:var(--sodium);color:var(--ink);border:0}
+.btn.ghost{background:transparent;color:var(--fg);border:1px solid var(--line)}
+.btn:hover{filter:brightness(1.08)}
+.btn:focus-visible{outline:2px solid var(--fg);outline-offset:3px}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+.stats{display:grid;grid-template-columns:1fr auto;gap:8px 16px;margin:0;font-variant-numeric:tabular-nums}
+.stats dt{color:var(--dim)}
+.stats dd{margin:0;font-family:var(--f-mono);font-weight:700;text-align:right}
+.good{color:var(--secure)}.bad{color:var(--alarm)}
+#note{color:var(--sodium)}
+@media (max-width:640px){#obj{max-width:calc(100vw - 150px)}#objText{font-size:15px}}
+@media (prefers-reduced-motion:reduce){#alarmEdge{animation:none;opacity:.45}#toast{transition:none}}
+</style>
+
+</head>
+<body>
+<div id="game"></div>
+<div id="vignette"></div>
+<div id="seenEdge"></div>
+<div id="alarmEdge" hidden></div>
+
+<div id="hud" hidden>
+  <div id="detect"><div class="lbl" id="detectLbl">Detection</div><div class="bar"><i id="detectFill"></i></div></div>
+  <div id="clock"><span class="lbl" id="clockLbl">Elapsed</span><span id="clockVal">00:00</span></div>
+  <div id="obj"><div class="lbl">Objective</div><div id="objText">Get into the bank unseen.</div><div id="bagsRow">Bags secured <b id="bagsVal">0/3</b></div></div>
+  <div id="status"><span class="chip" id="carry" hidden>CARRYING BAG · SLOWED</span><span class="chip" id="stance">STANDING</span><span class="chip" id="sound">SOUND ON · M</span></div>
+  <div id="crosshair"></div>
+  <div id="prompt" hidden><span id="promptText"></span><div class="pbar" id="pbar" hidden><i id="pfill"></i></div></div>
+  <div id="toast"></div>
+</div>
+
+<div id="menu" class="overlay">
+  <div class="card">
+    <span class="stamp">HARBOR SAVINGS &amp; LOAN · 02:40</span>
+    <h1>Quiet Hours</h1>
+    <p>Three bags of cash sit in the vault. Drill the vault door, carry every bag to the van in the back alley, and stay out of sight. If the alarm goes off, police arrive in 60 seconds.</p>
+    <dl class="keys">
+      <dt>WASD</dt><dd>Move</dd>
+      <dt>MOUSE</dt><dd>Look around</dd>
+      <dt>SHIFT</dt><dd>Sprint (louder to the eye, you get spotted faster)</dd>
+      <dt>C</dt><dd>Crouch on/off (hide behind the counter, cars, crates)</dd>
+      <dt>E</dt><dd>Interact. Hold it to drill the vault</dd>
+      <dt>CLICK</dt><dd>Take down a guard from behind</dd>
+      <dt>M</dt><dd>Sound on/off</dd>
+      <dt>ESC</dt><dd>Pause</dd>
+    </dl>
+    <ul class="tips">
+      <li>Guards and cameras fill the detection meter while they can see you. Break line of sight and it drains.</li>
+      <li>Guards hear you. Sprinting and drilling are loud, walking is quiet up close, crouching is silent. Wear headphones to hear their footsteps.</li>
+      <li>Two ways in: the front door past the lobby, or the back door in the alley.</li>
+      <li>Bags slow you down. You can carry one at a time.</li>
+    </ul>
+    <div class="row"><button class="btn" id="startBtn">Start the job</button></div>
+    <p class="lbl" id="note"></p>
+  </div>
+</div>
+
+<div id="pause" class="overlay" hidden>
+  <div class="card">
+    <span class="stamp">PAUSED</span>
+    <h2>Holding position</h2>
+    <p id="pauseNote">The guards are frozen until you come back.</p>
+    <div class="row"><button class="btn" id="resumeBtn">Resume</button><button class="btn ghost" id="restartBtn">Restart job</button></div>
+  </div>
+</div>
+
+<div id="end" class="overlay" hidden>
+  <div class="card">
+    <span class="stamp" id="endStamp">JOB REPORT</span>
+    <h2 id="endTitle">Clean job</h2>
+    <p id="endReason"></p>
+    <dl class="stats" id="endStats"></dl>
+    <div class="row"><button class="btn" id="againBtn">Play again</button></div>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+(function(){
+"use strict";
+const $=id=>document.getElementById(id);
+if(typeof THREE==="undefined"){
+  $("note").textContent="The 3D engine failed to load. Check your connection and reload the page.";
+  $("startBtn").disabled=true; return;
+}
+if(matchMedia("(pointer: coarse)").matches && !matchMedia("(pointer: fine)").matches){
+  $("note").textContent="This game needs a keyboard and mouse. Open it on a computer to play.";
+}
+
+/* ================= renderer / scene ================= */
+const renderer=new THREE.WebGLRenderer({antialias:true,powerPreference:"high-performance"});
+renderer.setPixelRatio(Math.min(window.devicePixelRatio||1,1.5));
+renderer.setSize(innerWidth,innerHeight);
+renderer.shadowMap.enabled=true;
+renderer.shadowMap.type=THREE.PCFSoftShadowMap;
+$("game").appendChild(renderer.domElement);
+const canvas=renderer.domElement;
+
+const scene=new THREE.Scene();
+scene.background=new THREE.Color(0x06090e);
+scene.fog=new THREE.FogExp2(0x06090e,0.03);
+const camera=new THREE.PerspectiveCamera(72,innerWidth/innerHeight,0.05,140);
+camera.rotation.order="YXZ";
+scene.add(camera);
+addEventListener("resize",()=>{camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight);});
+
+/* ================= helpers ================= */
+const clamp=(v,a,b)=>v<a?a:v>b?b:v;
+function wrap(a){while(a>Math.PI)a-=2*Math.PI;while(a<-Math.PI)a+=2*Math.PI;return a;}
+function phong(color,o){return new THREE.MeshPhongMaterial(Object.assign({color,shininess:8,specular:0x0c0c0c},o||{}));}
+function noise(g,w,h,count,alpha){for(let i=0;i<count;i++){const v=Math.random()<.5?0:255;g.fillStyle=`rgba(${v},${v},${v},${alpha*Math.random()})`;g.fillRect(Math.random()*w,Math.random()*h,1+Math.random()*2,1+Math.random()*2);}}
+function tex(w,h,draw,rx,ry){const c=document.createElement("canvas");c.width=w;c.height=h;const g=c.getContext("2d");draw(g,w,h);const t=new THREE.CanvasTexture(c);t.wrapS=t.wrapT=THREE.RepeatWrapping;t.repeat.set(rx||1,ry||1);t.anisotropy=Math.min(8,renderer.capabilities.getMaxAnisotropy());return t;}
+
+const drawTiles=(g,w,h)=>{g.fillStyle="#2c302f";g.fillRect(0,0,w,h);for(let i=0;i<2;i++)for(let j=0;j<2;j++){g.fillStyle=(i+j)%2?"#7c817d":"#5f6461";g.fillRect(i*128+3,j*128+3,122,122);}noise(g,w,h,2500,.12);};
+const drawAsphalt=(g,w,h)=>{g.fillStyle="#1d2023";g.fillRect(0,0,w,h);noise(g,w,h,5000,.18);};
+const drawCarpet=(g,w,h)=>{g.fillStyle="#2a3140";g.fillRect(0,0,w,h);noise(g,w,h,6000,.14);};
+const drawPlate=(g,w,h)=>{g.fillStyle="#4c5256";g.fillRect(0,0,w,h);g.strokeStyle="#2f3437";g.lineWidth=3;g.strokeRect(2,2,w-4,h-4);g.fillStyle="#3a3f43";for(let i=0;i<8;i++)for(let j=0;j<8;j++){g.fillRect(i*32+14,j*32+14,4,4);}noise(g,w,h,1500,.1);};
+const drawDeposit=(g,w,h)=>{g.fillStyle="#6d7479";g.fillRect(0,0,w,h);for(let i=0;i<4;i++)for(let j=0;j<4;j++){g.fillStyle="#8a9196";g.fillRect(i*64+3,j*64+3,58,58);g.fillStyle="#3c4246";g.fillRect(i*64+26,j*64+28,12,5);g.beginPath();g.arc(i*64+50,j*64+12,3,0,7);g.fill();}};
+
+/* ================= materials ================= */
+const M={
+  wall:phong(0x7a817d), outer:phong(0x58524b), ceil:phong(0x2f3437), trim:phong(0x3b3f42),
+  counter:phong(0x4a3426), counterTop:phong(0xb9b3a5,{shininess:40}), pillar:phong(0x8c908b),
+  desk:phong(0x3e3229), cabinet:phong(0x5a6065), steel:phong(0x8a9196,{shininess:60,specular:0x333333}),
+  brick:phong(0x3d302a), van:phong(0xbfc3bd,{shininess:30}), vanIn:phong(0x16191c,{side:THREE.DoubleSide}),
+  tire:phong(0x101113), car:phong(0x2a3e59,{shininess:60,specular:0x333333}), glass:phong(0x0c1520,{emissive:0x08111b,shininess:90,specular:0x444444}),
+  dumpster:phong(0x2c4a35), crate:phong(0x6a5233), bag:phong(0x26292d,{emissive:0x0d0e10}), strap:phong(0x8a6a2b),
+  pole:phong(0x26292c), lamp:new THREE.MeshBasicMaterial({color:0xffc56a}), fluoro:new THREE.MeshBasicMaterial({color:0xdfe8ff}),
+  monitor:new THREE.MeshBasicMaterial({color:0x5a86c8}), line:phong(0x9a9a86), uni:phong(0x1f2a46), pants:phong(0x15181f),
+  skin:phong(0xc79a7b), cap:phong(0x10141f), badge:phong(0xd9b24a,{shininess:80}), camBody:phong(0xd5d8d6,{shininess:40}),
+  lens:phong(0x050505,{shininess:100,specular:0x888888}), drill:phong(0xe0b31f,{shininess:40}),
+  bench:phong(0x3b3029)
+};
+const floorMats={
+  lobby:phong(0xffffff,{map:tex(256,256,drawTiles,15,6),shininess:30,specular:0x1a1a1a}),
+  hall:phong(0xffffff,{map:tex(256,256,drawTiles,5,2.5),shininess:30,specular:0x1a1a1a}),
+  carpet1:phong(0xffffff,{map:tex(256,256,drawCarpet,5,6)}),
+  carpet2:phong(0xffffff,{map:tex(256,256,drawCarpet,5,6)}),
+  vault:phong(0xffffff,{map:tex(256,256,drawPlate,5,3.5),shininess:50,specular:0x222222}),
+  ground:phong(0xffffff,{map:tex(256,256,drawAsphalt,16,16)})
+};
+const depositMat=phong(0xffffff,{map:tex(256,256,drawDeposit,4,1.3),shininess:50});
+
+/* ================= level geometry ================= */
+const colliders=[];
+function addBox(x1,z1,x2,z2,h,mat,o){
+  o=o||{};const y0=o.y0||0;
+  const minX=Math.min(x1,x2),maxX=Math.max(x1,x2),minZ=Math.min(z1,z2),maxZ=Math.max(z1,z2);
+  const m=new THREE.Mesh(new THREE.BoxGeometry(maxX-minX,h-y0,maxZ-minZ),mat);
+  m.position.set((minX+maxX)/2,y0+(h-y0)/2,(minZ+maxZ)/2);
+  m.castShadow=o.cast!==false;m.receiveShadow=true;(o.parent||scene).add(m);
+  let col=null;
+  if(o.collide!==false&&y0<0.5){col={minX,maxX,minZ,maxZ,h};colliders.push(col);}
+  return {mesh:m,col};
+}
+const wallX=(z,a,b,h,mat)=>addBox(a,z-0.2,b,z+0.2,h,mat);
+const wallZ=(x,a,b,h,mat)=>addBox(x-0.2,a,x+0.2,b,h,mat);
+const lintelX=(z,a,b,y0,h,mat)=>addBox(a,z-0.2,b,z+0.2,h,mat,{y0,collide:false});
+function floor(x1,z1,x2,z2,mat,y){const m=new THREE.Mesh(new THREE.PlaneGeometry(x2-x1,z2-z1),mat);m.rotation.x=-Math.PI/2;m.position.set((x1+x2)/2,y||0.01,(z1+z2)/2);m.receiveShadow=true;scene.add(m);return m;}
+function pointLight(x,y,z,color,intensity,dist,fixture){
+  const l=new THREE.PointLight(color,intensity,dist,2);l.position.set(x,y,z);scene.add(l);
+  if(fixture){const f=new THREE.Mesh(new THREE.BoxGeometry(1.2,0.05,0.3),M.fluoro);f.position.set(x,3.18,z);scene.add(f);}
+  return l;
+}
+function signTex(text,w,h,fg,bg,font){return tex(w,h,(g)=>{g.fillStyle=bg;g.fillRect(0,0,w,h);g.fillStyle=fg;g.font=font;g.textAlign="center";g.textBaseline="middle";g.fillText(text,w/2,h/2+2);});}
+
+// --- exterior
+floor(-32,-32,32,32,floorMats.ground,0);
+addBox(-24,15.6,24,16.4,0.12,phong(0x4a4c4c),{collide:false,cast:false}); // curb/sidewalk edge
+for(let x=-22;x<24;x+=5){const d=new THREE.Mesh(new THREE.PlaneGeometry(2.4,0.18),M.line);d.rotation.x=-Math.PI/2;d.position.set(x,0.02,20.5);scene.add(d);}
+wallZ(-24,-22,24,2.6,M.brick); wallZ(24,-22,24,2.6,M.brick);
+wallX(-22,-24,24,2.6,M.brick); wallX(24,-24,24,2.6,M.brick);
+
+// --- bank shell (outer walls 4m tall, parapet above the ceiling)
+wallX(12,-15.2,-1.5,4,M.outer); wallX(12,1.5,15.2,4,M.outer); lintelX(12,-1.5,1.5,2.6,4,M.outer);
+wallX(-12,-15.2,-12,4,M.outer); wallX(-12,-9.5,15.2,4,M.outer); lintelX(-12,-12,-9.5,2.4,4,M.outer);
+wallZ(-15,-12.2,12.2,4,M.outer); wallZ(15,-12.2,12.2,4,M.outer);
+addBox(-15.2,-12.2,15.2,12.2,3.4,M.ceil,{y0:3.2,collide:false});
+// front facade details
+for(const wx of [-8,8]){const w=new THREE.Mesh(new THREE.PlaneGeometry(4.4,1.7),M.glass);w.position.set(wx,1.8,12.215);scene.add(w);}
+const sign=new THREE.Mesh(new THREE.PlaneGeometry(9,1.2),new THREE.MeshBasicMaterial({map:signTex("HARBOR SAVINGS & LOAN",1024,136,"#e9eef2","#11161d","bold 76px 'Arial Narrow', Arial, sans-serif")}));
+sign.position.set(0,3.35,12.215);scene.add(sign);
+addBox(-1.8,12.2,-1.5,12.5,2.6,M.trim,{collide:false});addBox(1.5,12.2,1.8,12.5,2.6,M.trim,{collide:false});
+
+// --- interior walls (3.2m) with doorways
+wallX(0,-14.8,-11,3.2,M.wall); wallX(0,-9,-1.2,3.2,M.wall); wallX(0,1.2,9,3.2,M.wall); wallX(0,11,14.8,3.2,M.wall);
+lintelX(0,-11,-9,2.4,3.2,M.wall); lintelX(0,-1.2,1.2,2.4,3.2,M.wall); lintelX(0,9,11,2.4,3.2,M.wall);
+wallZ(-5,-12,0,3.2,M.wall); wallZ(5,-12,0,3.2,M.wall);
+wallX(-5,-5,-1.5,3.2,M.wall); wallX(-5,1.5,5,3.2,M.wall); lintelX(-5,-1.5,1.5,2.8,3.2,M.steel);
+
+// --- floors
+floor(-15,0,15,12,floorMats.lobby);
+floor(-15,-12,-5,0,floorMats.carpet1);
+floor(5,-12,15,0,floorMats.carpet2);
+floor(-5,-5,5,0,floorMats.hall);
+floor(-5,-12,5,-5,floorMats.vault);
+
+// --- lobby props
+addBox(-9,3.6,6,4.4,1.1,M.counter);
+addBox(-9.1,3.5,6.1,4.5,1.16,M.counterTop,{y0:1.1,collide:false});
+for(let x=-7;x<=4;x+=3.6){addBox(x-0.02,3.95,x+0.02,4.05,1.9,M.glass,{y0:1.16,collide:false});}
+addBox(-7.4,9.6,-6.6,10.4,3.2,M.pillar); addBox(6.6,9.6,7.4,10.4,3.2,M.pillar);
+addBox(-13,10.6,-10,11.2,0.5,M.bench); addBox(10,10.6,13,11.2,0.5,M.bench);
+const counterSign=new THREE.Mesh(new THREE.PlaneGeometry(3.4,0.5),new THREE.MeshBasicMaterial({map:signTex("TELLERS 1 – 4",512,76,"#c9d2d6","#1a2028","600 44px Arial, sans-serif")}));
+counterSign.position.set(-1.5,2.6,4.05);scene.add(counterSign);
+
+// --- office
+addBox(-14,-7,-12.8,-5,0.8,M.desk); addBox(-14,-3,-12.8,-1.5,0.8,M.desk);
+addBox(-5.6,-11,-5.2,-8,1.4,M.cabinet);
+addBox(-14.8,-11.8,-13.2,-11.2,1.9,M.cabinet);
+
+// --- security room
+addBox(12.8,-10,14.4,-8,0.8,M.desk);
+const monTex=signTex("CAM 01   CAM 02",256,64,"#9fc4ff","#0d1a2c","bold 24px monospace");
+for(let i=0;i<2;i++){const s=new THREE.Mesh(new THREE.BoxGeometry(0.1,0.5,0.7),[M.cabinet,new THREE.MeshBasicMaterial({map:monTex}),M.cabinet,M.cabinet,M.cabinet,M.cabinet]);s.position.set(14.1,1.1,-9.4+i*0.8);s.rotation.y=Math.PI;scene.add(s);}
+addBox(14.2,-4,14.8,-1,2,M.cabinet);
+
+// --- vault interior
+addBox(-4.8,-11.8,4.8,-11.4,2.6,depositMat,{collide:true});
+addBox(-4.8,-11.4,-4.4,-6.2,2.6,depositMat); addBox(4.4,-11.4,4.8,-6.2,2.6,depositMat);
+
+// vault door (pivot on the west edge, swings into the vault)
+const vaultPivot=new THREE.Group();vaultPivot.position.set(-1.5,0,-5);scene.add(vaultPivot);
+const doorFront=new THREE.MeshPhongMaterial({map:signTex("VAULT 02",256,256,"#2b3034","#9aa1a6","bold 34px Arial"),shininess:80,specular:0x555555});
+const vaultDoor=new THREE.Mesh(new THREE.BoxGeometry(3,2.8,0.5),[M.steel,M.steel,M.steel,M.steel,doorFront,M.steel]);
+vaultDoor.position.set(1.5,1.4,0);vaultDoor.castShadow=true;vaultPivot.add(vaultDoor);
+const wheel=new THREE.Mesh(new THREE.TorusGeometry(0.42,0.05,8,24),M.steel);wheel.position.set(1.5,1.35,0.3);vaultPivot.add(wheel);
+for(let i=0;i<3;i++){const sp=new THREE.Mesh(new THREE.BoxGeometry(0.84,0.05,0.05),M.steel);sp.rotation.z=i*Math.PI/3;sp.position.copy(wheel.position);vaultPivot.add(sp);}
+const vaultCol={minX:-1.5,maxX:1.5,minZ:-5.25,maxZ:-4.75,h:2.8};colliders.push(vaultCol);
+const drillGroup=new THREE.Group();drillGroup.position.set(0.45,1.3,-4.5);scene.add(drillGroup);
+const drillBody=new THREE.Mesh(new THREE.BoxGeometry(0.5,0.35,0.35),M.drill);drillGroup.add(drillBody);
+const drillBit=new THREE.Mesh(new THREE.CylinderGeometry(0.04,0.04,0.35,6),M.steel);drillBit.rotation.x=Math.PI/2;drillBit.position.z=-0.3;drillGroup.add(drillBit);
+const drillLegs=new THREE.Mesh(new THREE.BoxGeometry(0.06,1.3,0.06),M.pole);drillLegs.position.set(0,-0.65,0.1);drillGroup.add(drillLegs);
+drillGroup.visible=false;
+const drillLight=new THREE.PointLight(0xffa040,0,4,2);drillLight.position.set(0.45,1.3,-4.3);scene.add(drillLight);
+
+// --- alley & yard props
+addBox(-8.4,-14.4,-6.6,-13.2,1.4,M.dumpster);
+addBox(-14.6,-15.6,-13.4,-14.4,1.2,M.crate); addBox(-14.4,-15.4,-13.6,-14.6,1.9,M.crate,{y0:1.2,collide:false});
+addBox(-17.6,3,-16.4,4.2,1.1,M.crate); addBox(-17.8,5,-16.6,6.2,1.1,M.crate);
+// parked car on the street
+addBox(6,17.2,10.5,19,0.95,M.car,{});
+addBox(7,17.35,9.4,18.85,1.45,M.glass,{y0:0.95,collide:false});
+for(const [wx,wz] of [[6.8,17.15],[9.7,17.15],[6.8,19.05],[9.7,19.05]]){const w=new THREE.Mesh(new THREE.CylinderGeometry(0.33,0.33,0.22,12),M.tire);w.rotation.x=Math.PI/2;w.position.set(wx,0.33,wz);scene.add(w);}
+// mark car as sight-blocker for a crouched player
+colliders.forEach(c=>{if(c.minX===6&&c.maxX===10.5)c.h=1.4;});
+
+// getaway van (rear open, facing the building)
+const VAN={x1:-21.2,x2:-17.4,z1:-18.1,z2:-15.9};
+addBox(VAN.x1,VAN.z1,VAN.x2,VAN.z2,0.6,M.van,{y0:0.45,collide:false});
+addBox(VAN.x1,VAN.z1,VAN.x2,VAN.z1+0.08,2.3,M.van,{y0:0.6,collide:false});
+addBox(VAN.x1,VAN.z2-0.08,VAN.x2,VAN.z2,2.3,M.van,{y0:0.6,collide:false});
+addBox(VAN.x1,VAN.z1,VAN.x2,VAN.z2,2.38,M.van,{y0:2.3,collide:false});
+addBox(VAN.x1,VAN.z1,VAN.x1+0.1,VAN.z2,2.3,M.vanIn,{y0:0.6,collide:false});
+addBox(VAN.x1+0.1,VAN.z1+0.08,VAN.x2,VAN.z2-0.08,2.3,M.vanIn,{y0:0.6,collide:false,cast:false});
+addBox(-22.9,VAN.z1,VAN.x1,VAN.z2,1.9,M.van,{y0:0.45,collide:false});
+addBox(-22.4,VAN.z1+0.05,-21.3,VAN.z2-0.05,1.85,M.glass,{y0:1.3,collide:false});
+addBox(VAN.x2,VAN.z1-0.02,VAN.x2+1.1,VAN.z1+0.04,2.25,M.van,{y0:0.6,collide:false});
+addBox(VAN.x2,VAN.z2-0.04,VAN.x2+1.1,VAN.z2+0.02,2.25,M.van,{y0:0.6,collide:false});
+colliders.push({minX:-22.9,maxX:VAN.x2,minZ:VAN.z1,maxZ:VAN.z2,h:2.3});
+for(const [wx,wz] of [[-22,VAN.z1],[-18.4,VAN.z1],[-22,VAN.z2],[-18.4,VAN.z2]]){const w=new THREE.Mesh(new THREE.CylinderGeometry(0.4,0.4,0.26,12),M.tire);w.rotation.x=Math.PI/2;w.position.set(wx,0.4,wz);w.castShadow=true;scene.add(w);}
+const SECURE={x:-16.2,z:-17};
+const ring=new THREE.Mesh(new THREE.RingGeometry(0.9,1.1,40),new THREE.MeshBasicMaterial({color:0x78d8a3,transparent:true,opacity:.35,depthWrite:false}));
+ring.rotation.x=-Math.PI/2;ring.position.set(SECURE.x,0.03,SECURE.z);scene.add(ring);
+
+// street lamps
+function lamp(x,z,color){addBox(x-0.12,z-0.12,x+0.12,z+0.12,4.6,M.pole);const h=new THREE.Mesh(new THREE.BoxGeometry(0.7,0.15,0.35),M.lamp);h.position.set(x,4.6,z);scene.add(h);return pointLight(x,4.3,z,color,1.3,15);}
+lamp(-9,15.2,0xffb050); lamp(11,15.2,0xffb050); lamp(-21,-12.6,0xffa848);
+pointLight(-10.7,2.9,-12.6,0xd8e2ff,0.6,6);
+
+/* ================= lighting ================= */
+scene.add(new THREE.HemisphereLight(0x3d4c6a,0x0b0d10,0.55));
+const moon=new THREE.DirectionalLight(0x8ea4d4,0.35);moon.position.set(-18,30,14);moon.target.position.set(0,0,0);
+moon.castShadow=true;moon.shadow.mapSize.set(2048,2048);
+Object.assign(moon.shadow.camera,{left:-32,right:32,top:32,bottom:-32,near:1,far:80});moon.shadow.bias=-0.0008;
+scene.add(moon);scene.add(moon.target);
+pointLight(-7,3,6,0xdfe8ff,0.9,10,true); pointLight(7,3,6,0xdfe8ff,0.9,10,true);
+pointLight(-9.5,3,-6,0xcad6ff,0.5,8,true); pointLight(10,3,-6,0x7fa4e8,0.6,8,true);
+pointLight(0,3,-2.5,0xe8f0ff,0.6,7,true); pointLight(0,3,-8.5,0xd8ffe8,0.7,8,true);
+
+/* ================= cameras (CCTV) ================= */
+const cams=[];
+function makeCam(x,y,z,center,amp,period,phase,range,half){
+  const g=new THREE.Group();g.position.set(x,y,z);scene.add(g);
+  const head=new THREE.Group();head.rotation.x=0.24;g.add(head);
+  const bracket=new THREE.Mesh(new THREE.BoxGeometry(0.08,0.35,0.08),M.pole);bracket.position.y=0.2;g.add(bracket);
+  const body=new THREE.Mesh(new THREE.BoxGeometry(0.22,0.2,0.5),M.camBody);body.castShadow=true;head.add(body);
+  const lens=new THREE.Mesh(new THREE.CylinderGeometry(0.07,0.07,0.06,12),M.lens);lens.rotation.x=Math.PI/2;lens.position.z=0.27;head.add(lens);
+  const led=new THREE.Mesh(new THREE.SphereGeometry(0.025,6,6),new THREE.MeshBasicMaterial({color:0xff3030}));led.position.set(0.07,0.07,0.26);head.add(led);
+  const r=range*Math.tan(half);
+  const cg=new THREE.ConeGeometry(r,range,28,1,true);cg.translate(0,-range/2,0);cg.rotateX(-Math.PI/2);
+  const coneMat=new THREE.MeshBasicMaterial({color:0x9fc0ff,transparent:true,opacity:.07,depthWrite:false,side:THREE.DoubleSide,blending:THREE.AdditiveBlending});
+  const cone=new THREE.Mesh(cg,coneMat);head.add(cone);
+  const c={g,led,coneMat,x,z,center,amp,period,phase,range,half,yaw:center,seeDist:-1,base:0.33,kind:"camera"};
+  cams.push(c);return c;
+}
+makeCam(14.5,2.85,11.5,-3*Math.PI/4,0.78,9,0,15,0.45);
+makeCam(-4,2.85,-12.45,-3*Math.PI/4,0.78,8,1.6,12,0.45);
+
+/* ================= guards ================= */
+function alertTex(color){return tex(64,64,(g)=>{g.fillStyle="rgba(0,0,0,0)";g.fillRect(0,0,64,64);g.fillStyle=color;g.beginPath();g.moveTo(32,4);g.lineTo(60,58);g.lineTo(4,58);g.closePath();g.fill();g.fillStyle="#0a0d12";g.fillRect(29,20,6,22);g.fillRect(29,46,6,6);});}
+const TEX_AMBER=alertTex("#f4ab3d"),TEX_RED=alertTex("#ff4b3e");
+const TEX_HEAR=tex(64,64,(g)=>{g.clearRect(0,0,64,64);g.strokeStyle="#f4ab3d";g.lineWidth=5;g.beginPath();g.arc(32,32,26,0,7);g.stroke();g.fillStyle="#f4ab3d";g.font="bold 38px Arial";g.textAlign="center";g.textBaseline="middle";g.fillText("?",32,34);});
+
+class Guard{
+  constructor(route,pause){this.route=route;this.pause=pause;this.build();this.reset();this.kind="guard";this.base=0.28;}
+  build(){
+    const root=new THREE.Group(),body=new THREE.Group();root.add(body);scene.add(root);
+    const part=(geo,mat,x,y,z,parent)=>{const m=new THREE.Mesh(geo,mat);m.position.set(x,y,z);m.castShadow=true;(parent||body).add(m);return m;};
+    const legL=new THREE.Group(),legR=new THREE.Group();legL.position.set(-0.11,0.86,0);legR.position.set(0.11,0.86,0);body.add(legL,legR);
+    part(new THREE.BoxGeometry(0.18,0.86,0.2),M.pants,0,-0.43,0,legL);part(new THREE.BoxGeometry(0.18,0.86,0.2),M.pants,0,-0.43,0,legR);
+    part(new THREE.BoxGeometry(0.5,0.62,0.28),M.uni,0,1.17,0);
+    const armL=new THREE.Group(),armR=new THREE.Group();armL.position.set(-0.32,1.44,0);armR.position.set(0.32,1.44,0);body.add(armL,armR);
+    part(new THREE.BoxGeometry(0.13,0.6,0.14),M.uni,0,-0.3,0,armL);part(new THREE.BoxGeometry(0.13,0.6,0.14),M.uni,0,-0.3,0,armR);
+    armR.rotation.x=-0.9;
+    part(new THREE.BoxGeometry(0.06,0.06,0.24),M.pole,0,-0.55,0.08,armR);
+    part(new THREE.BoxGeometry(0.26,0.28,0.26),M.skin,0,1.63,0);
+    part(new THREE.BoxGeometry(0.29,0.09,0.3),M.cap,0,1.8,0);part(new THREE.BoxGeometry(0.29,0.03,0.14),M.cap,0,1.76,0.2);
+    part(new THREE.BoxGeometry(0.08,0.08,0.02),M.badge,-0.13,1.32,0.15);
+    const spot=new THREE.SpotLight(0xffeccc,1.5,15,0.42,0.55,1.6);spot.position.set(0.32,1.25,0.35);body.add(spot);
+    const tgt=new THREE.Object3D();tgt.position.set(0.1,0,7);body.add(tgt);spot.target=tgt;
+    const sprite=new THREE.Sprite(new THREE.SpriteMaterial({map:TEX_AMBER,depthTest:false,transparent:true}));sprite.scale.set(0.42,0.42,0.42);sprite.position.y=2.25;sprite.renderOrder=9;root.add(sprite);
+    Object.assign(this,{root,body,legL,legR,armL,spot,sprite});
+  }
+  reset(){
+    this.x=this.route[0][0];this.z=this.route[0][1];this.wp=1;
+    const n=this.route[1];this.yaw=Math.atan2(n[0]-this.x,n[1]-this.z);
+    this.wait=0;this.down=false;this.sus=0;this.seeDist=-1;this.fall=0;this.chase=false;this.last=null;this.phase=0;this.speedNow=0;
+    this.heard=null;this.wasSeeing=false;
+    this.body.rotation.x=0;this.spot.intensity=1.5;this.sprite.visible=false;this.sync(0);
+  }
+  hearCheck(){
+    if(G.noise<=0)return null;
+    const d=Math.hypot(P.x-this.x,P.z-this.z);
+    const eff=blocked(this.x,this.z,P.x,P.z,2.0)?d*1.7:d;
+    return eff<G.noise?{x:P.x,z:P.z}:null;
+  }
+  turn(target,rate,dt){const d=wrap(target-this.yaw);this.yaw+=clamp(d,-rate*dt,rate*dt);return Math.abs(d);}
+  walk(nx,nz,speed,dt,collide){
+    const diff=this.turn(Math.atan2(nx,nz),3.4,dt);
+    if(diff<0.5){this.x+=nx*speed*dt;this.z+=nz*speed*dt;this.speedNow=speed;
+      if(collide){const p={x:this.x,z:this.z};resolve(p,0.3);this.x=p.x;this.z=p.z;}
+    }else this.speedNow=0;
+  }
+  patrol(dt,speed,collide){
+    if(this.wait>0){this.wait-=dt;this.speedNow=0;return;}
+    const t=this.route[this.wp],dx=t[0]-this.x,dz=t[1]-this.z,d=Math.hypot(dx,dz);
+    if(d<0.15){this.wait=this.pause;this.wp=(this.wp+1)%this.route.length;return;}
+    this.walk(dx/d,dz/d,Math.min(speed,d/Math.max(dt,1e-4)),dt,collide);
+  }
+  nearestWaypoint(){let b=0,bd=1e9;this.route.forEach((p,i)=>{const d=Math.hypot(p[0]-this.x,p[1]-this.z);if(d<bd&&!blocked(this.x,this.z,p[0],p[1],0.5)){bd=d;b=i;}});return b;}
+  update(dt,simOnly){
+    if(this.down){this.fall=Math.min(1,this.fall+dt*2.6);this.body.rotation.x=this.fall*Math.PI/2*0.96;this.speedNow=0;this.sync(dt);return;}
+    if(simOnly){this.seeDist=-1;this.patrol(dt,1.45,false);this.sync(dt);return;}
+    const range=G.alarm?18:14,half=G.alarm?1.05:0.85;
+    this.seeDist=canSee(this.x,this.z,this.yaw,half,range);
+    const seeing=this.seeDist>=0;
+    if(G.alarm){
+      if(seeing){this.last={x:P.x,z:P.z};this.chase=true;}
+      if(this.chase&&this.last){
+        const dx=this.last.x-this.x,dz=this.last.z-this.z,d=Math.hypot(dx,dz);
+        if(d<0.5&&!seeing){this.chase=false;this.wp=this.nearestWaypoint();}
+        else if(d>0.01)this.walk(dx/d,dz/d,3.3,dt,true);
+      }else this.patrol(dt,1.9,true);
+      if(Math.hypot(P.x-this.x,P.z-this.z)<1.15)endGame(false,"A guard caught you.");
+    }else{
+      if(seeing){
+        if(!this.wasSeeing)SFX.spot(this.x,this.z);
+        this.sus=2.4;this.heard=null;this.speedNow=0;this.turn(Math.atan2(P.x-this.x,P.z-this.z),2.6,dt);
+      }else{
+        const hd=this.hearCheck();
+        if(hd){if(!this.heard)SFX.hear(this.x,this.z);this.heard=hd;this.sus=3.2;}
+        if(this.sus>0){
+          this.sus-=dt;this.speedNow=0;
+          if(this.heard)this.turn(Math.atan2(this.heard.x-this.x,this.heard.z-this.z),2.4,dt);
+          if(this.sus<=0)this.heard=null;
+        }else this.patrol(dt,1.45,false);
+      }
+    }
+    this.wasSeeing=seeing;
+    if(G.alarm){this.sprite.visible=this.chase;this.sprite.material.map=TEX_RED;}
+    else if(seeing){this.sprite.visible=true;this.sprite.material.map=TEX_AMBER;}
+    else if(this.heard){this.sprite.visible=true;this.sprite.material.map=TEX_HEAR;}
+    else this.sprite.visible=false;
+    this.sync(dt);
+  }
+  sync(dt){
+    this.root.position.set(this.x,0,this.z);this.root.rotation.y=this.yaw;
+    if(this.speedNow>0){
+      const before=Math.floor(this.phase/Math.PI);
+      this.phase+=this.speedNow*dt*4.2;
+      if(state==="playing"&&Math.floor(this.phase/Math.PI)!==before){const s=spatial(this.x,this.z,15);if(s)stepSound(this.x,this.z,0.5*s.vol*(this.speedNow>2?1.4:1),s.pan,s.lp);}
+    }
+    const s=this.speedNow>0?Math.sin(this.phase)*0.55:0;
+    this.legL.rotation.x=s;this.legR.rotation.x=-s;this.armL.rotation.x=-s*0.6;
+  }
+}
+const guards=[
+  new Guard([[-12,8],[12,8],[12,1.5],[-12,1.5]],1.1),
+  new Guard([[-12,-2],[-7,-2],[-7,-10],[-10.7,-10],[-10.7,-16],[-10.7,-10]],1.2),
+  new Guard([[10,-9],[13,-3],[10,-2],[10,1.5],[0,1.5],[0,-2.5],[-3.5,-3],[3.5,-3],[0,-2.5],[0,1.5],[10,1.5],[10,-2]],1.0)
+];
+
+/* ================= loot bags ================= */
+function makeBag(){
+  const g=new THREE.Group();
+  const b=new THREE.Mesh(new THREE.CylinderGeometry(0.22,0.22,0.75,10),M.bag);b.rotation.z=Math.PI/2;b.scale.set(1,1,0.85);b.castShadow=true;g.add(b);
+  const s=new THREE.Mesh(new THREE.TorusGeometry(0.13,0.025,6,12,Math.PI),M.strap);s.position.y=0.2;g.add(s);
+  const tag=new THREE.Mesh(new THREE.BoxGeometry(0.14,0.1,0.01),phong(0xd8d2b8));tag.position.set(0.2,0.05,0.19);g.add(tag);
+  return g;
+}
+const BAG_SPOTS=[[-3,-9.6],[0,-10.6],[3,-9.6]];
+const VAN_SLOTS=[[-18.2,-17.4],[-19.1,-16.6],[-20.1,-17.2]];
+const bags=BAG_SPOTS.map(()=>{const m=makeBag();scene.add(m);return {mesh:m,state:"vault"};});
+const viewBag=makeBag();viewBag.position.set(0.34,-0.42,-0.62);viewBag.rotation.set(0.3,0.5,0.2);viewBag.scale.setScalar(0.8);viewBag.visible=false;camera.add(viewBag);
+
+/* ================= collision & sight ================= */
+function resolve(p,r){
+  for(let it=0;it<3;it++)for(const c of colliders){
+    const cx=clamp(p.x,c.minX,c.maxX),cz=clamp(p.z,c.minZ,c.maxZ);
+    const dx=p.x-cx,dz=p.z-cz,d2=dx*dx+dz*dz;
+    if(d2<r*r){
+      if(d2>1e-9){const d=Math.sqrt(d2),k=(r-d)/d;p.x+=dx*k;p.z+=dz*k;}
+      else{const l=p.x-c.minX,rr=c.maxX-p.x,t=p.z-c.minZ,b=c.maxZ-p.z,m=Math.min(l,rr,t,b);
+        if(m===l)p.x=c.minX-r;else if(m===rr)p.x=c.maxX+r;else if(m===t)p.z=c.minZ-r;else p.z=c.maxZ+r;}
+    }
+  }
+}
+function segBox(ax,az,bx,bz,c){
+  let t0=0,t1=1;const dx=bx-ax,dz=bz-az;
+  if(Math.abs(dx)<1e-9){if(ax<c.minX||ax>c.maxX)return false;}
+  else{let a=(c.minX-ax)/dx,b=(c.maxX-ax)/dx;if(a>b){const t=a;a=b;b=t;}if(a>t0)t0=a;if(b<t1)t1=b;if(t0>t1)return false;}
+  if(Math.abs(dz)<1e-9){if(az<c.minZ||az>c.maxZ)return false;}
+  else{let a=(c.minZ-az)/dz,b=(c.maxZ-az)/dz;if(a>b){const t=a;a=b;b=t;}if(a>t0)t0=a;if(b<t1)t1=b;if(t0>t1)return false;}
+  return true;
+}
+function blocked(ax,az,bx,bz,minH){for(const c of colliders){if(c.h<minH)continue;if(segBox(ax,az,bx,bz,c))return true;}return false;}
+function canSee(ox,oz,yaw,half,range){
+  const dx=P.x-ox,dz=P.z-oz,d=Math.hypot(dx,dz);
+  if(d>range)return -1;
+  if(Math.abs(wrap(Math.atan2(dx,dz)-yaw))>half)return -1;
+  if(blocked(ox,oz,P.x,P.z,P.crouch?1.0:1.6))return -1;
+  return d;
+}
+
+/* ================= audio (Web Audio, all synthesized) ================= */
+const A={ctx:null,master:null,muted:false,noise:null,brown:null,amb:null,hum:null,drill:null,alarm:null};
+try{A.muted=localStorage.getItem("qh-muted")==="1";}catch(e){}
+function initAudio(){
+  if(A.ctx){if(A.ctx.state!=="running")A.ctx.resume().catch(()=>{});return;}
+  const AC=window.AudioContext||window.webkitAudioContext;if(!AC)return;
+  try{A.ctx=new AC();}catch(e){A.ctx=null;return;}
+  const c=A.ctx;
+  const comp=c.createDynamicsCompressor();comp.threshold.value=-14;comp.ratio.value=4;comp.connect(c.destination);
+  A.master=c.createGain();A.master.gain.value=A.muted?0:0.9;A.master.connect(comp);
+  const len=c.sampleRate*2;
+  A.noise=c.createBuffer(1,len,c.sampleRate);const nd=A.noise.getChannelData(0);for(let i=0;i<len;i++)nd[i]=Math.random()*2-1;
+  A.brown=c.createBuffer(1,len,c.sampleRate);const bd=A.brown.getChannelData(0);let l=0;for(let i=0;i<len;i++){l=(l+0.02*(Math.random()*2-1))/1.02;bd[i]=l*3.5;}
+  // night ambience: distant city rumble + fluorescent hum indoors
+  const amb=c.createBufferSource();amb.buffer=A.brown;amb.loop=true;
+  const af=c.createBiquadFilter();af.type="lowpass";af.frequency.value=380;
+  A.amb=c.createGain();A.amb.gain.value=0;amb.connect(af).connect(A.amb).connect(A.master);amb.start();
+  const h1=c.createOscillator();h1.frequency.value=100;const h2=c.createOscillator();h2.frequency.value=200;
+  A.hum=c.createGain();A.hum.gain.value=0;const h2g=c.createGain();h2g.gain.value=0.4;
+  h1.connect(A.hum);h2.connect(h2g).connect(A.hum);A.hum.connect(A.master);h1.start();h2.start();
+}
+function setMuted(m){
+  A.muted=m;try{localStorage.setItem("qh-muted",m?"1":"0");}catch(e){}
+  if(A.master)A.master.gain.setTargetAtTime(m?0:0.9,A.ctx.currentTime,0.05);
+  $("sound").textContent=m?"SOUND OFF · M":"SOUND ON · M";
+}
+function chain(pan,lp){
+  const c=A.ctx;let node=A.master;
+  if(pan!=null&&c.createStereoPanner){const p=c.createStereoPanner();p.pan.value=clamp(pan,-1,1);p.connect(node);node=p;}
+  if(lp){const f=c.createBiquadFilter();f.type="lowpass";f.frequency.value=lp;f.connect(node);node=f;}
+  return node;
+}
+function noiseHit(o){
+  if(!A.ctx||A.ctx.state!=="running")return;
+  const c=A.ctx,t=c.currentTime+(o.delay||0),dur=o.dur||0.08,att=o.attack||0.004;
+  const s=c.createBufferSource();s.buffer=A.noise;
+  const f=c.createBiquadFilter();f.type=o.type||"bandpass";f.frequency.value=o.freq||1000;f.Q.value=o.q||1;
+  const g=c.createGain();g.gain.setValueAtTime(0.0001,t);g.gain.exponentialRampToValueAtTime(Math.max(0.0002,o.vol||0.3),t+att);g.gain.exponentialRampToValueAtTime(0.0001,t+dur);
+  s.connect(f).connect(g).connect(chain(o.pan,o.lp));s.start(t,Math.random()*1.5,dur+0.05);
+}
+function tone(o){
+  if(!A.ctx||A.ctx.state!=="running")return;
+  const c=A.ctx,t=c.currentTime+(o.delay||0),dur=o.dur||0.2,att=o.attack||0.01;
+  const osc=c.createOscillator();osc.type=o.type||"sine";
+  osc.frequency.setValueAtTime(o.f0,t);osc.frequency.exponentialRampToValueAtTime(Math.max(1,o.f1||o.f0),t+dur);
+  const g=c.createGain();g.gain.setValueAtTime(0.0001,t);g.gain.exponentialRampToValueAtTime(Math.max(0.0002,o.vol||0.2),t+att);g.gain.exponentialRampToValueAtTime(0.0001,t+dur);
+  osc.connect(g).connect(chain(o.pan,o.lp));osc.start(t);osc.stop(t+dur+0.05);
+}
+// position a sound in the world relative to the player: volume falloff, stereo pan, muffled through walls
+function spatial(x,z,maxD){
+  const dx=x-P.x,dz=z-P.z,d=Math.hypot(dx,dz);if(d>maxD)return null;
+  const rx=Math.cos(P.yaw),rz=-Math.sin(P.yaw);
+  const pan=d>0.3?(dx*rx+dz*rz)/d*0.85:0;
+  let vol=Math.pow(1-d/maxD,1.6),lp=null;
+  if(blocked(P.x,P.z,x,z,2.0)){vol*=0.4;lp=700;}
+  return {vol,pan,lp};
+}
+function surface(x,z){
+  if(x>-5&&x<5&&z>-12&&z<-5)return "steel";
+  if(((x>-15&&x<-5)||(x>5&&x<15))&&z>-12&&z<0)return "carpet";
+  if(x>-15&&x<15&&z>-12&&z<12)return "tile";
+  return "asphalt";
+}
+const STEP={tile:{freq:1700,q:1.4,dur:.07,v:1},carpet:{freq:420,q:.7,dur:.1,v:.5},steel:{freq:2400,q:3,dur:.08,v:1,ping:true},asphalt:{freq:850,q:.9,dur:.08,v:.85}};
+function stepSound(x,z,vol,pan,lp){
+  const s=STEP[surface(x,z)];
+  noiseHit({freq:s.freq*(0.9+Math.random()*0.2),q:s.q,dur:s.dur,vol:vol*s.v,pan,lp});
+  noiseHit({type:"lowpass",freq:220,dur:.09,vol:vol*0.8*s.v,pan,lp});
+  if(s.ping)tone({type:"sine",f0:1900+Math.random()*300,f1:1700,dur:.12,vol:vol*0.1,pan,lp});
+}
+const SFX={
+  takedown(x,z){const s=spatial(x,z,20)||{pan:0};noiseHit({type:"lowpass",freq:180,dur:.25,vol:.9,pan:s.pan});tone({type:"sine",f0:120,f1:45,dur:.3,vol:.6,pan:s.pan});noiseHit({freq:600,q:.8,dur:.12,vol:.3,delay:.05,pan:s.pan});},
+  whiff(){noiseHit({type:"highpass",freq:1800,q:.6,dur:.14,vol:.18,attack:.03});},
+  hear(x,z){const s=spatial(x,z,25);if(!s)return;tone({type:"triangle",f0:170,f1:250,dur:.3,vol:.3*s.vol+.05,pan:s.pan,lp:s.lp||1200});},
+  spot(x,z){const s=spatial(x,z,30)||{vol:.3,pan:0};tone({type:"triangle",f0:240,f1:430,dur:.22,vol:.35*s.vol+.08,pan:s.pan,lp:s.lp||1800});},
+  blip(level){tone({type:"sine",f0:500+level*1100,f1:520+level*1150,dur:.07,vol:.08+level*.12});},
+  pickup(){for(let i=0;i<5;i++)noiseHit({type:"highpass",freq:3000,q:.7,dur:.03,vol:.16,delay:i*.035});noiseHit({type:"lowpass",freq:500,dur:.18,vol:.35,delay:.18});},
+  load(){noiseHit({type:"lowpass",freq:260,dur:.25,vol:.7});tone({f0:660,dur:.15,vol:.12,delay:.12});tone({f0:990,dur:.3,vol:.1,delay:.24});},
+  vault(){tone({type:"sawtooth",f0:70,f1:40,dur:1.4,vol:.25,lp:400});noiseHit({type:"lowpass",freq:300,dur:.6,vol:.8});tone({type:"square",f0:220,f1:170,dur:1.6,vol:.04,lp:900,delay:.3});},
+  alarmHit(){tone({type:"square",f0:880,dur:.18,vol:.18});tone({type:"square",f0:660,dur:.25,vol:.18,delay:.2});},
+  win(){[523,659,784,1046].forEach((f,i)=>tone({type:"triangle",f0:f,dur:.5,vol:.18,delay:i*.14}));},
+  lose(){[392,330,262].forEach((f,i)=>tone({type:"sawtooth",f0:f,f1:f*0.97,dur:.6,vol:.12,lp:1200,delay:i*.22}));}
+};
+function drillOn(){
+  if(!A.ctx||A.drill)return;
+  const c=A.ctx,t=c.currentTime;
+  const out=c.createGain();out.gain.setValueAtTime(0.0001,t);out.gain.exponentialRampToValueAtTime(0.32,t+.15);out.connect(A.master);
+  const o=c.createOscillator();o.type="sawtooth";o.frequency.setValueAtTime(60,t);o.frequency.exponentialRampToValueAtTime(110,t+.4);
+  const of=c.createBiquadFilter();of.type="lowpass";of.frequency.value=900;const og=c.createGain();og.gain.value=.35;o.connect(of).connect(og).connect(out);
+  const n=c.createBufferSource();n.buffer=A.noise;n.loop=true;
+  const nf=c.createBiquadFilter();nf.type="bandpass";nf.frequency.value=3200;nf.Q.value=2;const ng=c.createGain();ng.gain.value=.25;n.connect(nf).connect(ng).connect(out);
+  const lfo=c.createOscillator();lfo.frequency.value=21;const lg=c.createGain();lg.gain.value=.2;lfo.connect(lg).connect(ng.gain);
+  o.start(t);n.start(t);lfo.start(t);A.drill={out,nodes:[o,n,lfo]};
+}
+function drillOff(silent){
+  if(!A.drill)return;
+  const {out,nodes}=A.drill,t=A.ctx.currentTime;
+  out.gain.cancelScheduledValues(t);out.gain.setValueAtTime(Math.max(0.0001,out.gain.value),t);out.gain.exponentialRampToValueAtTime(0.0001,t+.2);
+  nodes.forEach(n=>n.stop(t+.25));A.drill=null;
+  if(!silent)tone({type:"sawtooth",f0:110,f1:40,dur:.3,vol:.1,lp:600});
+}
+function alarmOn(){
+  if(!A.ctx||A.alarm)return;
+  const c=A.ctx;
+  // bank bell: square tone chopped by a fast LFO
+  const bell=c.createOscillator();bell.type="square";bell.frequency.value=1250;
+  const bf=c.createBiquadFilter();bf.type="bandpass";bf.frequency.value=1800;bf.Q.value=1.2;
+  const bg=c.createGain();bg.gain.value=.5;const lfo=c.createOscillator();lfo.type="square";lfo.frequency.value=14;const lg=c.createGain();lg.gain.value=.5;lfo.connect(lg).connect(bg.gain);
+  const bo=c.createGain();bo.gain.value=.08;bell.connect(bf).connect(bg).connect(bo).connect(A.master);
+  // police siren, distant at first, louder as the timer runs down
+  const sir=c.createOscillator();sir.type="sawtooth";sir.frequency.value=850;
+  const sl=c.createOscillator();sl.type="triangle";sl.frequency.value=0.4;const sd=c.createGain();sd.gain.value=320;sl.connect(sd).connect(sir.frequency);
+  const sf=c.createBiquadFilter();sf.type="lowpass";sf.frequency.value=1300;const sg=c.createGain();sg.gain.value=0.0001;sir.connect(sf).connect(sg).connect(A.master);
+  [bell,lfo,sir,sl].forEach(o=>o.start());
+  A.alarm={nodes:[bell,lfo,sir,sl],siren:sg,outs:[bo,sg]};
+}
+function alarmOff(){
+  if(!A.alarm)return;
+  const t=A.ctx.currentTime;
+  A.alarm.outs.forEach(g=>{g.gain.cancelScheduledValues(t);g.gain.setTargetAtTime(0.0001,t,0.1);});
+  A.alarm.nodes.forEach(n=>n.stop(t+.6));A.alarm=null;
+}
+function updateAudio(){
+  if(!A.ctx)return;
+  const t=A.ctx.currentTime,inn=inside();
+  A.amb.gain.setTargetAtTime(inn?0.05:0.14,t,0.4);
+  A.hum.gain.setTargetAtTime(inn?0.012:0,t,0.4);
+  if(A.alarm)A.alarm.siren.gain.setTargetAtTime(0.03+0.17*(1-G.alarmT/ALARM_TIME),t,0.3);
+}
+
+/* ================= game state ================= */
+const P={x:2,z:20.5,yaw:0,pitch:0,crouch:false,eye:1.65,bobT:0,carry:null,sprinting:false,kick:0};
+const G={time:0,world:0,susp:0,unseen:0,alarm:false,alarmT:60,drill:0,drillWas:false,vaultOpen:false,doorAnim:0,secured:0,takedowns:0,everAlarm:false,lastSpotter:"guard"};
+let state="menu",locked=false,everLocked=false,fallback=false,pendingStart=false,pressedE=false;
+const keys={};
+const DRILL_TIME=10,ALARM_TIME=60;
+
+function resetGame(){
+  Object.assign(P,{x:2,z:20.5,yaw:0,pitch:0,crouch:false,eye:1.65,bobT:0,carry:null,sprinting:false,kick:0});
+  Object.assign(G,{time:0,susp:0,unseen:0,alarm:false,alarmT:ALARM_TIME,drill:0,drillWas:false,vaultOpen:false,doorAnim:0,secured:0,takedowns:0,everAlarm:false,noise:0,blipT:0});
+  drillOff(true);alarmOff();
+  vaultPivot.rotation.y=0;if(!colliders.includes(vaultCol))colliders.push(vaultCol);
+  drillGroup.visible=false;drillLight.intensity=0;
+  bags.forEach((b,i)=>{b.state="vault";b.mesh.visible=true;b.mesh.position.set(BAG_SPOTS[i][0],0.22,BAG_SPOTS[i][1]);b.mesh.rotation.set(0,i*0.7,0);});
+  viewBag.visible=false;
+  guards.forEach(g=>g.reset());
+  $("alarmEdge").hidden=true;
+  hideToast();
+}
+
+/* ================= input ================= */
+addEventListener("keydown",e=>{
+  if(["ArrowUp","ArrowDown","ArrowLeft","ArrowRight","Space"].includes(e.code))e.preventDefault();
+  keys[e.code]=true;
+  if(state!=="playing")return;
+  if(e.code==="KeyE"&&!e.repeat)pressedE=true;
+  if(e.code==="KeyC"&&!e.repeat)P.crouch=!P.crouch;
+  if(e.code==="KeyM"&&!e.repeat){setMuted(!A.muted);toast(A.muted?"Sound off":"Sound on","",1200);}
+  if(e.code==="Escape"&&!locked)setState("paused");
+});
+addEventListener("keyup",e=>{keys[e.code]=false;});
+addEventListener("blur",()=>{for(const k in keys)keys[k]=false;if(state==="playing"&&fallback)setState("paused");});
+document.addEventListener("mousemove",e=>{
+  if(state!=="playing")return;
+  if(!locked&&!fallback)return;
+  P.yaw-=(e.movementX||0)*0.0022;P.pitch=clamp(P.pitch-(e.movementY||0)*0.0022,-1.45,1.45);
+});
+canvas.addEventListener("mousedown",e=>{
+  if(state!=="playing")return;
+  if(e.button===0)tryTakedown();
+});
+
+function requestLock(){
+  try{const r=canvas.requestPointerLock();if(r&&typeof r.catch==="function")r.catch(lockFailed);}catch(err){lockFailed();}
+}
+function lockFailed(){
+  if(!pendingStart)return;
+  if(everLocked){pendingStart=false;const n=state==="paused"?$("pauseNote"):state==="ended"?$("endReason"):$("note");n.textContent="The browser needs a moment before it can capture the mouse again. Click the button once more.";return;}
+  pendingStart=false;fallback=true;setState("playing");
+  toast("Mouse capture is unavailable here. Move the mouse or use the arrow keys to look.","warn",4200);
+}
+document.addEventListener("pointerlockchange",()=>{
+  locked=document.pointerLockElement===canvas;
+  if(locked){everLocked=true;fallback=false;if(pendingStart){pendingStart=false;setState("playing");}}
+  else if(state==="playing"&&!fallback)setState("paused");
+});
+document.addEventListener("pointerlockerror",lockFailed);
+
+function begin(){
+  pendingStart=true;
+  if(fallback){pendingStart=false;setState("playing");return;}
+  requestLock();
+  setTimeout(()=>{if(pendingStart&&!locked)lockFailed();},1500);
+}
+$("startBtn").onclick=()=>{initAudio();resetGame();begin();};
+$("againBtn").onclick=()=>{initAudio();resetGame();begin();};
+$("resumeBtn").onclick=()=>{initAudio();$("pauseNote").textContent="The guards are frozen until you come back.";begin();};
+$("restartBtn").onclick=()=>{initAudio();resetGame();begin();};
+setMuted(A.muted);
+
+function setState(s){
+  state=s;
+  $("menu").hidden=s!=="menu";
+  $("pause").hidden=s!=="paused";
+  $("end").hidden=s!=="ended";
+  $("hud").hidden=!(s==="playing"||s==="paused");
+  if(s!=="playing"){for(const k in keys)keys[k]=false;}
+  if(A.ctx){
+    if(s==="playing"&&A.ctx.state!=="running")A.ctx.resume().catch(()=>{});
+    if(s==="paused"){drillOff(true);A.ctx.suspend().catch(()=>{});}
+    if(s==="ended"){const t=A.ctx.currentTime;A.amb.gain.setTargetAtTime(0.03,t,0.5);A.hum.gain.setTargetAtTime(0,t,0.5);}
+  }
+}
+
+/* ================= toast & prompt ================= */
+let toastTimer=0;
+function toast(msg,tone,ms){const t=$("toast");t.textContent=msg;t.className="show "+(tone||"");clearTimeout(toastTimer);toastTimer=setTimeout(hideToast,ms||2200);}
+function hideToast(){$("toast").className="";}
+let lastPrompt="";
+function setPrompt(html,progress){
+  const pr=$("prompt");
+  if(!html){pr.hidden=true;lastPrompt="";return;}
+  pr.hidden=false;
+  if(html!==lastPrompt){$("promptText").innerHTML=html;lastPrompt=html;}
+  const bar=$("pbar");
+  if(progress==null)bar.hidden=true;else{bar.hidden=false;$("pfill").style.width=(progress*100).toFixed(1)+"%";}
+}
+
+/* ================= player ================= */
+function updatePlayer(dt){
+  const turnL=(keys.ArrowLeft?1:0)-(keys.ArrowRight?1:0),turnU=(keys.ArrowUp?1:0)-(keys.ArrowDown?1:0);
+  P.yaw+=turnL*2.2*dt;P.pitch=clamp(P.pitch+turnU*1.6*dt,-1.45,1.45);
+  const fx=-Math.sin(P.yaw),fz=-Math.cos(P.yaw),rx=Math.cos(P.yaw),rz=-Math.sin(P.yaw);
+  let mx=0,mz=0;
+  if(keys.KeyW){mx+=fx;mz+=fz;}if(keys.KeyS){mx-=fx;mz-=fz;}
+  if(keys.KeyD){mx+=rx;mz+=rz;}if(keys.KeyA){mx-=rx;mz-=rz;}
+  const len=Math.hypot(mx,mz);
+  const shift=keys.ShiftLeft||keys.ShiftRight;
+  if(shift&&P.crouch&&len>0)P.crouch=false;
+  P.sprinting=!!(shift&&len>0);
+  let speed=P.crouch?1.7:(P.sprinting?5.4:3.1);
+  if(P.carry)speed*=0.62;
+  if(len>0){
+    mx/=len;mz/=len;
+    const p={x:P.x+mx*speed*dt,z:P.z+mz*speed*dt};
+    resolve(p,0.35);
+    for(const g of guards){if(g.down)continue;const dx=p.x-g.x,dz=p.z-g.z,d=Math.hypot(dx,dz);if(d<0.65&&d>1e-6){p.x=g.x+dx/d*0.65;p.z=g.z+dz/d*0.65;}}
+    P.x=p.x;P.z=p.z;
+    const before=Math.floor(P.bobT/Math.PI);
+    P.bobT+=dt*speed*2.1;
+    if(Math.floor(P.bobT/Math.PI)!==before){
+      stepSound(P.x,P.z,P.sprinting?0.5:P.crouch?0.08:0.25,0,null);
+      if(P.carry)noiseHit({type:"lowpass",freq:700,dur:.12,vol:.12});
+    }
+  }
+  G.noise=len>0?(P.sprinting?7:P.crouch?0:1.8):0;
+  if(G.drillWas)G.noise=Math.max(G.noise,3.5);
+  const targetEye=P.crouch?1.05:1.65;
+  P.eye+=(targetEye-P.eye)*Math.min(1,dt*10);
+  const reduce=matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const bob=reduce||len===0?0:Math.sin(P.bobT)*0.035;
+  P.kick=Math.max(0,P.kick-dt*4);
+  camera.position.set(P.x,P.eye+bob,P.z);
+  camera.rotation.set(P.pitch-P.kick*0.12,P.yaw,0);
+}
+function tryTakedown(){
+  const fx=-Math.sin(P.yaw),fz=-Math.cos(P.yaw);
+  let best=null,bd=1e9;
+  for(const g of guards){if(g.down)continue;const dx=g.x-P.x,dz=g.z-P.z,d=Math.hypot(dx,dz);
+    if(d<2.0&&(dx*fx+dz*fz)/d>0.45&&d<bd){best=g;bd=d;}}
+  P.kick=1;
+  if(!best){SFX.whiff();return;}
+  const tx=(P.x-best.x)/bd,tz=(P.z-best.z)/bd;
+  const facing=Math.sin(best.yaw)*tx+Math.cos(best.yaw)*tz;
+  if(facing<-0.15&&!blocked(P.x,P.z,best.x,best.z,0.9)){
+    best.down=true;best.spot.intensity=0;best.sprite.visible=false;best.seeDist=-1;best.heard=null;G.takedowns++;
+    SFX.takedown(best.x,best.z);
+    toast("Guard down","good");
+  }else{SFX.whiff();toast("Get behind them first","warn");}
+}
+
+/* ================= world updates ================= */
+function updateCams(dt,simOnly){
+  for(const c of cams){
+    c.yaw=c.center+c.amp*Math.sin(G.world*2*Math.PI/c.period+c.phase);
+    c.g.rotation.y=c.yaw;
+    c.seeDist=simOnly?-1:canSee(c.x,c.z,c.yaw,c.half,c.range);
+    const seeing=c.seeDist>=0;
+    c.coneMat.color.setHex(G.alarm?0xff5040:seeing?0xffb048:0x9fc0ff);
+    c.coneMat.opacity=seeing?0.14:0.07;
+    c.led.visible=(Math.floor(G.world*2)%2)===0||seeing;
+  }
+}
+function updateDetection(dt){
+  if(G.alarm)return;
+  let gain=0,spotter=null;
+  const obs=[...guards,...cams];
+  for(const o of obs){
+    if(o.seeDist<0)continue;
+    const range=o.kind==="camera"?o.range:14;
+    let r=o.base*(1+2.2*(1-o.seeDist/range));
+    if(P.sprinting)r*=1.7;if(P.crouch)r*=0.65;
+    gain+=r;spotter=o.kind;
+  }
+  G.blipT-=dt;
+  if(gain>0){
+    G.susp=Math.min(1,G.susp+gain*dt);G.unseen=0;G.lastSpotter=spotter;
+    if(G.blipT<=0){SFX.blip(G.susp);G.blipT=0.42-0.3*G.susp;}
+  }
+  else{G.unseen+=dt;if(G.unseen>0.8)G.susp=Math.max(0,G.susp-0.16*dt);}
+  if(G.susp>=1)triggerAlarm();
+}
+function triggerAlarm(){
+  G.alarm=true;G.everAlarm=true;G.alarmT=ALARM_TIME;G.susp=1;
+  $("alarmEdge").hidden=false;
+  SFX.alarmHit();alarmOn();
+  toast(G.lastSpotter==="camera"?"A camera spotted you. Alarm!":"A guard spotted you. Alarm!","bad",3000);
+}
+function updateInteraction(dt){
+  const fx=-Math.sin(P.yaw),fz=-Math.cos(P.yaw);
+  const facing=(x,z,max)=>{const dx=x-P.x,dz=z-P.z,d=Math.hypot(dx,dz);return d<max&&(d<0.4||(dx*fx+dz*fz)/d>0.45)?d:-1;};
+  let prompt=null,prog=null;
+
+  // vault door
+  if(!G.vaultOpen){
+    const d=facing(0,-4.7,2.3);
+    const inRange=d>=0&&P.z>-4.8;
+    let drilling=false;
+    if(inRange){
+      prompt="Hold <kbd>E</kbd> to drill the vault door";prog=G.drill;
+      if(keys.KeyE){
+        drilling=true;
+        G.drill=Math.min(1,G.drill+dt/DRILL_TIME);drillGroup.visible=true;
+        drillBit.rotation.y+=dt*40;drillLight.intensity=0.8+Math.random()*0.8;
+        prompt="Drilling… keep holding <kbd>E</kbd>";
+        if(G.drill>=1){G.vaultOpen=true;drilling=false;drillLight.intensity=0;drillGroup.visible=false;const i=colliders.indexOf(vaultCol);if(i>=0)colliders.splice(i,1);drillOff(true);SFX.vault();toast("Vault open","good");}
+        else drillOn();
+      }
+    }
+    if(!drilling){
+      drillLight.intensity=0;drillOff(G.vaultOpen);
+      if(G.drillWas&&G.drill>0&&G.drill<1)toast(inRange?"Drill paused":"Drill interrupted","warn");
+    }
+    G.drillWas=drilling;
+  }
+
+  // bags
+  if(!P.carry){
+    let best=null,bd=1e9;
+    for(const b of bags){if(b.state!=="vault")continue;const d=facing(b.mesh.position.x,b.mesh.position.z,2.0);if(d>=0&&d<bd){best=b;bd=d;}}
+    if(best&&!prompt){prompt="Press <kbd>E</kbd> to pick up the bag";if(pressedE){best.state="carried";best.mesh.visible=false;P.carry=best;viewBag.visible=true;SFX.pickup();toast("Bag picked up. Get it to the van.","warn");}}
+  }else{
+    const d=Math.hypot(SECURE.x-P.x,SECURE.z-P.z);
+    if(d<2.6){
+      prompt="Press <kbd>E</kbd> to load the bag into the van";
+      if(pressedE){
+        const b=P.carry,slot=VAN_SLOTS[G.secured];b.state="secured";b.mesh.visible=true;b.mesh.position.set(slot[0],0.82,slot[1]);b.mesh.rotation.set(0,G.secured*0.9,0);
+        P.carry=null;viewBag.visible=false;G.secured++;SFX.load();
+        if(G.secured>=3){endGame(true);return;}
+        toast(`Bag secured ${G.secured}/3`,"good");
+      }
+    }
+  }
+  setPrompt(prompt,prog);
+}
+function updateAlarm(dt){
+  if(!G.alarm)return;
+  G.alarmT-=dt;
+  if(G.alarmT<=0){G.alarmT=0;endGame(false,"The police arrived before you got away.");}
+}
+const fmt=s=>{s=Math.max(0,Math.ceil(s));return String(Math.floor(s/60)).padStart(2,"0")+":"+String(s%60).padStart(2,"0");};
+const fmtUp=s=>{s=Math.floor(s);return String(Math.floor(s/60)).padStart(2,"0")+":"+String(s%60).padStart(2,"0");};
+function inside(){return P.x>-15&&P.x<15&&P.z>-12&&P.z<12;}
+function updateHUD(){
+  const watched=!G.alarm&&[...guards,...cams].some(o=>o.seeDist>=0);
+  const hud=$("hud");hud.classList.toggle("alarm",G.alarm);hud.classList.toggle("watched",watched);
+  $("detectFill").style.width=((G.alarm?1:G.susp)*100).toFixed(1)+"%";
+  $("detectLbl").textContent=G.alarm?"Alarm raised":watched?"Being watched":"Detection";
+  $("seenEdge").style.opacity=G.alarm?0:(G.susp*0.55).toFixed(3);
+  $("clockLbl").textContent=G.alarm?"Police arrive in":"Elapsed";
+  $("clockVal").textContent=G.alarm?fmt(G.alarmT):fmtUp(G.time);
+  let obj;
+  if(!G.vaultOpen)obj=!inside()&&G.drill===0?"Get into the bank unseen. The vault is behind the lobby, past the tellers.":`Drill the vault door. Hold E. ${Math.round(G.drill*100)}% done`;
+  else if(P.carry)obj="Carry the bag to the van in the back alley (northwest corner).";
+  else obj="Grab a loot bag from the vault.";
+  $("objText").textContent=obj;
+  $("bagsVal").textContent=`${G.secured}/3`;
+  $("stance").textContent=G.drillWas?"DRILLING · NOISY":P.crouch?"CROUCHED · SILENT":P.sprinting?"SPRINTING · LOUD":"STANDING";
+  $("carry").hidden=!P.carry;
+}
+
+/* ================= end ================= */
+function endGame(won,reason){
+  if(state==="ended")return;
+  setState("ended");setPrompt(null);hideToast();
+  drillOff(true);alarmOff();if(won)SFX.win();else SFX.lose();
+  if(document.pointerLockElement)document.exitPointerLock();
+  const stealth=!G.everAlarm;
+  $("endStamp").textContent=won?"JOB REPORT · PAID":"JOB REPORT · FAILED";
+  $("endTitle").textContent=won?(stealth?"Clean job":"Loud, but paid"):"Busted";
+  $("endTitle").className=won?"good":"bad";
+  $("endReason").textContent=won?(stealth?"All three bags are in the van and nobody ever knew you were there.":"All three bags made it out, but the whole street heard the alarm."):reason;
+  const rows=[["Time",fmtUp(G.time)],["Bags secured",`${G.secured}/3`],["Stealth",stealth?"Kept":"Broken"],["Guards taken down",String(G.takedowns)]];
+  $("endStats").innerHTML=rows.map(([a,b],i)=>`<dt>${a}</dt><dd class="${i===2?(stealth?"good":"bad"):""}">${b}</dd>`).join("");
+}
+
+/* ================= main loop ================= */
+function stepGame(dt){
+  G.time+=dt;G.world+=dt;
+  updatePlayer(dt);
+  updateCams(dt,false);
+  for(const g of guards){g.update(dt,false);if(state!=="playing")return;}
+  updateDetection(dt);
+  updateInteraction(dt);
+  if(state!=="playing")return;
+  updateAlarm(dt);
+  updateAudio();
+  updateHUD();
+  pressedE=false;
+}
+function stepMenu(dt){
+  G.world+=dt;
+  updateCams(dt,true);
+  for(const g of guards)g.update(dt,true);
+  const a=G.world*0.05;
+  camera.position.set(Math.sin(a)*6+4,5.5,27+Math.cos(a)*2);
+  camera.lookAt(0,1.5,4);
+}
+function animate(dt){
+  if(G.vaultOpen&&G.doorAnim<1){G.doorAnim=Math.min(1,G.doorAnim+dt/1.6);const e=1-Math.pow(1-G.doorAnim,3);vaultPivot.rotation.y=e*1.75;}
+  ring.material.opacity=P.carry&&state==="playing"?0.45+0.25*Math.sin(G.world*5):0.22;
+  wheel.rotation.z=G.vaultOpen?G.doorAnim*3:0;
+}
+let last=performance.now();
+function frame(now){
+  requestAnimationFrame(frame);
+  const dt=Math.min(0.05,(now-last)/1000);last=now;
+  if(state==="playing")stepGame(dt);
+  else if(state==="menu")stepMenu(dt);
+  animate(dt);
+  renderer.render(scene,camera);
+}
+resetGame();
+setState("menu");
+requestAnimationFrame(frame);
+})();
+</script>
+
+</body>
+</html>
