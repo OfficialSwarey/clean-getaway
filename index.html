@@ -51,6 +51,7 @@ html,body{height:100%;margin:0;overflow:hidden;background:var(--ink);color:var(-
 #obj{position:absolute;left:max(18px,env(safe-area-inset-left,0px));bottom:calc(18px + env(safe-area-inset-bottom,0px));max-width:min(380px,44vw);display:grid;gap:6px;padding:12px 14px;background:var(--panel);border-left:3px solid var(--sodium)}
 #objText{font-size:17px;font-weight:600;line-height:1.3}
 #bagsRow{font-family:var(--f-mono);font-size:13px;color:var(--dim)}
+#objTip{font-size:13px;line-height:1.35;color:var(--sodium);opacity:.85}
 #bagsRow b{color:var(--secure);font-weight:700}
 
 #status{position:absolute;right:max(18px,env(safe-area-inset-right,0px));bottom:calc(18px + env(safe-area-inset-bottom,0px));display:flex;flex-direction:column;align-items:flex-end;gap:6px}
@@ -157,7 +158,7 @@ details.help .keys{margin-bottom:14px}
 <div id="hud" hidden>
   <div id="detect"><div class="lbl" id="detectLbl">Detection</div><div class="bar"><i id="detectFill"></i></div></div>
   <div id="clock"><span class="lbl" id="clockLbl">Elapsed</span><span id="clockVal">00:00</span></div>
-  <div id="obj"><div class="lbl">Objective</div><div id="objText">Get into the bank unseen.</div><div id="bagsRow"><span id="bagsLbl">Bags in the van</span> <b id="bagsVal">0/3</b> · Take <b id="takeVal">$0</b></div></div>
+  <div id="obj"><div class="lbl">Objective</div><div id="objText">Get into the bank unseen.</div><div id="objTip" hidden></div><div id="bagsRow"><span id="bagsLbl">Bags in the van</span> <b id="bagsVal">0/3</b> · Take <b id="takeVal">$0</b></div></div>
   <div id="status"><span class="chip" id="devChip" hidden>DEV · GHOST OFF · V</span><span class="chip" id="posChip" hidden></span><span class="chip" id="ammo" hidden>PISTOL 12 / 36</span><span class="chip" id="pagerChip" hidden>PAGERS 0/3</span><span class="chip" id="tieChip" hidden>ZIP TIES 6</span><span class="chip" id="loopChip" hidden></span><span class="chip" id="jamChip" hidden>JAMMERS 2 · J</span><span class="chip ok" id="cardChip" hidden>KEYCARD</span><span class="chip ok" id="codeChip" hidden></span><span class="chip" id="maskChip">UNMASKED · OUTSIDE</span><span class="chip" id="carry" hidden>CARRYING BAG · SLOWED</span><span class="chip" id="stance">STANDING</span><span class="chip" id="sound">SOUND ON · M</span></div>
   <div id="crosshair"></div>
   <div id="prompt" hidden><span id="promptText"></span><div class="pbar" id="pbar" hidden><i id="pfill"></i></div></div>
@@ -6048,7 +6049,6 @@ function updateHUD(){
   else if(caller)obj=`Stop the call! Look at ${caller.label.replace(/^A /,"the ").replace(/^The /,"the ")} and press F to shout before it goes through. ${Math.ceil(caller.callT)} s left.`;
   else if(ringing&&ringing.pager.state==="ringing")obj=`Answer ${ringing.name}'s pager! Hold E at his body and keep holding. ${Math.ceil(ringing.pager.t)} s left.`;
   else if(P.carry&&P.carry.kind==="body")obj=LV.def.text.bins;
-  else if(loose&&!G.alarm)obj=`Hide ${loose>1?"the bodies":"the body"}. Hold E on a body to bag it, then dump it in a bin.`;
   else if(LV.def.objective)obj=LV.def.objective();
   else if(!P.masked&&!G.vaultOpen)obj=restricted(P.x,P.z)?(LV.day&&P.level===0?`You're in a staff area of ${LV.def.place}. Staff and guards who see you back here will get suspicious.`:`You're ${onRoof()?"on the roof of":LV.def.multi&&!LV.def.isInside(P.x,P.z)?"on the grounds of":"inside"} ${LV.def.place} without a mask. Anyone who sees you will raise the alarm.`):LV.def.text.case;
   else if(!G.vaultOpen&&VAULT.safe)obj=G.knowCode?`Open the safe in the owner's office. The code is ${G.safeCode}.`:LV.def.text.vault;
@@ -6057,6 +6057,8 @@ function updateHUD(){
   else if(G.secured>=bags.length)obj=`Every bag is in the ${LV.def.getaway||"van"}. Hold E at the ${LV.def.getaway||"van"} to ${LV.def.leaveVerb||"drive off"}, or grab some loose cash first.`;
   else obj=(VAULT.safe?"Grab a loot bag from the safe.":"Grab a loot bag from the vault.")+(G.secured?" Or hold E at the van to drive off with what you have.":"");
   $("objText").textContent=obj;
+  {const tip=loose&&!G.alarm&&!(P.carry&&P.carry.kind==="body")?`Tip: ${loose>1?`${loose} bodies are`:"a body is"} lying in the open. If a guard or camera finds one, they raise the alarm. You can bag a body (hold E) and dump it in a bin, or leave it.`:"";
+    const el=$("objTip");if(el.textContent!==tip)el.textContent=tip;el.hidden=!tip;}
   $("bagsLbl").textContent=`Bags in the ${LV.def.getaway||"van"}`;$("bagsVal").textContent=`${G.secured}/${bags.length}`;
   {const tk=G.vanTake+G.pocket+G.diamondVal,t=G.pocket+G.diamondVal>0?`${money(tk)} (${money(G.pocket+G.diamondVal)} on you)`:money(G.vanTake);if($("takeVal").textContent!==t)$("takeVal").textContent=t;}
   $("stance").textContent=DEV.ghost?"NOCLIP":P.ladder?"ON A LADDER":(P.jh>P.gnd+0.05?"JUMPING":P.crouch?"CROUCHED · SILENT":P.sprinting?"SPRINTING · LOUD":P.gnd>0.1?"STANDING ON SOMETHING":"STANDING")+(musicCovers()&&!P.crouch?" · MUSIC COVERS YOU":"");
