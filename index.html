@@ -88,7 +88,8 @@ html,body{height:100%;margin:0;overflow:hidden;background:var(--ink);color:var(-
 #toast.warn{color:var(--sodium)}#toast.bad{color:var(--alarm)}#toast.good{color:var(--secure)}
 
 /* ---------- overlays ---------- */
-.overlay{position:fixed;inset:0;z-index:5;display:grid;place-items:center;overflow-y:auto;padding-block:24px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));background:linear-gradient(180deg,rgba(8,11,16,.55),rgba(8,11,16,.88))}
+.overlay{position:fixed;inset:0;z-index:5;display:grid;justify-items:center;overflow-y:auto;padding-block:24px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));background:linear-gradient(180deg,rgba(8,11,16,.55),rgba(8,11,16,.88))}
+.overlay>.card{margin:auto}
 .card{width:min(560px,100%);background:var(--panel);border:1px solid var(--line);padding:28px clamp(18px,4vw,34px);display:grid;gap:16px;backdrop-filter:blur(6px)}
 .card h1{margin:0;font-family:var(--f-display);font-weight:400;font-size:clamp(44px,8vw,72px);line-height:.95;letter-spacing:.02em;text-wrap:balance}
 .card h2{margin:0;font-family:var(--f-display);font-weight:400;font-size:clamp(36px,6vw,54px);line-height:1;text-wrap:balance}
@@ -120,23 +121,32 @@ button{font:inherit;cursor:pointer}
 .good{color:var(--secure)}.bad{color:var(--alarm)}
 #note{color:var(--sodium)}
 .card.wide{width:min(700px,100%)}
-.jobs{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
-.job{display:grid;gap:4px;text-align:left;padding:14px 16px;background:rgba(255,255,255,.02);border:1px solid var(--line);color:var(--fg);min-width:0}
-.job:hover{border-color:rgba(244,171,61,.5)}
+.card.menu{width:min(1080px,100%);gap:20px}
+.menu-head{display:grid;gap:12px}
+.menu-body{display:grid;grid-template-columns:minmax(0,1fr) 320px;gap:18px;align-items:start}
+@media (max-width:860px){.menu-body{grid-template-columns:1fr}.job-detail{position:static}}
+.jobs{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:10px}
+.job-group{grid-column:1/-1;font-family:var(--f-mono);font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--dim);padding:6px 0;border-bottom:1px solid var(--line)}
+.job-group:first-child{padding-top:0}
+.job{display:flex;flex-direction:column;gap:6px;text-align:left;padding:12px 14px;min-height:132px;background:rgba(255,255,255,.02);border:1px solid var(--line);color:var(--fg);min-width:0}
+.job:hover{border-color:rgba(244,171,61,.5);background:rgba(255,255,255,.035)}
 .job:focus-visible{outline:2px solid var(--fg);outline-offset:2px}
 .job[aria-checked="true"]{border-color:var(--sodium);background:rgba(244,171,61,.08);box-shadow:inset 3px 0 0 var(--sodium)}
-.job-time{font-family:var(--f-mono);font-size:11px;letter-spacing:.16em;color:var(--sodium)}
-.job-time.day{color:#8fd0ff}
-.job-time.club{color:#ff7ad9}
-.job.club,.job.manor,.job.casino,.job.port,.job.tower,.job.jewel,.job.jewelDay{grid-column:1/-1}
-.job-time.port{color:#7fd0ff}
-.job-time.tower{color:#c9a8ff}
-.job-time.jewel{color:#7fe0c0}
-.job-time.casino{color:#f4d27a}
-.job-time.manor{color:#9fc4ff}
-.job-name{font-family:var(--f-display);font-size:28px;line-height:1}
-.job-place{font-size:15px;color:#c7d0d3}
-.job-meta{font-family:var(--f-mono);font-size:11px;letter-spacing:.06em;color:var(--dim);line-height:1.5}
+.job-tags{display:flex;flex-wrap:wrap;gap:6px}
+.tag{font-family:var(--f-mono);font-size:10px;letter-spacing:.14em;padding:2px 6px;border:1px solid currentColor;line-height:1.4}
+.tag.night{color:var(--sodium)}.tag.day{color:#8fd0ff}.tag.open{color:var(--secure)}.tag.len{color:var(--dim)}
+.job-name{font-family:var(--f-display);font-size:26px;line-height:1}
+.job-place{font-size:14px;color:#c7d0d3}
+.job-stats{margin-top:auto;font-family:var(--f-mono);font-size:11px;letter-spacing:.04em;color:var(--dim);line-height:1.5}
+.job .job-best{font-family:var(--f-mono);font-size:10px;letter-spacing:.1em;color:var(--secure)}
+.job-detail{position:sticky;top:0;display:grid;gap:12px;align-content:start;padding:18px;border:1px solid var(--line);background:rgba(255,255,255,.03)}
+.job-detail h2{font-size:clamp(32px,4vw,44px)}
+.job-detail p{font-size:15px}
+.jd-stats{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.jd-stats li{font-family:var(--f-mono);font-size:12px;color:var(--fg);padding:6px 8px;border:1px solid var(--line);background:rgba(0,0,0,.2)}
+.jd-stats b{font-size:16px;margin-right:6px}
+.job-detail .btn{justify-self:stretch;text-align:center}
+#jdBest:empty{display:none}
 .dev{display:flex;gap:10px;align-items:flex-start;font-size:15px;color:#c7d0d3;cursor:pointer}
 .dev input{accent-color:#f4ab3d;width:18px;height:18px;margin:2px 0 0;flex:none}
 .dev small{display:block;color:var(--dim);font-size:13px}
@@ -171,80 +181,106 @@ details.help .keys{margin-bottom:14px}
 </div>
 
 <div id="menu" class="overlay">
-  <div class="card wide">
-    <span class="stamp">CHOOSE A JOB</span>
-    <h1>Clean Getaway</h1>
-    <p>Case the place, slip in, crack the vault and get the money to the van before anyone knows you were there. Every bag and every stack of loose cash adds to your take, and you can drive off whenever you like. Never set off the alarm for a 30% stealth bonus; on jobs with civilians, leave them all alive for another 15%. If the alarm goes off, the police arrive in 60 seconds.</p>
-    <div class="jobs" role="radiogroup" aria-label="Job">
-      <button class="job" type="button" role="radio" aria-checked="true" data-map="harbor">
-        <span class="job-time">NIGHT · 02:40</span>
-        <span class="job-name">Quiet Hours</span>
-        <span class="job-place">Harbor Savings &amp; Loan</span>
-        <span class="job-meta">Small bank · 2 ways in: front, back door · 4 guards · 2 cameras · 3 bags</span>
-      </button>
-      <button class="job" type="button" role="radio" aria-checked="false" data-map="meridian">
-        <span class="job-time">NIGHT · 03:15</span>
-        <span class="job-name">Night Deposit</span>
-        <span class="job-place">Meridian Trust</span>
-        <span class="job-meta">Large bank · 3 ways in: front, loading door, roof hatch · keycard for the security room · 6 guards · 5 cameras · 4 bags</span>
-      </button>
-      <button class="job" type="button" role="radio" aria-checked="false" data-map="harborDay">
-        <span class="job-time day">DAY · 11:20</span>
-        <span class="job-name">Business Hours</span>
-        <span class="job-place">Harbor Savings &amp; Loan</span>
-        <span class="job-meta">Open for business · walk in the front · staff areas off-limits · 4 guards · 8 civilians · 2 cameras · 3 bags</span>
-      </button>
-      <button class="job" type="button" role="radio" aria-checked="false" data-map="meridianDay">
-        <span class="job-time day">DAY · 12:45</span>
-        <span class="job-name">Lunch Rush</span>
-        <span class="job-place">Meridian Trust</span>
-        <span class="job-meta">Busy lunch hour · walk in, or use the loading door or roof · keycard for the security room · 6 guards · 11 civilians · 5 cameras · 4 bags</span>
-      </button>
-      <button class="job club" type="button" role="radio" aria-checked="false" data-map="club">
-        <span class="job-time club">NIGHT · 01:30 · OPEN</span>
-        <span class="job-name">Last Call</span>
-        <span class="job-place">Club Halo</span>
-        <span class="job-meta">Packed nightclub · walk in the front · VIP, the bar and the back rooms are off limits · the music hides your footsteps · owner's safe with a code lock (the code is written down somewhere) · keycard for the security room · 6 guards · 20 clubbers and staff · 5 cameras · 4 bags</span>
-      </button>
-      <button class="job manor" type="button" role="radio" aria-checked="false" data-map="manor">
-        <span class="job-time manor">NIGHT · 03:50 · LONG JOB</span>
-        <span class="job-name">The Winter Heart</span>
-        <span class="job-place">Blackwood Manor</span>
-        <span class="job-meta">Country mansion on four floors · a hidden vault, lasers, a split code, the sleeping owner's signet ring · you can't leave without the diamond · gold bags · 9 guards · 6 cameras · 8 bags</span>
-      </button>
-      <button class="job casino" type="button" role="radio" aria-checked="false" data-map="casino">
-        <span class="job-time casino">NIGHT · 23:40 · OPEN · LONG JOB</span>
-        <span class="job-name">House Edge</span>
-        <span class="job-place">The Golden Lotus casino</span>
-        <span class="job-meta">Busy casino on four levels · walk in with the gamblers · steal a staff uniform · pickpocket the manager's override key · crawl through a vent into surveillance · a time-locked vault you have to hold for 75 s · fire escape to the roof · 10 guards · 23 guests and staff · 6 cameras · 10 bags</span>
-      </button>
-      <button class="job port" type="button" role="radio" aria-checked="false" data-map="port">
-        <span class="job-time port">NIGHT · 01:10 · LONG JOB</span>
-        <span class="job-name">Dead Reckoning</span>
-        <span class="job-place">Port Halvard · MV Kestrel</span>
-        <span class="job-meta">Container port and a cargo ship · crawl under the fence · read the manifest · open the hold from the bridge · climb and run the dock crane (loud) · open the right container · escape by speedboat · 9 guards · 6 cameras incl. the ship's searchlight · 7 bags</span>
-      </button>
-      <button class="job tower" type="button" role="radio" aria-checked="false" data-map="tower">
-        <span class="job-time tower">NIGHT · 02:20 · LONG JOB</span>
-        <span class="job-name">Glass Ceiling</span>
-        <span class="job-place">Halcyon Tower</span>
-        <span class="job-meta">Office tower, lobby to roof · ride the elevator (the executive floors need a card) or the window cleaners' gondola up the outside · record the CEO's voice for the vault · server-room override · pull the fire alarm to empty the building · bags down the garbage chute · helicopter off the roof · 13 guards · 9 cameras · 8 bags</span>
-      </button>
-      <button class="job jewel" type="button" role="radio" aria-checked="false" data-map="jewel">
-        <span class="job-time jewel">NIGHT · 03:10 · SMALL, TRICKY</span>
-        <span class="job-name">Brilliant Cut</span>
-        <span class="job-place">Lindqvist &amp; Daughters, jewellers</span>
-        <span class="job-meta">Small jeweller's with a basement · in through the café cellar wall, the skylight or the stockroom window · work out the alarm code from a calendar and a UV torch · motion sensors, wired cases and door contacts with an entry delay · lift the strongroom key from behind the watchman · crack the safe by ear · you can't leave without the North Star · 4 guards · 3 cameras · 4 bags</span>
-      </button>
-      <button class="job jewelDay" type="button" role="radio" aria-checked="false" data-map="jewelDay">
-        <span class="job-time day">DAY · 14:30 · OPEN · SMALL, TRICKY</span>
-        <span class="job-name">Window Shopping</span>
-        <span class="job-place">Lindqvist &amp; Daughters, jewellers</span>
-        <span class="job-meta">The same jeweller's, open for business · walk in with the customers · the back rooms and the basement are staff only · Mrs Lindqvist (the owner), the shop assistant and a jeweller at work downstairs · the cases and the strongroom are still on the alarm · you can't leave without the North Star · 3 guards · 7 civilians · 3 cameras · 4 bags</span>
-      </button>
+  <div class="card menu">
+    <header class="menu-head">
+      <span class="stamp">CHOOSE A JOB</span>
+      <h1>Clean Getaway</h1>
+      <p>Case the place, slip in and get the money to the getaway before anyone knows you were there. Every bag and every stack of loose cash adds to your take, and you can leave whenever you like. Never set off the alarm: +30%. On jobs with civilians, nobody hurt: another +15%. Once the alarm goes, the police are 60 seconds out.</p>
+    </header>
+    <div class="menu-body">
+      <div class="jobs" role="radiogroup" aria-label="Job">
+        <div class="job-group" role="presentation">Short jobs</div>
+        <button class="job" type="button" role="radio" aria-checked="false" data-map="harbor" data-len="Short">
+          <span class="job-tags"><span class="tag night">NIGHT · 02:40</span></span>
+          <span class="job-name">Quiet Hours</span>
+          <span class="job-place">Harbor Savings &amp; Loan</span>
+          <span class="job-stats">4 guards · 2 cameras · 3 bags</span>
+          <span class="job-desc" hidden>A small bank with two ways in: the front doors and the back door. Drill the vault behind the tellers and carry the bags to the van.</span>
+        </button>
+        <button class="job" type="button" role="radio" aria-checked="false" data-map="harborDay" data-len="Short">
+          <span class="job-tags"><span class="tag day">DAY · 11:20</span><span class="tag open">OPEN</span></span>
+          <span class="job-name">Business Hours</span>
+          <span class="job-place">Harbor Savings &amp; Loan</span>
+          <span class="job-stats">4 guards · 8 civilians · 2 cameras · 3 bags</span>
+          <span class="job-desc" hidden>The same bank, open for business. Walk in with the customers. Everything behind the teller counter is staff only.</span>
+        </button>
+        <div class="job-group" role="presentation">Medium jobs</div>
+        <button class="job" type="button" role="radio" aria-checked="false" data-map="meridian" data-len="Medium">
+          <span class="job-tags"><span class="tag night">NIGHT · 03:15</span></span>
+          <span class="job-name">Night Deposit</span>
+          <span class="job-place">Meridian Trust</span>
+          <span class="job-stats">6 guards · 5 cameras · 4 bags</span>
+          <span class="job-desc" hidden>A large bank with three ways in: the front, the loading door and a roof hatch. A keycard opens the security room.</span>
+        </button>
+        <button class="job" type="button" role="radio" aria-checked="false" data-map="meridianDay" data-len="Medium">
+          <span class="job-tags"><span class="tag day">DAY · 12:45</span><span class="tag open">OPEN</span></span>
+          <span class="job-name">Lunch Rush</span>
+          <span class="job-place">Meridian Trust</span>
+          <span class="job-stats">6 guards · 11 civilians · 5 cameras · 4 bags</span>
+          <span class="job-desc" hidden>Meridian Trust in the lunch rush. Walk in with everyone else, or use the loading door or the roof. A keycard opens the security room.</span>
+        </button>
+        <button class="job" type="button" role="radio" aria-checked="false" data-map="club" data-len="Medium">
+          <span class="job-tags"><span class="tag night">NIGHT · 01:30</span><span class="tag open">OPEN</span></span>
+          <span class="job-name">Last Call</span>
+          <span class="job-place">Club Halo</span>
+          <span class="job-stats">6 guards · 20 civilians · 5 cameras · 4 bags</span>
+          <span class="job-desc" hidden>A packed nightclub where the music hides your footsteps. The VIP area, the bar and the back rooms are off limits. The owner&#x27;s safe has a code lock, and the code is written down somewhere.</span>
+        </button>
+        <button class="job" type="button" role="radio" aria-checked="false" data-map="jewel" data-len="Medium">
+          <span class="job-tags"><span class="tag night">NIGHT · 03:10</span></span>
+          <span class="job-name">Brilliant Cut</span>
+          <span class="job-place">Lindqvist &amp; Daughters</span>
+          <span class="job-stats">4 guards · 1 civilian · 3 cameras · 4 bags</span>
+          <span class="job-desc" hidden>A small jeweller&#x27;s with a basement. Get in through the café cellar, the skylight or a window, work out the alarm code from a calendar and a UV torch, and crack the safe by ear. You can&#x27;t leave without the North Star.</span>
+        </button>
+        <button class="job" type="button" role="radio" aria-checked="false" data-map="jewelDay" data-len="Medium">
+          <span class="job-tags"><span class="tag day">DAY · 14:30</span><span class="tag open">OPEN</span></span>
+          <span class="job-name">Window Shopping</span>
+          <span class="job-place">Lindqvist &amp; Daughters</span>
+          <span class="job-stats">3 guards · 7 civilians · 3 cameras · 4 bags</span>
+          <span class="job-desc" hidden>The same jeweller&#x27;s, open for business. Walk in with the customers. The back rooms and the basement are staff only, and the cases and the strongroom stay on the alarm. You can&#x27;t leave without the North Star.</span>
+        </button>
+        <div class="job-group" role="presentation">Long jobs</div>
+        <button class="job" type="button" role="radio" aria-checked="false" data-map="manor" data-len="Long">
+          <span class="job-tags"><span class="tag night">NIGHT · 03:50</span></span>
+          <span class="job-name">The Winter Heart</span>
+          <span class="job-place">Blackwood Manor</span>
+          <span class="job-stats">9 guards · 3 civilians · 6 cameras · 8 bags</span>
+          <span class="job-desc" hidden>A country mansion on four floors. Find the hidden vault, get past the lasers, put together a split code and take the sleeping owner&#x27;s signet ring. You can&#x27;t leave without the diamond.</span>
+        </button>
+        <button class="job" type="button" role="radio" aria-checked="false" data-map="casino" data-len="Long">
+          <span class="job-tags"><span class="tag night">NIGHT · 23:40</span><span class="tag open">OPEN</span></span>
+          <span class="job-name">House Edge</span>
+          <span class="job-place">The Golden Lotus casino</span>
+          <span class="job-stats">11 guards · 23 civilians · 6 cameras · 10 bags</span>
+          <span class="job-desc" hidden>A busy casino on four levels. Borrow a staff uniform, pickpocket the manager&#x27;s override key, crawl through a vent into surveillance and hold the time-locked vault for 75 seconds.</span>
+        </button>
+        <button class="job" type="button" role="radio" aria-checked="false" data-map="port" data-len="Long">
+          <span class="job-tags"><span class="tag night">NIGHT · 01:10</span></span>
+          <span class="job-name">Dead Reckoning</span>
+          <span class="job-place">Port Halvard · MV Kestrel</span>
+          <span class="job-stats">9 guards · 6 civilians · 6 cameras · 7 bags</span>
+          <span class="job-desc" hidden>A container port and a cargo ship. Crawl under the fence, read the manifest, open the hold from the bridge and run the dock crane to free the right container. Escape by speedboat.</span>
+        </button>
+        <button class="job" type="button" role="radio" aria-checked="false" data-map="tower" data-len="Long">
+          <span class="job-tags"><span class="tag night">NIGHT · 02:20</span></span>
+          <span class="job-name">Glass Ceiling</span>
+          <span class="job-place">Halcyon Tower</span>
+          <span class="job-stats">13 guards · 8 civilians · 9 cameras · 8 bags</span>
+          <span class="job-desc" hidden>An office tower from lobby to roof. Ride the elevator or the window cleaners&#x27; gondola, record the CEO&#x27;s voice, override the time lock from the server room, and leave by van or helicopter.</span>
+        </button>
+      </div>
+      <aside class="job-detail" aria-live="polite">
+        <div class="job-tags" id="jdTags"></div>
+        <h2 id="jdName"></h2>
+        <div class="job-place" id="jdPlace"></div>
+        <p id="jdDesc"></p>
+        <ul class="jd-stats" id="jdStats"></ul>
+        <div class="job-best" id="jdBest"></div>
+        <button class="btn" id="startBtn">Start the job</button>
+        <label class="dev" for="devToggle"><input type="checkbox" id="devToggle"><span>Dev mode<small>Press V during a job for noclip: fly through walls, unseen by guards and cameras. SPACE up, CTRL or C down, SHIFT faster.</small></span></label>
+      </aside>
     </div>
-    <label class="dev" for="devToggle"><input type="checkbox" id="devToggle"><span>Dev mode<small>Press V during a job for noclip: fly through walls, invisible to guards and cameras. SPACE up, CTRL or C down, SHIFT faster. Shows your position.</small></span></label>
-    <div class="row"><button class="btn" id="startBtn">Start the job</button></div>
     <p class="lbl" id="note"></p>
     <details class="help">
       <summary>Controls and tips</summary>
@@ -1126,7 +1162,7 @@ const money=n=>"$"+Math.round(n).toLocaleString("en-US");
 function rollValue(r,step){return Math.round((r[0]+Math.random()*(r[1]-r[0]))/step)*step;}
 function bestKey(){return "cg-best-"+LV.id;}
 function readBest(id){try{return +(localStorage.getItem("cg-best-"+id)||0);}catch(e){return 0;}}
-function showBests(){document.querySelectorAll(".job").forEach(b=>{let s=b.querySelector(".job-best");const v=readBest(b.dataset.map);if(!v){if(s)s.remove();return;}if(!s){s=document.createElement("span");s.className="job-best";b.appendChild(s);}s.textContent="BEST SCORE "+money(v);});}
+function showBests(){document.querySelectorAll(".job").forEach(b=>{let s=b.querySelector(".job-best");const v=readBest(b.dataset.map);if(!v){if(s)s.remove();return;}if(!s){s=document.createElement("span");s.className="job-best";b.appendChild(s);}s.textContent="BEST SCORE "+money(v);});if($("jdName"))jobDetail();}
 
 /* ---------- loot and body bags ---------- */
 const goldBagMat=phong(0x3b2d18,{emissive:0x120d05}),goldStrap=phong(0xd9b24a,{shininess:80});
@@ -5107,9 +5143,19 @@ $("menuBtn").onclick=toMenu;$("pauseMenuBtn").onclick=toMenu;
 // job picker
 let selectedMap="harbor";
 try{const m=localStorage.getItem("cg-map");if(m&&MAPS[m])selectedMap=m;}catch(e){}
+function jobDetail(){
+  const b=document.querySelector(`.job[data-map="${selectedMap}"]`);if(!b)return;
+  $("jdTags").innerHTML=b.querySelector(".job-tags").innerHTML+`<span class="tag len">${b.dataset.len.toUpperCase()}</span>`;
+  $("jdName").textContent=b.querySelector(".job-name").textContent;
+  $("jdPlace").textContent=b.querySelector(".job-place").textContent;
+  $("jdDesc").textContent=b.querySelector(".job-desc").textContent;
+  $("jdStats").innerHTML=b.querySelector(".job-stats").textContent.split(" · ").map(t=>{const m=/^(\d+) (.*)$/.exec(t);return `<li><b>${m[1]}</b>${m[2]}</li>`;}).join("");
+  const v=readBest(selectedMap);$("jdBest").textContent=v?"BEST SCORE "+money(v):"";
+}
 function pickMap(id){
   selectedMap=id;
   document.querySelectorAll(".job").forEach(b=>b.setAttribute("aria-checked",String(b.dataset.map===id)));
+  jobDetail();
   if(LV.id!==id){buildMap(id);resetGame();}
 }
 document.querySelectorAll(".job").forEach(b=>b.addEventListener("click",()=>pickMap(b.dataset.map)));
@@ -6198,7 +6244,7 @@ function frame(now){
   if(state==="playing"||state==="paused"){renderer.clearDepth();renderer.render(vmScene,vmCam);}
 }
 buildMap(selectedMap);
-document.querySelectorAll(".job").forEach(b=>b.setAttribute("aria-checked",String(b.dataset.map===selectedMap)));
+document.querySelectorAll(".job").forEach(b=>b.setAttribute("aria-checked",String(b.dataset.map===selectedMap)));jobDetail();
 resetGame();
 setState("menu");
 requestAnimationFrame(frame);
