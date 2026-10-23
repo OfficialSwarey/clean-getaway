@@ -1430,7 +1430,7 @@ const MAP_MERIDIAN={
     plaque(tex(256,160,(g,w,h)=>{g.fillStyle="#2b2117";g.fillRect(0,0,w,h);g.fillStyle="#6d5a3e";g.fillRect(10,10,w-20,h-20);g.fillStyle="#334a5c";g.fillRect(16,16,w-32,h-60);g.fillStyle="#d8b46a";g.beginPath();g.arc(180,50,14,0,7);g.fill();}),1.6,1.0,20.9,1.75,4.22);
     // break room
     addBox(-21,-5,-18.5,-3.2,0.75,M.desk); addBox(-23.8,-7.6,-22.8,-6.6,1.9,phong(0xc9ccc8));
-    addBox(-23.8,-6.4,-23.2,-1.5,0.95,M.counter); addBox(-15.2,-7.6,-12.6,-6.8,0.6,M.bench);
+    addBox(-23.8,-6.4,-23.2,-1.5,0.95,M.counter); addBox(-19.4,-7.6,-16.8,-6.8,0.6,M.bench);
     makeBin(-13.2,-1.0,1.2,0.8,1.0,cartMat,cartLid,"TRASH");
     // server room: rows of racks with blinking LEDs
     for(const rx of [-22,-19,-16]){
@@ -2458,8 +2458,8 @@ const MAP_CASINO={
     pointLight(0,ROOF_Y+3.0,-3.5,0xe8f0ff,0.5,26,true);
     // surveillance: a wall of monitors, two operators, the sensor console
     const monTex=signTex("CAM 01 02 03 04 05 06 · VAULT SENSORS ARMED",512,64,"#9fc4ff","#0d1a2c","bold 22px monospace");
-    for(let i=0;i<5;i++){const s=new THREE.Mesh(new THREE.PlaneGeometry(1.6,0.9),new THREE.MeshBasicMaterial({map:monTex}));s.position.set(-23+i*2.0,ROOF_Y+1.9,-5.22);s.rotation.y=Math.PI;s.userData.noHit=true;lvAdd(s);}
-    addBox(-23.5,-6.4,-13,-5.4,0.8,M.desk,{lvl:1});
+    for(const mx of [-23.15,-19,-17.2,-15.4,-13.6]){const s=new THREE.Mesh(new THREE.PlaneGeometry(1.6,0.9),new THREE.MeshBasicMaterial({map:monTex}));s.position.set(mx,ROOF_Y+1.9,-5.22);s.rotation.y=Math.PI;s.userData.noHit=true;lvAdd(s);}
+    addBox(-23.9,-6.4,-22.3,-5.4,0.8,M.desk,{lvl:1});addBox(-19.8,-6.4,-12.4,-5.4,0.8,M.desk,{lvl:1});
     for(const x of [-20,-16.5]){addBox(x-0.25,-7.85,x+0.25,-7.35,0.45,M.cabinet,{lvl:1,collide:false});addBox(x-0.25,-8.0,x+0.25,-7.92,1.15,M.cabinet,{lvl:1,y0:0.45,collide:false});}
     addBox(-13.9,-11,-12.3,-9,0.8,M.desk,{lvl:1});
     const sensCon=new THREE.Mesh(new THREE.BoxGeometry(0.6,0.45,0.08),[M.cabinet,M.cabinet,M.cabinet,M.cabinet,new THREE.MeshBasicMaterial({map:signTex("SENSORS · ARMED",256,64,"#ff6a5a","#160606","bold 30px monospace")}),M.cabinet]);
@@ -2743,7 +2743,7 @@ const MAP_PORT={
 
     // ---------- stairs ----------
     makeStairs({minX:4,maxX:6,minZ:18.5,maxZ:24.5,axis:"z",up:1,lo:0,mat:steel,railMat:yellow,noEndRail:true});            // gangway
-    makeStairs({minX:-36.6,maxX:-34.4,minZ:-13,maxZ:-6.5,axis:"z",up:-1,lo:0,mat:M.cabinet,railMat:M.trim,open:["minX"]});      // harbor office stairs
+    makeStairs({minX:-35.7,maxX:-33.5,minZ:-13,maxZ:-6.5,axis:"z",up:-1,lo:0,mat:M.cabinet,railMat:M.trim});      // harbor office stairs (a walkway beside them reaches both doors)
     makeStairs({minX:16.2,maxX:17.8,minZ:26,maxZ:32,axis:"z",up:1,lo:1,mat:steel,railMat:M.trim,open:["maxX"]});             // ship: deck -> cabins
     makeStairs({minX:10.4,maxX:12,minZ:26,maxZ:32,axis:"z",up:1,lo:0,mat:steel,railMat:M.trim,open:["minX"]});               // deck -> hold (crew stairs)
 
@@ -3862,7 +3862,7 @@ const MAP_TOWER={
     desk(5,11,-7.4,14.2,-6.4,walnut);monitor(5,12.6,-6.8,Math.PI,twScreens);chair(5,12.6,-8.1);
     box(5,7,-11.6,10,-11.0,1.0,walnut);box(5,7,-11.6,10,-11.0,1.05,M.counterTop,{y0:1.0,collide:false});
     for(let i=0;i<5;i++){const b=new THREE.Mesh(new THREE.CylinderGeometry(0.05,0.05,0.32,8),phong([0x6a2a10,0x2a5a2a,0xc9a24a,0x6a1020,0x1a3a5a][i],{shininess:90}));b.position.set(7.4+i*0.35,5*Y+1.21,-11.3);lvAdd(b);}
-    sofa(5,6.3,-6,7.3,-2.4);
+    sofa(5,6.3,-7.4,7.3,-3.8);
     const vaneSafe=smallSafe(14.4,-10.6,5,"V.V.");
     art(5,8.4,-11.58,0,2,1.6,1.1);art(5,15.58,-8,-Math.PI/2,3,1.6,1.1);art(5,6.22,-7,Math.PI/2,4,1.4,1.0);
     plaque(signTex("VICTOR VANE · CHIEF EXECUTIVE",512,64,"#e2c27a","#1a1d22","bold 28px Georgia"),2.2,0.28,5.78,5*Y+2.75,-2.3,-Math.PI/2);
@@ -5387,7 +5387,7 @@ function keypadEnter(){
   G.safeFails++;SFX.kpBad();if(VAULT.screen){VAULT.screen.color.setHex(0xff3a30);setTimeout(()=>{if(!G.vaultOpen)VAULT.screen.color.setHex(0x3aff8a);},700);}
   KP.entry="";drawKeypad("bad","WRONG");KP.busy=true;
   if(G.safeFails>=3){setTimeout(()=>{closeKeypad();},500);triggerAlarm(VAULT.failMsg||"Three wrong codes. The safe tripped the alarm!");return;}
-  toast(G.safeFails===2?"Wrong code. One more and the safe trips the alarm":"Wrong code","bad",2000);
+  toast(G.safeFails===2?"Wrong code. One more wrong and it trips the alarm":"Wrong code","bad",2000);
   setTimeout(()=>{KP.busy=false;if(G.keypad)drawKeypad();},700);
 }
 function openSafe(){
