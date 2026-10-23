@@ -126,9 +126,10 @@ button{font:inherit;cursor:pointer}
 .job-time{font-family:var(--f-mono);font-size:11px;letter-spacing:.16em;color:var(--sodium)}
 .job-time.day{color:#8fd0ff}
 .job-time.club{color:#ff7ad9}
-.job.club,.job.manor,.job.casino,.job.port,.job.tower{grid-column:1/-1}
+.job.club,.job.manor,.job.casino,.job.port,.job.tower,.job.jewel{grid-column:1/-1}
 .job-time.port{color:#7fd0ff}
 .job-time.tower{color:#c9a8ff}
+.job-time.jewel{color:#7fe0c0}
 .job-time.casino{color:#f4d27a}
 .job-time.manor{color:#9fc4ff}
 .job-name{font-family:var(--f-display);font-size:28px;line-height:1}
@@ -226,6 +227,12 @@ details.help .keys{margin-bottom:14px}
         <span class="job-name">Glass Ceiling</span>
         <span class="job-place">Halcyon Tower</span>
         <span class="job-meta">Office tower, lobby to roof · ride the elevator (the executive floors need a card) or the window cleaners' gondola up the outside · record the CEO's voice for the vault · server-room override · pull the fire alarm to empty the building · bags down the garbage chute · helicopter off the roof · 13 guards · 9 cameras · 8 bags</span>
+      </button>
+      <button class="job jewel" type="button" role="radio" aria-checked="false" data-map="jewel">
+        <span class="job-time jewel">NIGHT · 03:10 · SMALL, TRICKY</span>
+        <span class="job-name">Brilliant Cut</span>
+        <span class="job-place">Lindqvist &amp; Döttrar, jewellers</span>
+        <span class="job-meta">Small jeweller's with a basement · in through the café cellar wall, the skylight or the stockroom window · work out the alarm code from a calendar and a UV torch · motion sensors, wired cases and door contacts with an entry delay · lift the strongroom key from behind the watchman · crack the safe by ear · you can't leave without the Nordstjärnan · 4 guards · 3 cameras · 4 bags</span>
       </button>
     </div>
     <label class="dev" for="devToggle"><input type="checkbox" id="devToggle"><span>Dev mode<small>Press V during a job for noclip: fly through walls, invisible to guards and cameras. SPACE up, CTRL or C down, SHIFT faster. Shows your position.</small></span></label>
@@ -3063,6 +3070,411 @@ const MAP_PORT={
   }
 };
 function X_lifted(def,row){return def.X.rows[row].lifted;}
+
+/* ================= MAP 10 · Brilliant Cut · Lindqvist & Daughters, jewellers ================= */
+// a small jeweller's on a city street: shop floor, back rooms, a basement workshop and strongroom, the café cellar next door
+const JW_SHOP=[-10,-8,10,8],JW_FLOOR=[-10,0,10,8],JW_BASE=[-10,-8,10,8],JW_CELLAR=[-20,-8,-10,10.5],JW_COURT=[-20,-16,13,-8],JW_PASS=[10,-8,13,8];
+const JW_SKY=[0.6,-6,2.8,-4],JW_HATCH=[-15.6,9.2,-14.4,10.4],JW_STAIR=[-1.8,-6.8,-0.2,-1.2];
+const JW_NAMES=["Elin","Mormor Greta","Hugo"];
+function jwDates(){
+  // three birthdays as DDMM, each with four different digits, no two with the same set of digits
+  const out=[];let guard=0;
+  while(out.length<3&&guard++<500){
+    const m=1+(Math.random()*12|0),d=1+(Math.random()*28|0);
+    const s=String(d).padStart(2,"0")+String(m).padStart(2,"0");
+    if(new Set(s).size<4)continue;
+    const key=[...s].sort().join("");if(out.some(o=>o.key===key))continue;
+    out.push({code:s,key,d,m});
+  }
+  return out;
+}
+const JW_MONTHS=["januari","februari","mars","april","maj","juni","juli","augusti","september","oktober","november","december"];
+const MAP_JEWEL={
+  id:"jewel",job:"Brilliant Cut",place:"Lindqvist & Döttrar",time:"03:10",multi:true,levels:[-1,1],codeLen:4,zipTies:3,
+  spawn:{x:-24,z:17,yaw:-Math.PI/2},moon:30,needDiamond:"the Nordstjärnan",diamondValue:260000,
+  bagValue:[25000,45000],goldValue:[70000,110000],cashValue:[300,1800],jewelValue:[3000,9000],
+  cardMsg:"A keycard? This shop doesn't use them",
+  bagSpots:[
+    {x:6.8,z:-7.35,y:0.34,ry:0,lvl:-1,gold:true,box:"vault"},{x:8.2,z:-7.35,y:0.22,ry:0,lvl:-1,box:"vault"},
+    {x:-8.2,z:5.4,y:0.34,ry:0.4,lvl:-1,gold:true},{x:1.0,z:-1.4,y:0.22,ry:1.2,lvl:0}
+  ],
+  cash:[[-7.3,0.95,2.5,"jewel"],[-6.7,0.95,2.5,"jewel"],[-7.3,0.95,5.5,"jewel"],[-6.7,0.95,5.5,"jewel"],
+        [-3.8,0.95,2.5,"jewel"],[-3.2,0.95,2.5,"jewel"],[-3.8,0.95,5.5,"jewel"],[-3.2,0.95,5.5,"jewel"],
+        [-0.3,0.95,2.5,"jewel"],[0.3,0.95,2.5,"jewel"],[-0.3,0.95,5.5,"jewel"],[0.3,0.95,5.5,"jewel"],
+        [9.0,1.06,4.2],[-4.6,0.81,-6.8],[-2.6,-3.19,-7.2,"jewel"]],
+  isInside:(x,z)=>inR(x,z,JW_SHOP),
+  restricted(x,z,lvl){return lvl!==0||inR(x,z,JW_SHOP)||inR(x,z,JW_COURT)||inR(x,z,JW_PASS)&&z<7.8;},
+  trespassMsg(){return P.level===1?"You're on the roof. Don't let anyone see you up here":P.level===-1?"You're underground. Don't let anyone see you down here":inR(P.x,P.z,JW_SHOP)?"The shop is closed. Don't let anyone see you inside":"You're in the courtyard behind the shops. Don't let anyone see you";},
+  hasFloor(x,z,lvl){
+    const j=G.j;
+    if(lvl===-1)return inR(x,z,JW_BASE)||inR(x,z,JW_CELLAR);
+    if(lvl===0)return !(j&&j.hatch&&inR(x,z,JW_HATCH));
+    if(lvl===1)return inR(x,z,[-10.2,-8.2,10.2,8.2])&&!(j&&j.sky&&inR(x,z,JW_SKY));
+    return false;
+  },
+  ceil(x,z,lvl){
+    if(lvl===-1)return 3.5;
+    if(lvl===0&&inR(x,z,JW_SHOP))return G.j&&G.j.sky&&inR(x,z,JW_SKY)?null:3.5;
+    return null;
+  },
+  surface(x,z,lvl){
+    if(lvl===1)return "gravel";
+    if(lvl===-1)return inR(x,z,JW_CELLAR)?"asphalt":"tile";
+    if(inR(x,z,JW_FLOOR))return "carpet";
+    if(inR(x,z,JW_SHOP))return "tile";
+    return "asphalt";
+  },
+  fly(a){camera.position.set(Math.sin(a)*22+2,9,22+Math.cos(a)*5);camera.lookAt(0,1.5,2);},
+  text:{
+    case:"Lindqvist & Döttrar at ten past three. The shutters are down and the alarm is armed. You can't leave without the Nordstjärnan, a sapphire necklace in the strongroom safe. Ways in: the café cellar next door (the hatch on the pavement), the roof (a ladder in the courtyard), the stockroom window or the back door (that one's wired). Hold G to put on your mask when you're ready.",
+    vault:"",
+    van:"Carry the bag to the van on the street, east of the shop (through the courtyard and the passage).",
+    bins:"Dump the body in a bin in the courtyard. Q drops it."
+  },
+  build(){
+    const self=this,Y=ROOF_Y,WH=3.62;
+    const fm={ground:floorMat(drawAsphalt,20,14,{polygonOffset:true,polygonOffsetFactor:4,polygonOffsetUnits:4}),walk:floorMat(drawConcrete,24,3),
+      carpet:floorMat((g,w,h)=>{g.fillStyle="#3a1e26";g.fillRect(0,0,w,h);noise(g,w,h,6000,.12);},6,3),tile:floorMat(drawTiles,6,4,{shininess:30}),
+      conc:floorMat(drawConcrete,6,6),gravel:floorMat(drawGravel,6,6),cob:floorMat((g,w,h)=>{g.fillStyle="#3a3a3c";g.fillRect(0,0,w,h);for(let y=0;y<h;y+=16)for(let x=(y/16%2)*8;x<w;x+=16){g.fillStyle=`rgba(0,0,0,${.2+Math.random()*.2})`;g.fillRect(x,y,15,15);}noise(g,w,h,3000,.1);},10,6)};
+    const brickM=floorMat((g,w,h)=>{g.fillStyle="#6a3a2c";g.fillRect(0,0,w,h);g.fillStyle="#3a2a24";for(let y=0;y<h;y+=16){g.fillRect(0,y,w,2);for(let x=(y/16%2)*16;x<w;x+=32)g.fillRect(x,y,2,16);}noise(g,w,h,2500,.1);},3,2);
+    const wall=phong(0xb8ad9a),dark=phong(0x2a2c30),wood=phong(0x5a3a26,{shininess:30}),cream=phong(0xd8cfb8),greenW=phong(0x1f3a32,{shininess:30}),
+      steel=M.steel,shutterM=new THREE.MeshPhongMaterial({map:tex(64,64,(g,w,h)=>{g.fillStyle="#8a9196";g.fillRect(0,0,w,h);for(let y=0;y<h;y+=6){g.fillStyle="rgba(0,0,0,.25)";g.fillRect(0,y,w,2);g.fillStyle="rgba(255,255,255,.15)";g.fillRect(0,y+3,w,1);}}),shininess:40}),
+      caseGlass=new THREE.MeshPhongMaterial({color:0xcfe3ee,transparent:true,opacity:.18,shininess:100,specular:0xffffff,depthWrite:false}),velvet=phong(0x2a0e1a);
+    shutterM.map.repeat.set(10,2);
+    const box=(l,x1,z1,x2,z2,h,m,o)=>addBox(x1,z1,x2,z2,h,m,Object.assign({lvl:l},o||{}));
+    const wX=(l,z,a,b,h,m,o)=>addBox(a,z-0.2,b,z+0.2,h,m,Object.assign({lvl:l},o||{}));
+    const wZ=(l,x,a,b,h,m,o)=>addBox(x-0.2,a,x+0.2,b,h,m,Object.assign({lvl:l},o||{}));
+    const segX=(l,z,a,b,gaps,h,m)=>{let x=a;for(const [g0,g1,top] of gaps){if(g0>x)wX(l,z,x,g0,h,m);addBox(g0,z-0.2,g1,z+0.2,h,m,{lvl:l,y0:top,collide:false});x=g1;}if(b>x)wX(l,z,x,b,h,m);};
+    const segZ=(l,x,a,b,gaps,h,m)=>{let z=a;for(const [g0,g1,top] of gaps){if(g0>z)wZ(l,x,z,g0,h,m);addBox(x-0.2,g0,x+0.2,g1,h,m,{lvl:l,y0:top,collide:false});z=g1;}if(b>z)wZ(l,x,z,b,h,m);};
+    const holesAt=l=>STAIRS.filter(s=>s.hi===l).map(s=>[s.minX,s.minZ,s.maxX,s.maxZ]);
+    const fl=(l,r,mat,extra)=>{for(const q of rectMinus(r,holesAt(l).concat(extra||[])))floor(q[0],q[1],q[2],q[3],mat,l*Y+0.03);};
+    const slab=(l,r,m,extra)=>{for(const q of rectMinus(r,holesAt(l).concat(extra||[])))addBox(q[0],q[1],q[2],q[3],l*Y,m||M.ceil,{y0:l*Y-0.38,collide:false});};
+    const light=(l,x,z,i,d,col)=>pointLight(x,l*Y+3.3,z,col||0xf0f4ff,i,d,true);
+    const desk=(l,x1,z1,x2,z2,top)=>{box(l,x1,z1,x2,z2,0.74,wood);box(l,x1,z1,x2,z2,0.78,top||M.counterTop,{y0:0.74,collide:false});};
+    const plaqueD=(...a)=>{const p=plaque(...a);p.userData.dyn=1;return p;};
+
+    // ---------- stairs: stockroom down to the basement ----------
+    makeStairs({minX:-1.8,maxX:-0.2,minZ:-6.8,maxZ:-1.2,axis:"z",up:-1,lo:-1,mat:phong(0x6a6d70),railMat:M.trim});
+
+    // ---------- street, pavement, neighbours ----------
+    for(const q of rectMinus([-30,-24,30,26],[[-20,-8,13,8]]))floor(q[0],q[1],q[2],q[3],fm.ground,0);
+    floor(-30,8,30,12,fm.walk,0.035);floor(-20,-16,13,-8,fm.cob,0.035);floor(10,-8,13,8,fm.cob,0.035);
+    for(let x=-28;x<30;x+=6)addBox(x,15.9,x+3,16.1,0.02,phong(0xd9d2b0),{collide:false});
+    const nb=phong(0x2a2420),nbWin=new THREE.MeshBasicMaterial({map:tex(128,128,(g,w,h)=>{g.fillStyle="#17130f";g.fillRect(0,0,w,h);for(let y=8;y<h;y+=32)for(let x=8;x<w;x+=24){const r=Math.random();g.fillStyle=r<.15?"#d8b56a":r<.2?"#7a8fb0":"#0b0d10";g.fillRect(x,y,12,20);}})});
+    nbWin.map.repeat.set(3,2);
+    const block=(x1,z1,x2,z2,h,face)=>{addBox(x1,z1,x2,z2,h,nb);if(!face)return;const p=new THREE.Mesh(new THREE.PlaneGeometry(face==="s"||face==="n"?x2-x1:z2-z1,h-1),nbWin);p.userData.noHit=true;lvAdd(p);
+      if(face==="s")p.position.set((x1+x2)/2,h/2+0.5,z2+0.02);if(face==="n"){p.position.set((x1+x2)/2,h/2+0.5,z1-0.02);p.rotation.y=Math.PI;}
+      if(face==="w"){p.position.set(x1-0.02,h/2+0.5,(z1+z2)/2);p.rotation.y=-Math.PI/2;}if(face==="e"){p.position.set(x2+0.02,h/2+0.5,(z1+z2)/2);p.rotation.y=Math.PI/2;}};
+    block(13,-16,30,8,11,"s");block(-30,-24,30,-16,12,"s");block(-30,-16,-20,8,10,"s");block(-30,26,30,34,12,"n");
+    // the café next door (closed): a solid building with a lit window
+    addBox(-20,-8,-10,8,7.2,phong(0x3a332c));{const w=new THREE.Mesh(new THREE.PlaneGeometry(6,2.2),new THREE.MeshBasicMaterial({color:0x6a4a2a}));w.position.set(-15,1.6,8.02);lvAdd(w);}
+    plaque(signTex("KAFÉ SOLROS",512,96,"#f2e2b8","#3a1e12","bold 54px Georgia"),4,0.7,-15,3.4,8.03);
+    colliders.push({minX:-20,maxX:-10,minZ:-8,maxZ:8,h:7.2,lvl:0});
+    for(const x of [-22,-4,16])lamp(x,11.4,0xffc070);lamp(2,-12,0xffd9a0);
+    for(const [x,z] of [[-12,14],[4,18.5],[22,13.8]]){addBox(x-2.1,z-0.9,x+2.1,z+0.9,0.95,M.car);addBox(x-1.2,z-0.85,x+1.0,z+0.85,1.45,M.glass,{y0:0.95,collide:false});}
+    // the bench (someone's asleep on it)
+    box(0,-12.8,10.9,-10.6,11.5,0.45,wood);box(0,-12.8,11.4,-10.6,11.5,0.9,wood,{collide:false});
+    makeVan(14,15.5,-1);
+    // ---------- the shop shell ----------
+    wZ(0,-10,-8,8,Y,wall);wZ(0,10,-8,8,Y,wall);
+    wX(0,-8,-10,0.6,Y,wall);const swin=makeWindowAt(1.6,-8,2.0,false,Y,wall,"stockroom window",0);segX(0,-8,2.6,10,[[6,7.6,2.4]],Y,wall);
+    makeDoor(6,7.6,-8,2.38,{mat:phong(0x3a4a3a),pick:true,name:"back door"});
+    // front: the shutter
+    addBox(-10,7.9,10,8.3,Y,dark,{collide:false});addBox(-9.8,8.25,9.8,8.45,3.3,shutterM);
+    addBox(-10,8.2,10,8.7,4.0,greenW,{y0:3.3,collide:false});
+    plaque(signTex("LINDQVIST & DÖTTRAR",512,80,"#e2c27a","#1f3a32","bold 46px Georgia"),6,0.7,0,3.65,8.72);
+    plaque(signTex("GULDSMEDER SEDAN 1911",512,48,"#e2c27a","#1f3a32","bold 28px Georgia"),3,0.25,0,3.15,8.47);
+    // roof and the parapet, the skylight
+    slab(1,JW_SHOP,M.ceil,[JW_SKY]);fl(1,[-10,-8,10,8],fm.gravel,[JW_SKY]);
+    for(const [x1,z1,x2,z2] of [[-10.2,-8.2,10.2,-7.9],[-10.2,7.9,10.2,8.2],[-10.2,-8.2,-9.9,8.2],[9.9,-8.2,10.2,8.2]])box(1,x1,z1,x2,z2,0.55,wall);
+    for(const [x1,z1,x2,z2] of [[0.45,-6.15,2.95,-6],[0.45,-4,2.95,-3.85],[0.45,-6,0.6,-4],[2.8,-6,2.95,-4]])box(1,x1,z1,x2,z2,0.25,steel,{collide:false});
+    const skyPiv=new THREE.Group();skyPiv.position.set(0.6,Y+0.25,-5);lvAdd(skyPiv);
+    {const lid=new THREE.Mesh(new THREE.BoxGeometry(2.2,0.06,2.0),skylightMat);lid.position.set(1.1,0.03,0);skyPiv.add(lid);skyPiv.traverse(o=>o.userData.dyn=1);}
+    box(1,5,2,7,4,1.3,acMat);
+    // ---------- shop floor: six display cases, the counter, the till ----------
+    fl(0,JW_FLOOR,fm.carpet);
+    const cases=[];
+    for(const x of [-7,-3.5,0])for(const z of [2.5,5.5]){
+      box(0,x-0.8,z-0.4,x+0.8,z+0.4,0.9,wood);box(0,x-0.75,z-0.35,x+0.75,z+0.35,0.92,velvet,{y0:0.9,collide:false});
+      colliders.push({minX:x-0.8,maxX:x+0.8,minZ:z-0.4,maxZ:z+0.4,h:1.25,lvl:0});
+      const g=new THREE.Mesh(new THREE.BoxGeometry(1.6,0.34,0.8),caseGlass);g.position.set(x,1.08,z);g.userData.noHit=true;lvAdd(g);
+      const lt=new THREE.Mesh(new THREE.BoxGeometry(1.5,0.02,0.04),new THREE.MeshBasicMaterial({color:0xfff2d0}));lt.position.set(x,1.24,z-0.36);lvAdd(lt);
+      cases.push({x,z,glass:g,open:false,cutT:0});
+    }
+    box(0,8.6,2,9.4,6.5,1.05,wood);box(0,8.55,1.95,9.45,6.55,1.1,M.counterTop,{y0:1.05,collide:false});
+    {const r=new THREE.Mesh(new THREE.BoxGeometry(0.4,0.25,0.35),dark);r.position.set(9.0,1.23,3.4);lvAdd(r);}
+    for(const z of [1.2,6.8]){const m=new THREE.Mesh(new THREE.PlaneGeometry(1.0,1.4),new THREE.MeshBasicMaterial({color:0x9aa6b0}));m.position.set(-9.78,1.7,z+0.5);m.rotation.y=Math.PI/2;lvAdd(m);}
+    plaque(signTex("NORDSTJÄRNAN · Visas endast efter avtal",512,64,"#e2c27a","#1a1d22","bold 26px Georgia"),2.4,0.3,0,2.6,0.22);
+    pointLight(-3.5,3.2,4,0xffe8c8,0.8,11);pointLight(5,3.2,4,0xffe8c8,0.55,9);pointLight(-7,2.2,4,0xfff2d0,0.35,5);pointLight(0,2.2,4,0xfff2d0,0.35,5);
+    // ---------- back rooms: office (W), stockroom (middle), hallway (E) ----------
+    segX(0,0,-10,10,[[5,6.5,2.4]],WH,wall);
+    makeDoor(5,6.5,0,2.38,{mat:phong(0x4a3a2c),name:"staff door"});
+    segZ(0,-2,-8,0,[[-7.7,-6.7,2.4]],WH,wall);makeDoorZ(-2,-7.7,-6.7,2.38,{name:"office door"});
+    segZ(0,4,-8,0,[[-3,-1.6,2.4]],WH,wall);
+    fl(0,[-10,-8,10,0],fm.tile);slab(0,JW_BASE,M.ceil,[]);slab(0,JW_CELLAR,M.ceil,[JW_HATCH]);
+    // office: monitors on the west wall, Lars, the calendar, the key hook
+    desk(0,-9.6,-6.6,-8.8,-3.4);
+    const monTex=signTex("SHOP · HALL · YARD · STRONGROOM",512,64,"#9fc4ff","#0d1a2c","bold 22px monospace");
+    for(let i=0;i<2;i++){const sc=new THREE.Mesh(new THREE.PlaneGeometry(1.2,0.7),new THREE.MeshBasicMaterial({map:monTex}));sc.position.set(-9.78,1.6,-5.8+i*1.5);sc.rotation.y=Math.PI/2;sc.userData.noHit=true;lvAdd(sc);}
+    desk(0,-6,-7.6,-3.4,-6.6,wood);
+    const cal=new THREE.Mesh(new THREE.PlaneGeometry(0.6,0.8),new THREE.MeshBasicMaterial({map:tex(96,128,(g,w,h)=>{g.fillStyle="#f2efe6";g.fillRect(0,0,w,h);g.fillStyle="#a8261c";g.fillRect(0,0,w,22);g.fillStyle="#fff";g.font="bold 14px Arial";g.fillText("2026",30,16);g.fillStyle="#2a2a2a";for(let r=0;r<5;r++)for(let c=0;c<7;c++)g.fillRect(6+c*12,32+r*18,8,10);g.strokeStyle="#c02020";g.lineWidth=2;for(const [c,r] of [[2,1],[5,3],[1,4]]){g.beginPath();g.arc(10+c*12,37+r*18,7,0,7);g.stroke();}})}));
+    cal.position.set(-5,1.7,-7.78);cal.userData.noHit=true;lvAdd(cal);
+    const keyM=new THREE.Mesh(new THREE.BoxGeometry(0.03,0.14,0.06),phong(0xc9a24a,{shininess:80}));keyM.position.set(-2.22,1.45,-5.5);keyM.userData.dyn=1;lvAdd(keyM);
+    {const h=new THREE.Mesh(new THREE.BoxGeometry(0.05,0.05,0.3),dark);h.position.set(-2.23,1.55,-5.5);lvAdd(h);}
+    pointLight(-6,3.0,-4,0xffd9a0,0.6,9,true);
+    // stockroom: shelves, parcels, the window, the rope ladder (once the skylight is open)
+    box(0,3.0,-7.6,3.7,-4.4,2.0,M.cabinet);box(0,0.4,-3.1,2.6,-2.5,2.0,M.cabinet);
+    box(0,2.4,-1.4,3.8,-0.6,0.8,M.crate);
+    pointLight(1.2,3.0,-3,0xf0f4ff,0.35,7,true);
+    const rope=new THREE.Group();rope.position.set(1.7,0,-5.0);lvAdd(rope);
+    {for(const s of [-0.2,0.2]){const r=new THREE.Mesh(new THREE.BoxGeometry(0.03,4.3,0.03),phong(0xc9b48a));r.position.set(s,2.15,0);rope.add(r);}for(let y=0.3;y<4.2;y+=0.35){const r=new THREE.Mesh(new THREE.BoxGeometry(0.42,0.04,0.04),wood);r.position.set(0,y,0);rope.add(r);}rope.traverse(o=>o.userData.dyn=1);rope.visible=false;}
+    LADDERS.push({name:"rope ladder",x:1.7,z:-4.6,yaw:0,lo:0,top:Y+0.4,path:[[1.7,-4.6,Y+0.6],[1.7,-3.4,Y+0.6]],exit:{x:1.7,z:-3.2,lvl:1},enabled:()=>G.j&&G.j.sky});
+    // hallway: the alarm panel, the back door
+    const panel=new THREE.Mesh(new THREE.BoxGeometry(0.06,0.34,0.26),phong(0xe8e6de));panel.position.set(9.77,1.45,-4);lvAdd(panel);
+    const panelScr=new THREE.MeshBasicMaterial({color:0xff3a30});{const s=new THREE.Mesh(new THREE.PlaneGeometry(0.18,0.06),panelScr);s.position.set(9.73,1.56,-4);s.rotation.y=-Math.PI/2;s.userData.dyn=1;lvAdd(s);}
+    plaque(signTex("LARM",128,48,"#0b0d10","#e8e6de","bold 30px Arial"),0.22,0.08,9.73,1.75,-4,-Math.PI/2);
+    pointLight(7,3.0,-4,0xf0f4ff,0.4,8,true);
+    // motion sensors on the shop floor
+    const pirs=[[-9.7,2.9,7.7,Math.PI*0.75],[9.7,2.9,0.3,-Math.PI*0.25]].map(([x,y,z,yaw])=>{
+      const b=new THREE.Mesh(new THREE.BoxGeometry(0.16,0.12,0.12),cream);b.position.set(x,y,z);lvAdd(b);
+      const lm=new THREE.MeshBasicMaterial({color:0xff3a30});const l=new THREE.Mesh(new THREE.SphereGeometry(0.03,6,4),lm);l.position.set(x+Math.sin(yaw)*0.08,y,z+Math.cos(yaw)*0.08);l.userData.dyn=1;lvAdd(l);
+      return {x,z,yaw,lm};});
+    // ---------- basement: workshop (W), storage (S), strongroom (E) ----------
+    wZ(-1,-10,-8,-1,Y,brickM);wZ(-1,-10,1,8,Y,brickM);wX(-1,-8,-10,10,Y,brickM);wX(-1,8,-10,10,Y,brickM);wZ(-1,10,-8,8,Y,brickM);
+    const drillCol={minX:-10.2,maxX:-9.8,minZ:-1,maxZ:1,h:Y,lvl:-1};colliders.push(drillCol);
+    const plug=new THREE.Mesh(new THREE.BoxGeometry(0.4,WH,2),brickM);plug.position.set(-10,-Y+WH/2,0);plug.userData.dyn=1;lvAdd(plug);
+    fl(-1,JW_BASE,fm.conc);
+    desk(-1,-9.6,-7.6,-4.4,-6.8,steel);desk(-1,-3.6,-7.6,-2.0,-6.8,steel);
+    for(const x of [-8.6,-7.2,-5.8]){const lm=new THREE.Mesh(new THREE.CylinderGeometry(0.08,0.12,0.4,8),dark);lm.position.set(x,-Y+0.98,-7.4);lvAdd(lm);}
+    const uv=new THREE.Mesh(new THREE.CylinderGeometry(0.03,0.04,0.2,8),phong(0x5a2a9a));uv.rotation.z=Math.PI/2;uv.position.set(-6.4,-Y+0.82,-7.0);uv.userData.dyn=1;lvAdd(uv);
+    const cutter=new THREE.Mesh(new THREE.BoxGeometry(0.16,0.03,0.04),phong(0xc0202a));cutter.position.set(-2.9,-Y+0.8,-7.1);cutter.userData.dyn=1;lvAdd(cutter);
+    for(const z of [3,5.5])box(-1,0.4,z-0.3,8.6,z+0.3,2.0,M.cabinet);
+    for(const [x,z] of [[-8.6,2],[-7.4,2.2]])box(-1,x-0.5,z-0.5,x+0.5,z+0.5,1.0,M.crate);
+    // strongroom
+    segZ(-1,4,-8,2,[[-4,-2.6,2.4]],WH,vaultM2());wX(-1,2,4,10,WH,vaultM2());
+    const srDoor=makeDoorZ(4,-4,-2.6,2.38,{lvl:-1,mat:M.steel,name:"strongroom door"});srDoor.sr=true;srDoor.reader={ledMat:new THREE.MeshBasicMaterial(),flash:0};
+    function vaultM2(){return phong(0x5a5f64,{shininess:50,specular:0x333333});}
+    // the dial safe (door faces +z)
+    const sx=7.5,sz=-6.9,W=1.6,D=0.9,Hh=1.6,t=0.08,ly=-1;
+    addBox(sx-W/2,sz-D,sx+W/2,sz-D+t,Hh,safeMat,{lvl:ly,collide:false});addBox(sx-W/2,sz-D,sx-W/2+t,sz,Hh,safeMat,{lvl:ly,collide:false});addBox(sx+W/2-t,sz-D,sx+W/2,sz,Hh,safeMat,{lvl:ly,collide:false});
+    addBox(sx-W/2,sz-D,sx+W/2,sz,t,safeIn,{lvl:ly,collide:false});addBox(sx-W/2,sz-D,sx+W/2,sz,Hh,safeMat,{lvl:ly,y0:Hh-t,collide:false});
+    colliders.push({minX:sx-W/2,maxX:sx+W/2,minZ:sz-D,maxZ:sz,h:Hh,lvl:ly});
+    const piv=new THREE.Group();piv.position.set(sx-W/2,-Y,sz+0.065);lvAdd(piv);
+    {const dm=new THREE.Mesh(new THREE.BoxGeometry(W,Hh,0.12),safeMat);dm.position.set(W/2,Hh/2,0);piv.add(dm);}
+    const dial=new THREE.Mesh(new THREE.CylinderGeometry(0.16,0.16,0.05,24),M.steel);dial.rotation.x=Math.PI/2;dial.position.set(W*0.6,0.95,0.09);piv.add(dial);
+    {const nm=new THREE.Mesh(new THREE.PlaneGeometry(0.6,0.12),new THREE.MeshBasicMaterial({map:signTex("LINDQVIST 1911",256,48,"#2a2010","#c9a24a","bold 26px Georgia")}));nm.position.set(W/2,1.38,0.061);piv.add(nm);}
+    piv.traverse(o=>o.userData.dyn=1);
+    const necklace=new THREE.Mesh(new THREE.TorusGeometry(0.12,0.015,6,20),phong(0x2a4adf,{emissive:0x0a1a5a,shininess:120,specular:0xffffff}));necklace.rotation.x=Math.PI/2;necklace.position.set(7.5,-Y+0.95,-7.4);necklace.userData.dyn=1;lvAdd(necklace);
+    const nGlint=new THREE.Sprite(new THREE.SpriteMaterial({map:GLINT,transparent:true,depthWrite:false,blending:THREE.AdditiveBlending,opacity:.7}));nGlint.scale.set(0.35,0.35,0.35);nGlint.position.copy(necklace.position);lvAdd(nGlint);
+    box(-1,6.6,-7.6,8.4,-7.0,0.9,steel,{collide:false});
+    VAULT={x:sx,z:sz,pivot:piv,wheel:dial,col:{minX:sx-W/2,maxX:sx+W/2,minZ:sz,maxZ:sz+0.14,h:Hh,lvl:ly},openCol:null,openDir:-1,custom:true,level:-1,
+      drillGroup:new THREE.Group(),drillBit:new THREE.Object3D(),drillLight:{intensity:0}};
+    colliders.push(VAULT.col);
+    pointLight(-6,-Y+3.2,-4,0xf0f4ff,0.5,10,true);pointLight(4,-Y+3.2,5,0xf0f4ff,0.35,8,true);pointLight(7,-Y+3.2,-3,0xf0f4ff,0.45,8,true);
+    // ---------- the café cellar, the hatch on the pavement ----------
+    wZ(-1,-20,-8,10.5,Y,brickM);wX(-1,-8,-20,-10,Y,brickM);wX(-1,10.5,-20,-10,Y,brickM);
+    addBox(-10.2,8,-9.8,10.5,Y,brickM,{lvl:-1});
+    fl(-1,JW_CELLAR,fm.conc,[]);
+    for(const [x,z] of [[-18.6,-6.6],[-17.4,-6.6],[-18.6,-5.4],[-13,-7]]){const b=new THREE.Mesh(new THREE.CylinderGeometry(0.45,0.45,1.0,12),wood);b.position.set(x,-Y+0.5,z);lvAdd(b);colliders.push({minX:x-0.45,maxX:x+0.45,minZ:z-0.45,maxZ:z+0.45,h:1.0,lvl:-1});}
+    for(const z of [-2,3])box(-1,-19.6,z-0.4,-17,z+0.4,1.8,M.cabinet);
+    box(-1,-16,4,-14.6,5.4,0.8,M.crate);
+    pointLight(-15,-Y+3.0,0,0xffd9a0,0.35,9);
+    makeLadder(-15,10.3,-Y,0.4,Math.PI);
+    LADDERS.push({name:"cellar ladder",x:-15,z:9.95,yaw:Math.PI,lo:-1,top:0.35,path:[[-15,9.95,0.6],[-15,11.0,0.6]],exit:{x:-15,z:11.2,lvl:0},enabled:()=>G.j&&G.j.hatch});
+    // the hatch: two steel flaps in the pavement, padlocked
+    const hatchPiv=new THREE.Group();hatchPiv.position.set(-15.6,0.05,9.8);lvAdd(hatchPiv);
+    {const l=new THREE.Mesh(new THREE.BoxGeometry(1.2,0.05,1.2),new THREE.MeshPhongMaterial({map:drawPlateTex(),shininess:40}));l.position.set(0.6,0,0);hatchPiv.add(l);hatchPiv.traverse(o=>o.userData.dyn=1);}
+    function drawPlateTex(){return tex(64,64,drawPlate);}
+    // ---------- courtyard: bins, the roof ladder, the passage gate ----------
+    makeBin(-4,-14.8,1.8,1.2,1.3,M.dumpster,lidMat,"AVFALL");makeBin(-8,-14.8,1.8,1.2,1.3,M.dumpster,lidMat,"AVFALL");
+    makeLadder(-6,-8.25,0,Y+0.5,0);
+    LADDERS.push({name:"ladder",x:-6,z:-8.6,yaw:Math.PI,lo:0,top:Y+0.4,path:[[-6,-8.6,Y+0.6],[-6,-7.4,Y+0.6]],exit:{x:-6,z:-7.2,lvl:1}});
+    box(0,-18,-15.6,-15.6,-13.6,1.0,M.crate);
+    makeDoor(10.2,12.8,7.9,2.3,{gate:true,pick:true,name:"courtyard gate"});addBox(10,7.8,13,8.0,3.0,M.pole,{y0:2.3,collide:false});
+    // ---------- cameras ----------
+    makeCam(9.6,3.2,0.6,-Math.PI/4,0.5,10,0,14,0.5,0,{shadow:false});      // shop floor
+    makeCam(4.4,3.1,-7.6,Math.PI*0.25,0.4,9,0.6,10,0.5,0,{shadow:false});     // hallway, back door
+    makeCam(9.5,3.4,-8.4,-Math.PI*0.7,0.6,11,0.2,18,0.45,0);                   // courtyard
+    // ---------- people ----------
+    new Guard([[-8.3,-5,-Math.PI/2,0]],0,{security:true,seated:true,name:"Lars",flashShadow:false});
+    new Guard([[-7,4.2,null,3],[7.2,4.2],[5.75,1.4],[5.75,-1.5],[7.6,-5.6,null,4],[5.75,-1.5],[5.75,1.4],[7.2,4.2]],1.0,{name:"Holm",flashShadow:false});
+    new Guard([[-27,12.4,null,3],[24,12.4,null,3]],1.0,{name:"Berg"});
+    new Guard([[-17,-12,null,3],[11.5,-12,null,2],[11.5,4,null,3],[11.5,-12]],1.0,{name:"Nyström",flashShadow:false});
+    new Civilian([[-11.7,11.15,Math.PI/2,0]],0,{asleep:true,label:"A man asleep on the bench",bedY:0.62});
+    Object.assign(self,{X:{cases,swin,skyPiv,rope,hatchPiv,keyM,uv,cutter,plug,drillCol,necklace,nGlint,panelScr,pirs,srDoor,dial}});
+  },
+  reset(){
+    const X=this.X;if(!X)return;
+    const dates=jwDates(),pick=Math.random()*3|0,code=dates[pick].code;
+    G.safeCode=code;
+    G.j={armed:true,delay:0,beep:0,uvRead:false,uv:false,cutter:false,key:false,cal:false,dates,pick,hatch:false,hatchT:0,sky:false,skyT:0,drill:0,drilled:false,
+      dial:{n:0,t:0,target:1.5+Math.random()*2,held:false,clicked:false,over:false,tick:0},sensorT:0,sensorTip:false,holdT:0,holdId:"",tripped:new Set(),necklace:false,hatchPick:0,skyPick:0};
+    X.cases.forEach(c=>{c.open=false;c.cutT=0;c.glass.visible=true;});
+    // the jewels in the cases can't be taken until the glass is off
+    CASH.forEach(c=>{if(inR(c.x,c.z,JW_FLOOR)&&c.jewel&&c.level===0)c.taken=true;});
+    X.skyPiv.rotation.z=0;X.rope.visible=false;X.hatchPiv.rotation.z=0;X.keyM.visible=true;X.uv.visible=true;X.cutter.visible=true;
+    X.plug.visible=true;if(!colliders.includes(X.drillCol))colliders.push(X.drillCol);
+    X.necklace.visible=true;X.nGlint.visible=true;X.panelScr.color.setHex(0xff3a30);X.pirs.forEach(p=>p.lm.color.setHex(0xff3a30));
+    X.srDoor.locked=true;
+    VAULT.keypadTitle="ALARM PANEL";VAULT.failMsg="Three wrong codes. The alarm company is sending the police!";
+    VAULT.onCode=()=>{const j=G.j;j.armed=false;j.delay=0;X.panelScr.color.setHex(0x40ff80);X.pirs.forEach(p=>p.lm.color.setHex(0x40ff80));SFX.kpOk();toast("Alarm disarmed. The motion sensors, the case sensors and the door contacts are off","good",3200);};
+  },
+  tick(dt){
+    const X=this.X,j=G.j;if(!X||!j)return;
+    // skylight, hatch animations
+    if(j.sky&&j.skyT<1){j.skyT=Math.min(1,j.skyT+dt/0.8);X.skyPiv.rotation.z=j.skyT*1.9;}
+    if(j.hatch&&j.hatchT<1){j.hatchT=Math.min(1,j.hatchT+dt/0.8);X.hatchPiv.rotation.z=j.hatchT*1.9;}
+    X.necklace.rotation.z+=dt*0.6;X.nGlint.material.opacity=0.45+0.3*Math.sin(G.world*3);
+    if(state!=="playing")return;
+    if(G.alarm){j.delay=0;return;}
+    if(!j.armed)return;
+    // door contacts: the back door and the strongroom door start the entry delay
+    for(const d of doors){if((d.name==="back door"||d.sr)&&d.open&&!j.tripped.has(d)){j.tripped.add(d);if(j.delay<=0){j.delay=30;toast("Beep… beep… Entry delay: type the alarm code at the panel in the back hallway within 30 seconds","warn",3600);}}}
+    if(j.delay>0){j.delay-=dt;j.beep-=dt;if(j.beep<=0){j.beep=j.delay<10?0.25:0.5;const s=spatial(9.7,-4,24,0);tone({type:"square",f0:2600,dur:.06,vol:.05*(s?s.vol:0.25)+.01});}
+      if(j.delay<=0)triggerAlarm("Nobody typed the code. The alarm went off!");}
+    // motion sensors on the shop floor
+    if(!DEV.ghost&&P.level===0&&inR(P.x,P.z,JW_FLOOR)){
+      if(!j.sensorTip){j.sensorTip=true;toast("Motion sensors in here. Crouch-walk and keep your distance, or disarm the alarm first","warn",3000);}
+      const moving=keys.KeyW||keys.KeyA||keys.KeyS||keys.KeyD;let seen=false;
+      for(const p of X.pirs){const dx=P.x-p.x,dz=P.z-p.z,d=Math.hypot(dx,dz);const reach=P.crouch?2.6:9;
+        if(d<reach&&Math.abs(wrap(Math.atan2(dx,dz)-p.yaw))<0.85&&!blocked(p.x,p.z,P.x,P.z,1.3,0)){seen=true;p.lm.color.setHex(moving&&Math.floor(G.world*8)%2?0xffd040:0xff3a30);}else p.lm.color.setHex(0xff3a30);}
+      if(seen&&moving)j.sensorT+=dt*(P.sprinting?3:1);else j.sensorT=Math.max(0,j.sensorT-dt);
+      if(j.sensorT>0.6)triggerAlarm("A motion sensor picked you up. Alarm!");
+    }
+  },
+  interact(dt,facing){
+    const X=this.X,j=G.j;if(!X||!j)return null;
+    const hold=(id,secs,label)=>{
+      if(!keys.KeyE){if(j.holdId===id)j.holdT=0;return null;}
+      if(j.holdId!==id){j.holdId=id;j.holdT=0;}
+      j.holdT+=dt;P.fiddle=Math.max(P.fiddle,0.3);
+      if(j.holdT>=secs){j.holdT=0;j.holdId="";return "done";}
+      return {p:label,prog:j.holdT/secs};
+    };
+    const lv=P.level;
+    // the pavement hatch
+    if(lv===0&&!j.hatch&&Math.hypot(P.x+15,P.z-10.8)<1.5){
+      if(keys.KeyE){if(pickTick({get pickT(){return j.hatchPick;},set pickT(v){j.hatchPick=v;}},4,dt)){j.hatch=true;SFX.unlock();toast("The cellar hatch is open. A ladder goes down into the café cellar","good",2400);}
+        return {p:`Picking the padlock… ${Math.min(5,Math.floor(j.hatchPick/4*5)+1)}/5`,prog:j.hatchPick/4};}
+      return {p:"Hold <kbd>E</kbd> to pick the padlock on the cellar hatch",prog:j.hatchPick>0?j.hatchPick/4:null};
+    }
+    // the skylight
+    if(lv===1&&!j.sky&&inR(P.x,P.z,[0.1,-6.6,3.3,-3.4])){
+      if(keys.KeyE){if(pickTick({get pickT(){return j.skyPick;},set pickT(v){j.skyPick=v;}},4,dt)){j.sky=true;X.rope.visible=true;SFX.unlock();toast("Skylight open. You drop a rope ladder into the stockroom","good",2400);}
+        return {p:`Picking the skylight latch… ${Math.min(5,Math.floor(j.skyPick/4*5)+1)}/5`,prog:j.skyPick/4};}
+      return {p:"Hold <kbd>E</kbd> to pick the skylight latch",prog:j.skyPick>0?j.skyPick/4:null};
+    }
+    // drilling through the cellar wall
+    if(lv===-1&&!j.drilled&&P.x<-10&&Math.abs(P.z)<1.4&&facing(-10,0,1.8)>=0){
+      if(keys.KeyE){j.drill+=dt;P.fiddle=0.3;j.dsnd=(j.dsnd||0)-dt;if(j.dsnd<=0){j.dsnd=0.25;noiseHit({type:"bandpass",freq:240,dur:.25,vol:.06});G.bang={x:-10,z:0,r:5,lvl:-1};}
+        if(j.drill>=25){j.drilled=true;X.plug.visible=false;const i=colliders.indexOf(X.drillCol);if(i>=0)colliders.splice(i,1);SFX.unlock();toast("You're through the wall. That's the jeweller's basement","good",2400);return null;}
+        return {p:`Drilling through the brick… ${Math.round(j.drill/25*100)}%`,prog:j.drill/25};}
+      return {p:`Hold <kbd>E</kbd> to drill through the old wall (25 s, quiet)${j.drill>0?" · "+Math.round(j.drill/25*100)+"%":""}`,prog:j.drill>0?j.drill/25:null};
+    }
+    // the workshop: UV torch, glass cutter
+    if(lv===-1&&!j.uv&&facing(-6.4,-7.0,1.7)>=0){if(pressedE){j.uv=true;X.uv.visible=false;SFX.pickup();toast("A UV torch. Worn keypad buttons glow under it","good",2400);}return {p:"Press <kbd>E</kbd> to take the UV torch"};}
+    if(lv===-1&&!j.cutter&&facing(-2.9,-7.1,1.7)>=0){if(pressedE){j.cutter=true;X.cutter.visible=false;SFX.pickup();toast("A glass cutter. The display cases","good",2200);}return {p:"Press <kbd>E</kbd> to take the glass cutter"};}
+    // the calendar in the office
+    if(lv===0&&inR(P.x,P.z,JW_SHOP)&&facing(-5,-7.8,1.9)>=0&&P.z<-5.5){
+      if(pressedE){j.cal=true;SFX.paper();const s=j.dates.map((d,i)=>`${JW_NAMES[i]} ${d.d} ${JW_MONTHS[d.m-1]}`).join(" · ");
+        showSub("D",`Circled: ${s}. Scribbled underneath: "Larm = en födelsedag (DDMM). Skriv INTE upp den, Lars!"`,9000,"THE CALENDAR");}
+      return {p:j.cal?"The calendar: three birthdays. The alarm code is one of them, as DDMM":"Press <kbd>E</kbd> to look at the calendar"};
+    }
+    // the strongroom key on the hook (behind Lars)
+    if(lv===0&&!j.key&&inR(P.x,P.z,JW_SHOP)&&facing(-2.25,-5.5,1.5)>=0&&P.x<-2){
+      const r=hold("key",1.4,"Lifting the key off the hook…");
+      if(r==="done"){j.key=true;X.keyM.visible=false;SFX.card();toast("The strongroom key","good",2000);return null;}
+      return r||{p:"Hold <kbd>E</kbd> to take the strongroom key off the hook"};
+    }
+    // the strongroom door
+    if(lv===-1&&X.srDoor.locked&&facing(4,-3.3,1.9)>=0){
+      if(!j.key)return {p:"The strongroom door is locked. The key hangs in the back office"};
+      if(pressedE){X.srDoor.locked=false;openDoor(X.srDoor,P.x,P.z,false);SFX.unlock();}
+      return {p:`Press <kbd>E</kbd> to unlock the strongroom${j.armed?" (it's on the alarm: the entry delay starts)":""}`};
+    }
+    // the alarm panel: UV first, then the keypad
+    if(lv===0&&!G.keypad&&inR(P.x,P.z,JW_SHOP)&&facing(9.7,-4,1.6)>=0&&P.x>8){
+      if(!j.armed)return {p:"Alarm: disarmed"};
+      if(j.uv&&!j.uvRead){
+        const r=hold("uv",1.5,"Shining the UV torch on the keys…");
+        if(r==="done"){j.uvRead=true;SFX.paper();toast(`Under UV, four keys glow: ${[...G.safeCode].sort().join("  ")}`,"good",4200);return null;}
+        return r||{p:"Hold <kbd>E</kbd> to shine the UV torch on the keypad"};
+      }
+      if(P.carry)return {p:"Drop what you're carrying to use the keypad. <kbd>Q</kbd>"};
+      if(pressedE)openKeypad();
+      const hint=j.uvRead?` · the worn keys: ${[...G.safeCode].sort().join(" ")}`:"";
+      return {p:`Press <kbd>E</kbd> to type the alarm code${j.delay>0?" · "+Math.ceil(j.delay)+" s left":""}${hint}`};
+    }
+    // display cases
+    if(lv===0&&inR(P.x,P.z,JW_FLOOR)){
+      let best=null,bd=1e9;for(const c of X.cases){if(c.open)continue;const d=facing(c.x,c.z,1.6);if(d>=0&&d<bd){best=c;bd=d;}}
+      if(best){
+        const c=best;
+        if(G.alarm){const r=hold("smash"+c.x+c.z,0.5,"Smashing the case…");if(r==="done"){this.openCase(c,true);return null;}return r||{p:"Hold <kbd>E</kbd> to smash the case (the alarm's going anyway)"};}
+        if(!j.cutter)return {p:"A locked display case. A glass cutter would open it quietly (the workshop downstairs)"};
+        const r=hold("cut"+c.x+c.z,3,"Cutting the glass…");
+        if(r==="done"){if(j.armed){triggerAlarm("The case's vibration sensor tripped. Alarm!");}this.openCase(c,false);return null;}
+        return r||{p:`Hold <kbd>E</kbd> to cut the glass${j.armed?" · the cases are on the alarm":""}`};
+      }
+    }
+    // the safe dial: hold E to turn, let go right after the click
+    if(lv===-1&&!G.vaultOpen&&facing(7.5,-6.6,1.7)>=0&&P.z>-6.8){
+      const d=j.dial;
+      if(keys.KeyE&&!P.carry){
+        d.held=true;d.t+=dt;P.fiddle=0.3;d.tick-=dt;
+        if(d.tick<=0){d.tick=0.16;tone({type:"square",f0:1200,dur:.015,vol:.025});}
+        if(!d.clicked&&d.t>=d.target){d.clicked=true;tone({type:"square",f0:420,dur:.07,vol:.12});noiseHit({type:"lowpass",freq:900,dur:.05,vol:.15});}
+        if(d.clicked&&d.t>d.target+0.6)d.over=true;
+        X.dial.rotation.y+=dt*2;
+        return {p:d.over?"You turned past it. Let go and start this number again":d.clicked?"<b>CLICK</b>. Let go now!":`Turning the dial… listen for the click · number ${d.n+1} of 3`,prog:d.n/3};
+      }
+      if(d.held){
+        d.held=false;
+        if(d.clicked&&!d.over){d.n++;SFX.pin();toast(d.n<3?`Number ${d.n} is set`:"The last tumbler falls","good",1400);}
+        else if(!d.clicked)toast("Too soon. Hold E and let go right after the click","warn",1800);
+        else toast("Missed it. Try that number again","warn",1600);
+        d.t=0;d.clicked=false;d.over=false;d.target=1.4+Math.random()*2.2;
+        if(d.n>=3){openSafe();toast("The safe is open. The Nordstjärnan is inside","good",2600);}
+        return null;
+      }
+      if(P.carry)return {p:"Drop what you're carrying to work the dial. <kbd>Q</kbd>"};
+      return {p:`Hold <kbd>E</kbd> to turn the dial, let go right after the click · ${d.n}/3 numbers`};
+    }
+    // the Nordstjärnan
+    if(lv===-1&&G.vaultOpen&&!G.hasDiamond&&facing(7.5,-7.4,1.8)>=0){
+      if(pressedE){G.hasDiamond=true;G.diamondVal=this.diamondValue;X.necklace.visible=false;X.nGlint.visible=false;SFX.cash();toast("You have the Nordstjärnan","good",2600);}
+      return {p:"Press <kbd>E</kbd> to take the Nordstjärnan"};
+    }
+    return null;
+  },
+  openCase(c,smash){
+    c.open=true;c.glass.visible=false;if(smash){SFX.glass(c.x,c.z);G.bang={x:c.x,z:c.z,r:12,lvl:0};}else SFX.unlock();
+    CASH.forEach(k=>{if(k.level===0&&Math.abs(k.x-c.x)<0.9&&Math.abs(k.z-c.z)<0.5)k.taken=false;});
+  },
+  chip(){
+    const j=G.j;if(!j)return "";const s=[];
+    if(j.armed)s.push(j.delay>0?`ENTRY DELAY ${Math.ceil(j.delay)} s`:"ALARM ARMED");else s.push("ALARM OFF");
+    if(j.uvRead&&j.armed)s.push("UV "+[...G.safeCode].sort().join(""));
+    if(j.cal&&j.armed)s.push(j.dates.map((d,i)=>`${JW_NAMES[i].split(" ").pop()} ${String(d.d).padStart(2,"0")}/${String(d.m).padStart(2,"0")}`).join(" "));
+    if(j.key&&!G.vaultOpen)s.push("STRONGROOM KEY");
+    if(j.cutter)s.push("GLASS CUTTER");
+    if(!G.vaultOpen&&j.dial.n>0)s.push(`DIAL ${j.dial.n}/3`);
+    return s.join(" · ");
+  },
+  objective(){
+    const j=G.j;if(!j)return this.text.case;
+    if(P.carry&&P.carry.kind==="loot")return this.text.van;
+    if(G.hasDiamond)return "You have the Nordstjärnan. Take what else you want (the display cases, the workshop, the stockroom) and get to the van on the street.";
+    if(G.vaultOpen)return "The safe is open. Take the Nordstjärnan.";
+    if(!P.masked&&!restricted(P.x,P.z))return this.text.case;
+    const need=[];
+    if(j.armed)need.push(`disarm the alarm at the panel in the back hallway: the code is a birthday${j.cal?" on the office calendar":" (the calendar in the back office, where the watchman sits)"}${j.uvRead?", and the worn keys are "+[...G.safeCode].sort().join(" "):"; a UV torch in the workshop shows which keys are worn"}`);
+    if(!j.key)need.push("the strongroom key: on the hook in the back office, behind the watchman");
+    need.push("crack the safe in the strongroom (basement): hold E to turn the dial, let go right after each click");
+    return "To get the Nordstjärnan: "+need.join("; ")+".";
+  }
+};
+
 function X_vane(){return MAP_TOWER.X&&MAP_TOWER.X.vane;}
 
 /* ================= MAP 9 · Glass Ceiling · Halcyon Tower ================= */
@@ -3768,7 +4180,7 @@ const MAP_TOWER={
   }
 };
 
-const MAPS={harbor:MAP_HARBOR,meridian:MAP_MERIDIAN,harborDay:MAP_HARBOR_DAY,meridianDay:MAP_MERIDIAN_DAY,club:MAP_CLUB,manor:MAP_MANOR,casino:MAP_CASINO,port:MAP_PORT,tower:MAP_TOWER};
+const MAPS={harbor:MAP_HARBOR,meridian:MAP_MERIDIAN,harborDay:MAP_HARBOR_DAY,meridianDay:MAP_MERIDIAN_DAY,club:MAP_CLUB,manor:MAP_MANOR,casino:MAP_CASINO,port:MAP_PORT,tower:MAP_TOWER,jewel:MAP_JEWEL};
 
 // night: moonlight and sodium lamps. day: sun, blue sky, light haze
 function setSky(day){
