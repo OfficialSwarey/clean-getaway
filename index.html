@@ -126,7 +126,8 @@ button{font:inherit;cursor:pointer}
 .job-time{font-family:var(--f-mono);font-size:11px;letter-spacing:.16em;color:var(--sodium)}
 .job-time.day{color:#8fd0ff}
 .job-time.club{color:#ff7ad9}
-.job.club{grid-column:1/-1}
+.job.club,.job.manor{grid-column:1/-1}
+.job-time.manor{color:#9fc4ff}
 .job-name{font-family:var(--f-display);font-size:28px;line-height:1}
 .job-place{font-size:15px;color:#c7d0d3}
 .job-meta{font-family:var(--f-mono);font-size:11px;letter-spacing:.06em;color:var(--dim);line-height:1.5}
@@ -198,6 +199,12 @@ details.help .keys{margin-bottom:14px}
         <span class="job-name">Last Call</span>
         <span class="job-place">Club Halo</span>
         <span class="job-meta">Packed nightclub · walk in the front · VIP, the bar and the back rooms are off limits · the music hides your footsteps · owner's safe with a code lock (the code is written down somewhere) · keycard for the security room · 6 guards · 20 clubbers and staff · 5 cameras · 4 bags</span>
+      </button>
+      <button class="job manor" type="button" role="radio" aria-checked="false" data-map="manor">
+        <span class="job-time manor">NIGHT · 03:50 · LONG JOB</span>
+        <span class="job-name">The Winter Heart</span>
+        <span class="job-place">Blackwood Manor</span>
+        <span class="job-meta">Country mansion on four floors · a hidden vault, lasers, a split code, the sleeping owner's signet ring · you can't leave without the diamond · gold bags · 9 guards · 6 cameras · 8 bags</span>
       </button>
     </div>
     <label class="dev" for="devToggle"><input type="checkbox" id="devToggle"><span>Dev mode<small>Press V during a job for noclip: fly through walls, invisible to guards and cameras. SPACE up, CTRL or C down, SHIFT faster. Shows your position.</small></span></label>
@@ -1648,7 +1655,507 @@ const MAP_CLUB={
     fx.ball.rotation.y+=dt*0.6;
   }
 };
-const MAPS={harbor:MAP_HARBOR,meridian:MAP_MERIDIAN,harborDay:MAP_HARBOR_DAY,meridianDay:MAP_MERIDIAN_DAY,club:MAP_CLUB};
+
+/* ================= MAP 6 · The Winter Heart · Blackwood Manor ================= */
+const drawParquet=(g,w,h)=>{g.fillStyle="#4a3424";g.fillRect(0,0,w,h);for(let y=0;y<h;y+=16)for(let x=((y/16)%2)*24;x<w;x+=48){g.fillStyle=`rgba(${110+Math.random()*30|0},${78+Math.random()*20|0},${50+Math.random()*16|0},.55)`;g.fillRect(x,y,46,14);}noise(g,w,h,2500,.08);};
+const drawMarble=(g,w,h)=>{g.fillStyle="#cfc9bd";g.fillRect(0,0,w,h);for(let i=0;i<2;i++)for(let j=0;j<2;j++){g.fillStyle=(i+j)%2?"#d9d3c8":"#2b2a2a";g.fillRect(i*w/2+2,j*h/2+2,w/2-4,h/2-4);}noise(g,w,h,3000,.06);};
+const drawGrass=(g,w,h)=>{g.fillStyle="#1f2d1b";g.fillRect(0,0,w,h);for(let i=0;i<9000;i++){g.fillStyle=`rgba(${40+Math.random()*30|0},${70+Math.random()*40|0},${30+Math.random()*20|0},.6)`;g.fillRect(Math.random()*w,Math.random()*h,1,2+Math.random()*3);}};
+const drawRug=(g,w,h)=>{g.fillStyle="#5a1d22";g.fillRect(0,0,w,h);g.strokeStyle="#c9a24a";g.lineWidth=6;g.strokeRect(10,10,w-20,h-20);noise(g,w,h,4000,.1);};
+const ORD=["","top","second","third","bottom"];
+function rectMinus(r,holes){
+  let out=[r];
+  for(const h of holes){
+    const nx=[];
+    for(const [x1,z1,x2,z2] of out){
+      if(h[0]>=x2||h[2]<=x1||h[1]>=z2||h[3]<=z1){nx.push([x1,z1,x2,z2]);continue;}
+      const hx1=Math.max(x1,h[0]),hx2=Math.min(x2,h[2]),hz1=Math.max(z1,h[1]),hz2=Math.min(z2,h[3]);
+      if(hx1>x1)nx.push([x1,z1,hx1,z2]);if(hx2<x2)nx.push([hx2,z1,x2,z2]);
+      if(hz1>z1)nx.push([hx1,z1,hx2,hz1]);if(hz2<z2)nx.push([hx1,hz2,hx2,z2]);
+    }
+    out=nx;
+  }
+  return out;
+}
+const MAN_F=[-20,-12,20,12],MAN_ATTIC=[0,-12,20,0],MAN_BALC=[-6,12,6,14.5];
+const MAN_BASE=[[-20,-9,-17,0],[-17,-2,-10,0],[-10,-14,-7,0],[-13,-21,-4,-14],[6,-12,20,-2]];
+const inR=(x,z,r)=>x>r[0]&&x<r[2]&&z>r[1]&&z<r[3];
+const MAP_MANOR={
+  id:"manor",job:"The Winter Heart",place:"Blackwood Manor",time:"03:50",multi:true,levels:[-1,2],codeLen:6,zipTies:4,
+  needDiamond:"the Winter Heart",diamondValue:350000,
+  spawn:{x:0,z:37,yaw:0},moon:60,
+  bagValue:[30000,55000],goldValue:[90000,140000],cashValue:[400,2500],jewelValue:[3000,12000],
+  bagSpots:[
+    {x:-11.8,z:-20.2,y:0.34,ry:Math.PI/2,lvl:-1,gold:true,box:"vault"},{x:-11.8,z:-19.1,y:0.34,ry:Math.PI/2,lvl:-1,gold:true,box:"vault"},
+    {x:-5.2,z:-20.2,y:0.34,ry:Math.PI/2,lvl:-1,gold:true,box:"vault"},{x:-5.2,z:-19.1,y:0.34,ry:Math.PI/2,lvl:-1,gold:true,box:"vault"},
+    {x:-11.8,z:-16.4,y:0.22,ry:Math.PI/2,lvl:-1,box:"vault"},{x:-5.2,z:-16.4,y:0.22,ry:Math.PI/2,lvl:-1,box:"vault"},
+    {x:-9,z:-11.4,y:0.3,ry:0,lvl:1,box:"study"},{x:-9,z:-11.4,y:0.94,ry:0,lvl:1,box:"study"}
+  ],
+  cash:[[-14,1.01,9.2],[19.5,1.01,2.2],[8.2,0.96,-11.3],[-10.4,0.79,-7.1],[-0.8,0.81,-5.4],
+        [18.6,4.61,9.9,"jewel"],[0.4,4.61,-11.5,"jewel"],[8.0,5.01,-11.55,"jewel"],[-12.6,4.81,-7.6],
+        [2.6,8.79,-11.4],[10.2,8.79,-11.4],[-6.2,-3.19,-15.0,"jewel"],[12.4,-2.99,-11.1]],
+  isInside:(x,z)=>inR(x,z,MAN_F),
+  restricted(x,z,lvl){return lvl!==0||(x>-34&&x<34&&z>-26&&z<30);},
+  trespassMsg(){return P.level===0&&!this.isInside(P.x,P.z)?"You're on the grounds of Blackwood Manor. Don't let anyone see you":"You're inside Blackwood Manor. Don't let anyone see you";},
+  hasFloor(x,z,lvl){
+    if(lvl===0)return true;
+    if(lvl===1)return inR(x,z,MAN_F)||inR(x,z,MAN_BALC);
+    if(lvl===2)return inR(x,z,MAN_ATTIC);
+    if(lvl===-1)return MAN_BASE.some(r=>inR(x,z,r));
+    return false;
+  },
+  ceil(x,z,lvl){return (lvl===-1||inR(x,z,MAN_F))?3.55:null;},
+  surface(x,z,lvl){
+    if(lvl===-1)return inR(x,z,[-13,-21,-4,-14])?"steel":"asphalt";
+    if(lvl>=1)return inR(x,z,[-5,0,5,12])?"tile":"carpet";
+    if(inR(x,z,MAN_F))return (x>-17&&x<0&&z<-2)?"carpet":"tile";
+    if(inR(x,z,[-7,14.5,7,24.5])||inR(x,z,[-2.5,24.5,2.5,30])||inR(x,z,[20,2,34,5]))return "gravel";
+    if(x>-34&&x<34&&z>-26&&z<30)return "carpet";
+    return "asphalt";
+  },
+  fly(a){camera.position.set(Math.sin(a)*34,20,44+Math.cos(a)*6);camera.lookAt(0,4,0);},
+  text:{
+    case:"Blackwood Manor. The Winter Heart is in a vault no floor plan shows. The gates are locked (hold E to pick them), and there's a gap in the back wall behind the gardener's shed. Everything inside the walls is off limits. Hold G to put on your mask when you're ready.",
+    vault:"Find the vault.",
+    van:"Carry the bag to the van outside the east gate.",
+    bins:"Dump the body in a bin: the dumpster by the garage, the garden bin by the shed, or the linen cart in the pantry. Q drops it."
+  },
+  build(){
+    const self=this;
+    const fm={
+      ground:floorMat(drawAsphalt,24,24,{polygonOffset:true,polygonOffsetFactor:4,polygonOffsetUnits:4}),
+      grass:floorMat(drawGrass,20,16,{polygonOffset:true,polygonOffsetFactor:2,polygonOffsetUnits:2}),
+      gravel:floorMat(drawGravel,6,8),marble:floorMat(drawMarble,8,8,{shininess:60,specular:0x333333}),
+      parquet:floorMat(drawParquet,6,4,{shininess:40,specular:0x222222}),carpet:floorMat(drawCarpet,6,4),rug:floorMat(drawRug,1,1),
+      tile:floorMat(drawTiles,6,4,{shininess:30}),wood:floorMat(drawParquet,8,4),stone:floorMat(drawConcrete,6,6),steel:floorMat(drawPlate,4,3,{shininess:50,specular:0x222222})
+    };
+    const stone=phong(0x77736a),paper=phong(0x8c7b66),panel=phong(0x5a4636),dark=phong(0x2a2420),marbleM=phong(0xd8d2c6,{shininess:60}),oak=phong(0x5a3c24,{shininess:30});
+    const brass=phong(0xc9a24a,{shininess:90,specular:0x664422}),hedge=phong(0x1e3a1c),leaf=phong(0x1c3218),bark=phong(0x3a2a1c);
+    const IH=3.6,OH=4.0;
+    const wX=(l,z,a,b,h,m)=>addBox(a,z-0.2,b,z+0.2,h,m,{lvl:l});
+    const wZ=(l,x,a,b,h,m)=>addBox(x-0.2,a,x+0.2,b,h,m,{lvl:l});
+    const segX=(l,z,a,b,gaps,h,m)=>{let x=a;for(const [g0,g1,top] of gaps){if(g0>x)wX(l,z,x,g0,h,m);addBox(g0,z-0.2,g1,z+0.2,h,m,{lvl:l,y0:top,collide:false});x=g1;}if(b>x)wX(l,z,x,b,h,m);};
+    const segZ=(l,x,a,b,gaps,h,m)=>{let z=a;for(const [g0,g1,top] of gaps){if(g0>z)wZ(l,x,z,g0,h,m);addBox(x-0.2,g0,x+0.2,g1,h,m,{lvl:l,y0:top,collide:false});z=g1;}if(b>z)wZ(l,x,z,b,h,m);};
+    const winX=(l,z,a,b,h,m)=>{addBox(a,z-0.2,b,z+0.2,1.0,m,{lvl:l});addBox(a,z-0.2,b,z+0.2,h,m,{lvl:l,y0:2.6,collide:false});
+      const g=new THREE.Mesh(new THREE.PlaneGeometry(b-a,1.6),winGlass);g.position.set((a+b)/2,l*ROOF_Y+1.8,z);g.userData.noHit=true;lvAdd(g);
+      addBox((a+b)/2-0.04,z-0.05,(a+b)/2+0.04,z+0.05,2.6,M.trim,{lvl:l,y0:1.0,collide:false});
+      colliders.push({minX:a,maxX:b,minZ:z-0.05,maxZ:z+0.05,h:2.6,see:true,lvl:l});};
+    const winZ=(l,x,a,b,h,m)=>{addBox(x-0.2,a,x+0.2,b,1.0,m,{lvl:l});addBox(x-0.2,a,x+0.2,b,h,m,{lvl:l,y0:2.6,collide:false});
+      const g=new THREE.Mesh(new THREE.PlaneGeometry(b-a,1.6),winGlass);g.position.set(x,l*ROOF_Y+1.8,(a+b)/2);g.rotation.y=Math.PI/2;g.userData.noHit=true;lvAdd(g);
+      addBox(x-0.05,(a+b)/2-0.04,x+0.05,(a+b)/2+0.04,2.6,M.trim,{lvl:l,y0:1.0,collide:false});
+      colliders.push({minX:x-0.05,maxX:x+0.05,minZ:a,maxZ:b,h:2.6,see:true,lvl:l});};
+    const holesAt=l=>STAIRS.filter(s=>s.hi===l).map(s=>[s.minX,s.minZ,s.maxX,s.maxZ]);
+    const fl=(l,r,mat)=>{for(const q of rectMinus(r,holesAt(l)))floor(q[0],q[1],q[2],q[3],mat,l*ROOF_Y+0.03);};
+    const slab=(l,r,m,extraHoles)=>{for(const q of rectMinus(r,holesAt(l).concat(extraHoles||[])))addBox(q[0],q[1],q[2],q[3],l*ROOF_Y,m||M.ceil,{y0:l*ROOF_Y-0.38,collide:false,lvl:0});};
+    const H=[];  // lights that go dark when the power is cut
+    const houseLight=(x,y,z,c,i,d)=>{const l=pointLight(x,y,z,c,i,d);l.userData.base=i;H.push(l);return l;};
+
+    // ---------- stairs first (floors and slabs are cut around them) ----------
+    makeStairs({minX:-1.5,maxX:1.5,minZ:3,maxZ:9,axis:"z",up:-1,lo:0,mat:marbleM,railMat:brass});           // grand staircase
+    makeStairs({minX:17.5,maxX:19.7,minZ:-10.5,maxZ:-4,axis:"z",up:1,lo:1,mat:oak,railMat:oak,open:["maxX"]});  // servants' stairs to the attic
+    makeStairs({minX:17.5,maxX:19.7,minZ:-10.5,maxZ:-4,axis:"z",up:1,lo:-1,mat:M.cabinet,railMat:M.trim,open:["maxX"]}); // kitchen stairs to the cellar
+    makeStairs({minX:-19.7,maxX:-17.3,minZ:-9,maxZ:-2,axis:"z",up:-1,lo:-1,mat:M.cabinet,railMat:M.trim,open:["minX","maxX"]}); // secret stairs
+
+    // ---------- the estate ----------
+    for(const q of rectMinus([-46,-34,46,44],[[-34,-26,34,30]]))floor(q[0],q[1],q[2],q[3],fm.ground,0);
+    for(const q of rectMinus([-34,-26,34,30],[MAN_F]))floor(q[0],q[1],q[2],q[3],fm.grass,0.005);
+    for(const r of [[-7,14.5,7,24.5],[-2.5,24.5,2.5,30],[-2.5,12,2.5,14.5],[20,2,34,5]])floor(r[0],r[1],r[2],r[3],fm.gravel,0.015);
+    wZ(0,-46,-34,44,2.6,M.brick);wZ(0,46,-34,44,2.6,M.brick);wX(0,-34,-46,46,2.6,M.brick);wX(0,44,-46,46,2.6,M.brick);
+    // estate wall with two locked gates and a gap at the back
+    wX(0,30,-34.2,-2.4,2.8,stone);wX(0,30,2.4,34.2,2.8,stone);
+    wZ(0,-34,-26.2,30.2,2.8,stone);wZ(0,34,-26.2,2,2.8,stone);wZ(0,34,5,30.2,2.8,stone);
+    wX(0,-26,-34.2,-30,2.8,stone);wX(0,-26,-28,34.2,2.8,stone);
+    for(const [x,z] of [[-30.2,-26],[-27.8,-26]])addBox(x-0.3,z-0.4,x+0.3,z+0.4,1.4,stone);
+    addBox(-29.6,-26.3,-28.4,-25.7,0.35,stone,{collide:false});
+    for(const x of [-2.4,2.4])addBox(x-0.35,29.6,x+0.35,30.4,3.4,stone);
+    for(const z of [2,5])addBox(33.6,z-0.35,34.4,z+0.35,3.4,stone);
+    makeDoor(-2,2,30,2.6,{gate:true,pick:true,name:"front gate"});
+    makeDoorZ(34,2,5,2.6,{gate:true,pick:true,name:"east gate"});
+    plaque(signTex("BLACKWOOD",512,96,"#d9c79a","#1a1712","bold 60px Georgia, serif"),2.2,0.42,0,2.4,30.42);
+    // fountain, hedges, trees, shed, garage
+    const basin=new THREE.Mesh(new THREE.CylinderGeometry(2.2,2.3,0.6,24),stone);basin.position.set(0,0.3,19.5);basin.castShadow=true;lvAdd(basin);
+    const water=new THREE.Mesh(new THREE.CircleGeometry(2.0,24),new THREE.MeshPhongMaterial({color:0x1d3a52,shininess:100,specular:0x88aacc}));water.rotation.x=-Math.PI/2;water.position.set(0,0.52,19.5);lvAdd(water);
+    colliders.push({minX:-1.7,maxX:1.7,minZ:17.8,maxZ:21.2,h:0.6,lvl:0});
+    addBox(-0.3,19.2,0.3,19.8,1.9,stone);
+    for(const [a,b] of [[-16,-8],[8,16]])addBox(a,15,b,16,1.3,hedge);
+    for(const [a,b] of [[25,27.5],[-27.5,-25]])addBox(-3.4,a,-2.8,b,1.3,hedge),addBox(2.8,a,3.4,b,1.3,hedge);
+    for(const [x,z] of [[-24,20],[24,20],[-27,2],[28,-6],[-12,-20],[10,-21],[-24,-16.5],[-20,26],[20,26]]){
+      addBox(x-0.25,z-0.25,x+0.25,z+0.25,3.0,bark);const c=new THREE.Mesh(new THREE.SphereGeometry(2.0,10,8),leaf);c.position.set(x,4.2,z);c.castShadow=true;lvAdd(c);
+    }
+    addBox(-30,-22,-26,-19,2.6,oak);addBox(-30.2,-22.2,-25.8,-18.8,2.9,dark,{y0:2.6,collide:false});
+    addBox(20,-23,28,-16,3.2,stone);addBox(19.8,-23.2,28.2,-15.8,3.5,dark,{y0:3.2,collide:false});
+    plaque(tex(128,96,(g,w,h)=>{g.fillStyle="#5d6266";g.fillRect(0,0,w,h);g.fillStyle="#4a4e52";for(let y=0;y<h;y+=8)g.fillRect(0,y,w,3);}),5,2.6,24,1.3,-15.78);
+    makeBin(18.5,-19.5,1.8,1.2,1.3,M.dumpster,lidMat,"WASTE");
+    makeBin(-25,-20.5,1.2,0.8,1.0,M.dumpster,lidMat,"GARDEN");
+    // the van waits outside the east gate
+    makeVan(37.4,3.5,-1);
+    const car=addBox(-14,37.2,-9.5,39,0.95,M.car);car.col.h=1.4;addBox(-13,37.35,-10.6,38.85,1.45,M.glass,{y0:0.95,collide:false});
+    lamp(-7,27,0xffb050);lamp(30,8,0xffa848);lamp(-22,-23,0xffa848);
+
+    // ---------- the house: shell ----------
+    // ground floor
+    wX(0,12,-20,-17,OH,stone);winX(0,12,-17,-13,OH,stone);wX(0,12,-13,-10,OH,stone);winX(0,12,-10,-6,OH,stone);wX(0,12,-6,-1.5,OH,stone);
+    addBox(-1.5,11.8,1.5,12.2,OH,stone,{y0:2.6,collide:false});
+    wX(0,12,1.5,6,OH,stone);winX(0,12,6,10,OH,stone);wX(0,12,10,13,OH,stone);winX(0,12,13,17,OH,stone);wX(0,12,17,20,OH,stone);
+    wX(0,-12,-20,-14,OH,stone);winX(0,-12,-14,-11,OH,stone);wX(0,-12,-11,2,OH,stone);addBox(2,-12.2,4,-11.8,OH,stone,{y0:2.4,collide:false});
+    wX(0,-12,4,8,OH,stone);windowOX(-12,8,11,OH,stone,"kitchen window",0);wX(0,-12,11,20,OH,stone);
+    wZ(0,-20,-12.2,3,OH,stone);winZ(0,-20,3,6,OH,stone);wZ(0,-20,6,7.5,OH,stone);winZ(0,-20,7.5,10.5,OH,stone);wZ(0,-20,10.5,12.2,OH,stone);
+    wZ(0,20,-12.2,4,OH,stone);winZ(0,20,4,8,OH,stone);wZ(0,20,8,12.2,OH,stone);
+    // first floor
+    wX(1,12,-20,-15,OH,stone);winX(1,12,-15,-11,OH,stone);wX(1,12,-11,-1,OH,stone);makeWindowAt(0,12,2,false,OH,stone,"balcony window",1);
+    wX(1,12,1,11,OH,stone);winX(1,12,11,15,OH,stone);wX(1,12,15,20,OH,stone);
+    wX(1,-12,-20,-14,OH,stone);winX(1,-12,-14,-11,OH,stone);wX(1,-12,-11,-1,OH,stone);winX(1,-12,-1,2,OH,stone);wX(1,-12,2,20,OH,stone);
+    wZ(1,-20,-12.2,4,OH,stone);winZ(1,-20,4,8,OH,stone);wZ(1,-20,8,12.2,OH,stone);
+    wZ(1,20,-12.2,4,OH,stone);winZ(1,20,4,8,OH,stone);wZ(1,20,8,12.2,OH,stone);
+    // attic
+    wZ(2,0,-12.2,0.2,OH,stone);wZ(2,20,-12.2,0.2,OH,stone);
+    wX(2,-12,0,3,OH,stone);winX(2,-12,3,5,OH,stone);wX(2,-12,5,11,OH,stone);winX(2,-12,11,13,OH,stone);wX(2,-12,13,20,OH,stone);wX(2,0,0,20,OH,stone);
+    // slabs: ground floor over the cellars, first floor, roof, attic roof, basement ceilings outside the house
+    slab(0,MAN_F,M.ceil);slab(1,MAN_F,M.ceil);slab(2,MAN_F,dark);
+    addBox(0,-12,20,0,3*ROOF_Y,dark,{y0:3*ROOF_Y-0.38,collide:false});
+    for(const r of [[-10,-14,-7,-12],[-13,-21,-4,-14]])addBox(r[0],r[1],r[2],r[3],-0.02,M.ceil,{y0:-0.38,collide:false});
+    // balcony with balustrade, columns and the trellis ladder
+    addBox(-6,12.2,6,14.5,ROOF_Y,stone,{y0:ROOF_Y-0.3,collide:false});
+    for(const x of [-5.6,5.6])addBox(x-0.2,14.1,x+0.2,14.5,ROOF_Y-0.3,stone);
+    addBox(-6,14.4,6,14.6,1.0,stone,{lvl:1});addBox(-6.1,12.2,-5.9,14.6,1.0,stone,{lvl:1});addBox(5.9,12.2,6.1,14.6,1.0,stone,{lvl:1});
+    makeLadder(4.6,14.66,0,ROOF_Y+1.1,0);
+    for(let i=0;i<7;i++)plaque(tex(32,64,(g,w,h)=>{g.clearRect(0,0,w,h);g.fillStyle="#2d4a26";for(let k=0;k<40;k++){g.beginPath();g.arc(Math.random()*w,Math.random()*h,2+Math.random()*3,0,7);g.fill();}}),0.7,0.8,4.6+(i%2?0.2:-0.2),0.5+i*0.7,14.7);
+    LADDERS.push({name:"trellis",x:4.6,z:15.05,yaw:0,lo:0,top:ROOF_Y+1.15,path:[[4.6,14.1,ROOF_Y+1.15]],exit:{x:4.6,z:13.5,lvl:1}});
+    makeDoor(-1.5,1.5,12,2.58,{mat:oak,name:"front door",pick:true});
+    makeDoor(2,4,-12,2.38,{mat:staffDoorMat,name:"service door",pick:true});
+    plaque(signTex("BLACKWOOD MANOR",1024,120,"#d9c79a","#1a1712","bold 80px Georgia, serif"),5,0.6,0,3.3,12.22);
+    pointLight(0,3.2,13.4,0xffd9a0,0.7,8);
+
+    // ---------- ground floor ----------
+    segX(0,0,-20,20,[[-12,-10,2.4],[-3.5,3.5,2.8],[10,12,2.4]],IH,paper);
+    segZ(0,-5,0,12,[[5,7,2.8]],IH,paper);segZ(0,5,0,12,[[5,7,2.8]],IH,paper);
+    segX(0,-2,-20,20,[[-13,-11,2.4],[-4,-2,2.4],[2,4,2.4],[9,11,2.4]],IH,paper);
+    segZ(0,-17,-12,-2,[[-11,-9,2.6]],IH,paper);wZ(0,-6,-12,-2,IH,paper);wZ(0,0,-12,-2,IH,paper);segZ(0,6,-12,-2,[[-8,-6,2.4]],IH,paper);
+    makeDoor(-12,-10,0,2.38,{mat:oak,name:"ballroom door"});makeDoor(10,12,0,2.38,{mat:oak,name:"dining room door"});
+    makeDoor(-13,-11,-2,2.38,{mat:oak,name:"library door"});
+    const secDoor=makeDoor(-4,-2,-2,2.38,{name:"security door"});makeReader(secDoor,-1.55,1.25,-1.77,0);
+    makeDoor(2,4,-2,2.38,{mat:staffDoorMat,name:"pantry door"});makeDoor(9,11,-2,2.38,{mat:staffDoorMat,name:"kitchen door"});
+    makeDoorZ(6,-8,-6,2.38,{mat:staffDoorMat,name:"pantry door"});
+    fl(0,[-5,0,5,12],fm.marble);fl(0,[-20,-2,20,0],fm.marble);fl(0,[-20,0,-5,12],fm.parquet);fl(0,[5,0,20,12],fm.parquet);
+    fl(0,[-20,-12,-17,-2],fm.stone);fl(0,[-17,-12,-6,-2],fm.carpet);fl(0,[-6,-12,0,-2],fm.carpet);fl(0,[0,-12,6,-2],fm.tile);fl(0,[6,-12,20,-2],fm.tile);
+    floor(-3.5,9.5,3.5,11.6,fm.rug,0.04);
+    // ballroom: piano, chandelier
+    addBox(-15,8,-13,10,1.0,dark);addBox(-15.1,7.9,-12.9,8.1,1.25,dark,{y0:1.0,collide:false});
+    for(const [x,z] of [[-12.5,6],[12.5,5.5],[0,7.5]]){const ch=new THREE.Mesh(new THREE.SphereGeometry(0.35,10,8),new THREE.MeshBasicMaterial({color:0xffe6b0}));ch.position.set(x,3.15,z);ch.userData.noHit=true;lvAdd(ch);}
+    houseLight(-12.5,3.0,6,0xffe0b0,0.85,14);houseLight(0,3.0,7.5,0xffe6c0,0.8,12);houseLight(12.5,3.0,5.5,0xffe0b0,0.7,12);
+    // dining: long table, sideboard
+    addBox(9,5.2,17,6.8,0.8,oak);addBox(19.2,0.6,19.8,4.4,1.0,oak);
+    for(let x=9.6;x<17;x+=1.4)for(const z of [4.7,7.3])addBox(x-0.22,z-0.22,x+0.22,z+0.22,0.5,dark,{collide:false});
+    // library: shelves, the secret bookcase, reading table
+    const books=tex(256,256,(g,w,h)=>{g.fillStyle="#2a1d14";g.fillRect(0,0,w,h);const c=["#6b2a22","#2a3a5a","#3a4a2a","#5a4a2a","#4a2a4a","#7a6a4a","#2a2a2a"];for(let r=0;r<5;r++){let x=0;while(x<w){const bw=6+Math.random()*10;g.fillStyle=c[Math.random()*c.length|0];g.fillRect(x,r*51+6,bw-1,42-Math.random()*10);x+=bw;}g.fillStyle="#1a120c";g.fillRect(0,r*51+48,w,4);}});
+    const shelfUnit=(x1,z1,x2,z2,face,ry)=>{addBox(x1,z1,x2,z2,2.7,panel);const lenU=Math.max(x2-x1,z2-z1);const p=plaque(books,lenU,2.5,face[0],1.3,face[1],ry);p.material.map=books.clone();p.material.map.needsUpdate=true;p.material.map.repeat.set(lenU/2,1);};
+    shelfUnit(-16.8,-9,-16.4,-2,[-16.38,-5.5],Math.PI/2);shelfUnit(-16.8,-11.8,-6.2,-11.4,[-11.5,-11.38],0);
+    addBox(-12,-7.5,-9,-6.5,0.78,oak);
+    houseLight(-11.5,3.0,-7,0xffd9a0,0.75,11);
+    // the secret bookcase door (hinged at z=-9, swings into the library)
+    const sp=new THREE.Group();sp.position.set(-16.6,0,-9);lvAdd(sp);
+    const sd=new THREE.Mesh(new THREE.BoxGeometry(0.4,2.7,2.0),panel);sd.position.set(0,1.35,-1.0);sd.castShadow=true;sp.add(sd);
+    const sdf=new THREE.Mesh(new THREE.PlaneGeometry(2.0,2.5),new THREE.MeshBasicMaterial({map:books}));sdf.position.set(0.21,1.3,-1.0);sdf.rotation.y=Math.PI/2;sp.add(sdf);
+    const secretCol={minX:-17.2,maxX:-16.4,minZ:-11,maxZ:-9,h:IH,lvl:0};colliders.push(secretCol);
+    const secretLeaf={minX:-16.7,maxX:-14.6,minZ:-9.35,maxZ:-8.95,h:IH,lvl:0};
+    const BOOKS=[["red",0xb02a2a,-8.3,3],["blue",0x2a4ab0,-7.1,1],["green",0x2a8a3a,-6.0,4],["gold",0xd4a637,-4.9,2],["white",0xe8e4d8,-3.8,3],["black",0x151515,-2.9,2]]
+      .map(([c,hex,z,sh])=>{const y=[0,2.25,1.75,1.25,0.75][sh];const m=new THREE.Mesh(new THREE.BoxGeometry(0.2,0.3,0.07),phong(hex,{shininess:40}));m.position.set(-16.3,y,z);lvAdd(m);return {c,z,sh,y,mesh:m,tilt:0};});
+    // security room: monitors, the operator, the laser computer
+    addBox(-1.4,-9,-0.2,-5,0.8,M.desk);
+    const monTex=signTex("CAM 01  02  03  04  05  06",256,64,"#9fc4ff","#0d1a2c","bold 18px monospace");
+    for(let i=0;i<3;i++){const s=new THREE.Mesh(new THREE.BoxGeometry(0.1,0.5,0.7),[M.cabinet,new THREE.MeshBasicMaterial({map:monTex}),M.cabinet,M.cabinet,M.cabinet,M.cabinet]);s.position.set(-0.45,1.1,-7.8+i*0.8);lvAdd(s);}
+    const term=new THREE.Mesh(new THREE.BoxGeometry(0.1,0.4,0.55),[M.cabinet,new THREE.MeshBasicMaterial({map:signTex("LASER GRID · ARMED",256,64,"#ff6a5a","#160606","bold 22px monospace")}),M.cabinet,M.cabinet,M.cabinet,M.cabinet]);term.position.set(-0.45,1.05,-8.6);lvAdd(term);
+    addBox(-2.65,-7.25,-2.15,-6.75,0.45,M.cabinet,{collide:false});addBox(-2.74,-7.25,-2.66,-6.75,1.15,M.cabinet,{y0:0.45,collide:false});
+    houseLight(-3,3.0,-7,0x9fb8e8,0.5,8);
+    // pantry and kitchen
+    addBox(0.4,-11.8,5.6,-11.2,1.8,M.cabinet);makeBin(1.2,-4,1.2,0.8,1.0,cartMat,cartLid,"LINEN");
+    addBox(6.4,-11.8,16,-11.0,0.95,M.counter);addBox(10,-7,14,-5.5,0.95,M.counter);
+    houseLight(12,3.0,-7,0xf0f4ff,0.7,11);
+
+    // ---------- first floor ----------
+    segX(1,0,-20,20,[[-12,-10,2.4],[-3.5,3.5,2.8],[8,10,2.4]],IH,paper);
+    segZ(1,-5,0,12,[[5,7,2.8]],IH,paper);segZ(1,5,0,12,[[5,7,2.4]],IH,paper);
+    segX(1,-2,-20,20,[[-13,-11,2.4],[-1,1,2.4],[11,13,2.4]],IH,paper);
+    wZ(1,-6,-12,-2,IH,paper);wZ(1,10,-12,-2,IH,paper);
+    makeDoor(-12,-10,0,2.38,{lvl:1,mat:oak,name:"gallery door"});makeDoor(8,10,0,2.38,{lvl:1,mat:oak,name:"guest room door"});
+    makeDoorZ(5,5,7,2.38,{lvl:1,mat:oak,name:"guest room door"});
+    makeDoor(-13,-11,-2,2.38,{lvl:1,mat:oak,name:"study door",pick:true});makeDoor(-1,1,-2,2.38,{lvl:1,mat:oak,name:"master bedroom door"});
+    makeDoor(11,13,-2,2.38,{lvl:1,mat:staffDoorMat,name:"servants' door"});
+    fl(1,[-5,0,5,12],fm.marble);fl(1,[-20,-2,20,0],fm.carpet);fl(1,[-20,0,-5,12],fm.parquet);fl(1,[5,0,20,12],fm.carpet);
+    fl(1,[-20,-12,-6,-2],fm.parquet);fl(1,[-6,-12,10,-2],fm.carpet);fl(1,[10,-12,20,-2],fm.wood);
+    floor(-6,12,6,14.5,fm.stone,ROOF_Y+0.03);
+    // gallery: paintings and the replica under glass
+    const art=(seed)=>tex(128,96,(g,w,h)=>{let r=seed;const rnd=()=>(r=(r*9301+49297)%233280)/233280;g.fillStyle=`hsl(${rnd()*360},30%,${20+rnd()*20}%)`;g.fillRect(0,0,w,h);for(let i=0;i<7;i++){g.fillStyle=`hsla(${rnd()*360},${40+rnd()*40}%,${30+rnd()*40}%,.8)`;g.beginPath();g.ellipse(rnd()*w,rnd()*h,10+rnd()*30,8+rnd()*24,rnd()*3,0,7);g.fill();}g.strokeStyle="#c9a24a";g.lineWidth=8;g.strokeRect(0,0,w,h);});
+    for(let i=0;i<4;i++){plaque(art(i*17+3),2.0,1.5,-17.5+i*3.6,ROOF_Y+2.0,0.22);plaque(art(i*29+11),2.0,1.5,-17.5+i*3.6,ROOF_Y+2.0,11.78,Math.PI);}
+    addBox(-13,5.6,-12,6.4,1.0,marbleM,{lvl:1});
+    const dome=new THREE.Mesh(new THREE.CylinderGeometry(0.28,0.28,0.5,16,1,true),new THREE.MeshPhongMaterial({color:0xcfe3ee,transparent:true,opacity:.18,side:THREE.DoubleSide,depthWrite:false}));dome.position.set(-12.5,ROOF_Y+1.25,6);dome.userData.noHit=true;lvAdd(dome);
+    const gemM=new THREE.MeshPhongMaterial({color:0xbfefff,emissive:0x2a7aa8,shininess:140,specular:0xffffff,flatShading:true});
+    const replica=new THREE.Mesh(new THREE.OctahedronGeometry(0.12),gemM);replica.position.set(-12.5,ROOF_Y+1.15,6);replica.scale.y=1.3;replica.userData.noHit=true;lvAdd(replica);
+    plaque(signTex("THE WINTER HEART · replica",512,64,"#e9e3d0","#1a1712","italic 30px Georgia, serif"),0.9,0.12,-12.5,ROOF_Y+0.85,6.42);
+    houseLight(-12.5,ROOF_Y+3.0,6,0xffe8c8,0.8,13);houseLight(0,ROOF_Y+3.0,6.5,0xffe6c0,0.6,11);
+    // guest room
+    addBox(15,7,18,9.4,0.6,M.bench,{lvl:1});addBox(18.3,9.6,18.9,10.2,0.6,oak,{lvl:1});addBox(19.2,1,19.8,3.5,2.0,oak,{lvl:1});
+    // study: desk with the diary, the study safe
+    addBox(-15,-8,-12.5,-7,0.8,oak,{lvl:1});
+    const diary=new THREE.Mesh(new THREE.BoxGeometry(0.34,0.04,0.24),phong(0x4a1a12));diary.position.set(-13.8,ROOF_Y+0.82,-7.5);diary.rotation.y=0.3;lvAdd(diary);
+    const pageL=new THREE.Mesh(new THREE.PlaneGeometry(0.3,0.2),new THREE.MeshBasicMaterial({map:tex(128,96,(g,w,h)=>{g.fillStyle="#efe6cf";g.fillRect(0,0,w,h);g.fillStyle="#3a3024";for(let y=12;y<h;y+=9)g.fillRect(8,y,w-16-Math.random()*30,2);})}));pageL.rotation.x=-Math.PI/2;pageL.rotation.z=-0.3;pageL.position.set(-13.8,ROOF_Y+0.845,-7.5);lvAdd(pageL);
+    const ss={pivot:null,pickT:0,open:false,t:0};
+    {const x=-9,z=-11.0,W=1.2,D=0.7,Hh=1.4,t=0.07,b=ROOF_Y;
+      addBox(x-W/2,z-D,x+W/2,z-D+t,Hh,safeMat,{lvl:1,collide:false});addBox(x-W/2,z-D,x-W/2+t,z,Hh,safeMat,{lvl:1,collide:false});addBox(x+W/2-t,z-D,x+W/2,z,Hh,safeMat,{lvl:1,collide:false});
+      addBox(x-W/2,z-D,x+W/2,z,t,safeIn,{lvl:1,collide:false});addBox(x-W/2,z-D,x+W/2,z,Hh,safeMat,{lvl:1,y0:Hh-t,collide:false});addBox(x-W/2+t,z-D+t,x+W/2-t,z-0.03,0.72,safeIn,{lvl:1,y0:0.68,collide:false});
+      colliders.push({minX:x-W/2,maxX:x+W/2,minZ:z-D,maxZ:z+0.12,h:Hh,lvl:1});
+      ss.pivot=new THREE.Group();ss.pivot.position.set(x-W/2,b,z+0.06);lvAdd(ss.pivot);
+      const dm=new THREE.Mesh(new THREE.BoxGeometry(W,Hh,0.1),safeMat);dm.position.set(W/2,Hh/2,0);dm.castShadow=true;ss.pivot.add(dm);
+      const dial=new THREE.Mesh(new THREE.CylinderGeometry(0.1,0.1,0.04,20),M.steel);dial.rotation.x=Math.PI/2;dial.position.set(W*0.62,0.8,0.07);ss.pivot.add(dial);
+      const hd=new THREE.Mesh(new THREE.BoxGeometry(0.04,0.25,0.04),M.steel);hd.position.set(W*0.88,0.8,0.08);ss.pivot.add(hd);
+      ss.x=x;ss.z=z;}
+    houseLight(-13,ROOF_Y+3.0,-7,0xffd9a0,0.7,11);
+    // master bedroom: the owner asleep, the ring on the nightstand
+    addBox(1,-11.8,3,-9.6,0.6,phong(0xe8e2d4),{lvl:1});addBox(1,-11.8,3,-11.6,1.3,oak,{lvl:1});addBox(0.95,-11.8,3.05,-9.55,0.45,oak,{lvl:1,collide:false});
+    addBox(3.3,-11.8,3.9,-11.2,0.6,oak,{lvl:1});addBox(0.1,-11.8,0.7,-11.2,0.6,oak,{lvl:1});addBox(6,-11.8,8.4,-11.3,1.0,oak,{lvl:1});
+    // (the bed itself is on the first floor)
+    const ring=new THREE.Mesh(new THREE.TorusGeometry(0.03,0.01,6,14),brass);ring.rotation.x=Math.PI/2;ring.position.set(3.6,ROOF_Y+0.62,-11.5);ring.userData.noHit=true;lvAdd(ring);
+    const ringGlint=new THREE.Sprite(new THREE.SpriteMaterial({map:GLINT,transparent:true,depthWrite:false,blending:THREE.AdditiveBlending,opacity:.5}));ringGlint.scale.set(0.16,0.16,0.16);ringGlint.position.set(3.6,ROOF_Y+0.68,-11.5);lvAdd(ringGlint);
+    houseLight(2,ROOF_Y+2.6,-6,0xffc890,0.3,9);
+    // servants' wing (stairs up to the attic)
+    addBox(10.4,-11.8,14,-11.2,1.6,M.cabinet,{lvl:1});
+    // ---------- attic ----------
+    segX(2,-3,0,17.3,[[5,7,2.4],[11,13,2.4]],IH,paper);wZ(2,8,-12,-3,IH,paper);
+    makeDoor(5,7,-3,2.38,{lvl:2,mat:oak,name:"butler's door"});makeDoor(11,13,-3,2.38,{lvl:2,mat:oak,name:"maid's door"});
+    fl(2,[0,-12,20,0],fm.wood);
+    addBox(4.5,-11.8,7.6,-10,0.55,M.bench,{lvl:2});addBox(1,-11.8,3.2,-11,0.78,oak,{lvl:2});
+    addBox(13.5,-11.8,16.8,-10,0.55,M.bench,{lvl:2});addBox(9.2,-11.8,11,-11,0.78,oak,{lvl:2});
+    houseLight(9,2*ROOF_Y+2.9,-6,0xfff0d0,0.85,15);
+    // ---------- cellars (level -1) ----------
+    const bw=(r,m)=>fl(-1,r,m);
+    // secret shaft, corridors, vault
+    wZ(-1,-20,-9,0,3.98,stone);wZ(-1,-17,-9,-2,3.98,stone);wX(-1,-9,-20,-17,3.98,stone);wX(-1,0,-20,-7,3.98,stone);
+    wX(-1,-2,-17,-10,3.98,stone);wZ(-1,-10,-14,-2,3.98,stone);wZ(-1,-7,-14,0,3.98,stone);
+    wX(-1,-14,-13,-10,3.98,stone);wX(-1,-14,-7,-4,3.98,stone);wZ(-1,-13,-21,-14,3.98,stone);wZ(-1,-4,-21,-14,3.98,stone);wX(-1,-21,-13,-4,3.98,stone);
+    bw([-20,-9,-17,0],fm.stone);bw([-17,-2,-10,0],fm.stone);bw([-10,-14,-7,-2],fm.stone);bw([-13,-21,-4,-14],fm.steel);
+    makeVault(-8.5,-14,"BLACKWOOD",-1);
+    VAULT.custom=true;VAULT.keypadTitle="VAULT KEYPAD";
+    const ledR=new THREE.MeshBasicMaterial({color:0xff3a30}),ledK=new THREE.MeshBasicMaterial({color:0xff3a30});
+    {const pad=new THREE.Mesh(new THREE.BoxGeometry(0.3,0.4,0.05),phong(0x111316));pad.position.set(2.6,1.4,0.28);VAULT.pivot.add(pad);
+     const sc=new THREE.Mesh(new THREE.PlaneGeometry(0.22,0.06),ledK);sc.position.set(2.6,1.53,0.31);VAULT.pivot.add(sc);
+     const rd=new THREE.Mesh(new THREE.BoxGeometry(0.22,0.22,0.05),phong(0x2a2620,{shininess:60}));rd.position.set(2.6,0.95,0.28);VAULT.pivot.add(rd);
+     const rl=new THREE.Mesh(new THREE.CircleGeometry(0.06,16),ledR);rl.position.set(2.6,0.95,0.31);VAULT.pivot.add(rl);}
+    // inside the vault: deposit walls, pallets of gold, the Winter Heart on its plate
+    addBox(-12.8,-20.8,-4.2,-20.4,2.6,depositMat,{lvl:-1});
+    for(const x of [-12.6,-6.2])addBox(x,-20.3,x+1.6,-18.6,0.12,M.crate,{lvl:-1,collide:false});
+    addBox(-8.9,-18.9,-8.1,-18.1,1.0,marbleM,{lvl:-1});
+    addBox(-9.2,-19.2,-7.8,-17.8,0.04,M.steel,{lvl:-1,collide:false});
+    const diamond=new THREE.Mesh(new THREE.OctahedronGeometry(0.13),gemM);diamond.position.set(-8.5,-ROOF_Y+1.17,-18.5);diamond.scale.y=1.3;diamond.userData.noHit=true;lvAdd(diamond);
+    const dGlint=new THREE.Sprite(new THREE.SpriteMaterial({map:GLINT,transparent:true,depthWrite:false,blending:THREE.AdditiveBlending,opacity:.8}));dGlint.scale.set(0.5,0.5,0.5);dGlint.position.copy(diamond.position);lvAdd(dGlint);
+    addBox(-6.6,-15.6,-5.8,-14.6,0.8,M.desk,{lvl:-1});
+    pointLight(-8.5,-ROOF_Y+3.0,-17.5,0xd8f0ff,0.9,10);
+    // the laser grid in the corridor
+    const lasers=[];const lzs=[-3.5,-6,-8.5,-11];
+    const laserMat=new THREE.MeshBasicMaterial({color:0xff2020,transparent:true,opacity:.85});
+    for(const z of lzs){for(const [h,dz] of [[0.25,0],[0.7,0.1],[1.15,0],[1.6,0.1],[2.05,0]]){const b=new THREE.Mesh(new THREE.BoxGeometry(2.6,0.025,0.025),laserMat);b.position.set(-8.5,-ROOF_Y+h,z+dz);b.userData.noHit=true;lvAdd(b);lasers.push(b);}
+      for(const x of [-9.75,-7.25])addBox(x-0.05,z-0.08,x+0.05,z+0.18,2.3,M.cabinet,{lvl:-1,collide:false,y0:0.1});}
+    pointLight(-8.5,-ROOF_Y+3.0,-7,0xff4a3a,0.55,12);pointLight(-18.5,-ROOF_Y+3.0,-1,0xd8c8a8,0.4,8);
+    // main cellar under the kitchen: wine racks, barrels, utility room with the fuse box
+    wZ(-1,6,-12,-2,3.98,stone);wZ(-1,20,-12,-2,3.98,stone);wX(-1,-12,6,20,3.98,stone);wX(-1,-2,6,20,3.98,stone);
+    wZ(-1,14,-10,-2,3.98,stone);segX(-1,-10,14,17.25,[[14.5,16,2.4]],3.98,stone);wZ(-1,17.25,-10.5,-2,3.98,stone);
+    makeDoor(14.5,16,-10,2.38,{lvl:-1,name:"utility door"});
+    bw([6,-12,20,-2],fm.stone);
+    for(let x=6.4;x<13.6;x+=2.4)addBox(x,-2.6,x+1.8,-2.2,2.1,oak,{lvl:-1});
+    for(const z of [-10.5,-8.5,-6.5,-4.5])addBox(6.2,z-0.8,6.8,z+0.8,2.1,oak,{lvl:-1});
+    for(const [x,z] of [[11,-11.2],[12.6,-11.2]]){const k=new THREE.Mesh(new THREE.CylinderGeometry(0.45,0.45,1.0,12),oak);k.position.set(x,-ROOF_Y+0.5,z);lvAdd(k);}
+    colliders.push({minX:10.5,maxX:13.1,minZ:-11.7,maxZ:-10.7,h:1.0,lvl:-1});
+    const fuse=new THREE.Mesh(new THREE.BoxGeometry(0.12,0.7,0.5),phong(0x5a6066,{shininess:40}));fuse.position.set(14.26,-ROOF_Y+1.4,-6);lvAdd(fuse);
+    const fuseLed=new THREE.MeshBasicMaterial({color:0x40ff80});const fl2=new THREE.Mesh(new THREE.PlaneGeometry(0.06,0.06),fuseLed);fl2.position.set(14.33,-ROOF_Y+1.62,-5.85);fl2.rotation.y=Math.PI/2;lvAdd(fl2);
+    plaque(signTex("MAIN POWER",256,64,"#0b0d10","#f4ab3d","bold 34px Arial"),0.5,0.12,14.33,-ROOF_Y+1.85,-6,Math.PI/2);
+    addBox(15.6,-9.6,16.8,-8.4,1.8,M.steel,{lvl:-1});
+    houseLight(10,-ROOF_Y+3.0,-7,0xffd9a0,0.85,13);houseLight(15.6,-ROOF_Y+3.0,-5,0xf0f4ff,0.6,8);
+
+    // ---------- keycard, notes ----------
+    makeKeycard([[12,0.96,-6.0],[19.5,1.01,3.8],[1.4,8.79,-11.6],[16.4,4.61,7.3],[3,1.81,-11.5],[-13.6,1.01,8.6]]);
+    const paperNote=(txt)=>{const c=document.createElement("canvas");c.width=160;c.height=120;const t=new THREE.CanvasTexture(c);const m=new THREE.Mesh(new THREE.PlaneGeometry(0.26,0.2),new THREE.MeshBasicMaterial({map:t}));m.userData.noHit=true;lvAdd(m);
+      const gl=new THREE.Sprite(new THREE.SpriteMaterial({map:GLINT,transparent:true,depthWrite:false,blending:THREE.AdditiveBlending,opacity:.5}));gl.scale.set(0.3,0.3,0.3);gl.position.z=0.02;m.add(gl);
+      return {mesh:m,canvas:c,tex:t};};
+    const notes=[paperNote(),paperNote()];
+    notes[0].spots=[[1.8,2*ROOF_Y+0.795,-11.4,"flat"],[0.22,2*ROOF_Y+1.6,-7.5,Math.PI/2],[7.78,2*ROOF_Y+1.5,-9,-Math.PI/2]];
+    notes[1].spots=[[7.0,ROOF_Y+1.005,-11.55,"flat"],[-2.2,ROOF_Y+1.6,-2.22,Math.PI],[-5.78,ROOF_Y+1.5,-6,Math.PI/2]];
+
+    // ---------- lights outside the house ----------
+    // cameras (all fed to the security room)
+    makeCam(19.4,3.4,12.4,-0.96,0.5,10,0,26,0.45,0);
+    makeCam(-19.4,3.4,-12.4,1.94,0.5,11,1.2,24,0.45,0,{shadow:false});
+    makeCam(4.55,3.3,11.55,-2.47,0.5,9,0.5,16,0.45,0);
+    makeCam(19.55,3.0,-1.0,-Math.PI/2,0.15,7,0.3,40,0.4,0,{shadow:false});
+    makeCam(4.55,ROOF_Y+3.3,0.45,-0.785,0.5,9,2.0,16,0.45,1,{shadow:false});
+    makeCam(-4.45,-ROOF_Y+3.0,-14.45,-2.36,0.4,8,1.0,11,0.45,-1,{shadow:false});
+    // guards
+    new Guard([[0,27.6,0,0]],0,{name:"Ashford",flashShadow:false});
+    new Guard([[-26,24,null,2],[26,24,null,2],[29,8],[29,-14,null,2],[-29,-14,null,2],[-29,8]],1.2,{name:"Holloway"});
+    new Guard([[-16,-18,null,3],[16,-18,null,3]],1.0,{name:"Pike",flashShadow:false});
+    new Guard([[-18,-1,null,2],[18,-1,null,2],[3,-1],[3,10.5],[-3,10.5],[-3,-1]],1.0,{name:"Reed",flashShadow:false});
+    new Guard([[-17,6,null,3],[-3,6],[-3,10.5],[3,10.5],[3,6],[8,3.5],[17,3.5,null,3],[8,3.5],[3,6],[3,10.5],[-3,10.5],[-3,6]],1.0,{name:"Lowe"});
+    new Guard([[-2.4,-7,Math.PI/2,0]],0,{security:true,seated:true,name:"Patel",flashShadow:false});
+    const brennan=new Guard([[8,-4,null,3],[8,-11],[15.2,-11,null,2],[15.2,-6,null,3],[15.2,-11],[8,-11]],1.0,{name:"Brennan",level:-1,flashShadow:false});
+    new Guard([[-17,6,null,3],[-3,6],[-3,-1],[17,-1,null,2],[-3,-1],[-3,6]],1.0,{name:"Mercer",level:1,flashShadow:false});
+    new Guard([[17,-1,null,2],[9,-1],[9,6],[17,3,null,3],[9,6],[9,-1]],1.2,{name:"Quinn",level:1,flashShadow:false});
+    // the household
+    new Civilian([[2,-9.85,0,0]],0,{level:1,asleep:true,label:"Lord Blackwood",bedY:0.74});
+    new Civilian([[13,-6,null,4],[11,-3],[11,1],[13,6,null,5],[11,1],[11,-3]],2,{worker:true,label:"The butler"});
+    new Civilian([[3,-8,null,4],[6,-1.5],[12,-1.5],[12,-8,null,4],[12,-1.5],[6,-1.5]],2,{worker:true,label:"The maid",level:2});
+    Object.assign(self,{X:{H,BOOKS,sp,secretCol,secretLeaf,lasers,lzs,ring,ringGlint,replica,diamond,dGlint,ss,notes,brennan,brennanRoute:brennan.route,ledR,ledK,fuseLed,term,diary}});
+  },
+  reset(){
+    const X=this.X;if(!X)return;
+    const b=X.BOOKS[Math.random()*X.BOOKS.length|0];
+    const code=G.safeCode;
+    G.laserOff=false;
+    G.m={diary:false,book:b,secretOpen:false,secretT:0,ring:false,ringOk:false,codeOk:false,knowA:false,knowB:false,replica:false,powerOff:false,powerT:0,fixing:false,fixT:0,holdT:0,holdId:"",wrongBooks:0};
+    X.sp.rotation.y=0;if(!colliders.includes(X.secretCol))colliders.push(X.secretCol);{const i=colliders.indexOf(X.secretLeaf);if(i>=0)colliders.splice(i,1);}
+    X.BOOKS.forEach(k=>{k.tilt=0;k.mesh.rotation.z=0;});
+    X.ring.visible=true;X.ringGlint.visible=true;X.replica.visible=true;X.diamond.visible=true;X.dGlint.visible=true;
+    X.ss.open=false;X.ss.t=0;X.ss.pickT=0;X.ss.pivot.rotation.y=0;
+    X.H.forEach(l=>l.intensity=l.userData.base);
+    X.brennan.route=X.brennanRoute;X.ledR.color.setHex(0xff3a30);X.ledK.color.setHex(0xff3a30);X.fuseLed.color.setHex(0x40ff80);
+    X.lasers.forEach(l=>l.visible=true);
+    // two halves of the code, each on a note somewhere in its room
+    X.notes.forEach((n,i)=>{
+      const g=n.canvas.getContext("2d");g.fillStyle="#efe8d6";g.fillRect(0,0,160,120);g.fillStyle="rgba(0,0,0,.06)";for(let y=20;y<120;y+=16)g.fillRect(0,y,160,1);
+      g.fillStyle="#2a2416";g.textAlign="center";g.font="italic 18px Georgia, serif";g.fillText(i?"vault, 2nd half":"vault, 1st half",80,34);
+      g.font="bold 40px 'Segoe Print','Comic Sans MS',cursive";g.fillText(i?code.slice(3):code.slice(0,3),80,88);n.tex.needsUpdate=true;
+      const s=n.spots[Math.random()*n.spots.length|0];n.spot=s;n.level=levelOfY(s[1]);
+      n.mesh.position.set(s[0],s[1],s[2]);if(s[3]==="flat")n.mesh.rotation.set(-Math.PI/2,0,(Math.random()-0.5)*0.6);else n.mesh.rotation.set(0,s[3],(Math.random()-0.5)*0.2);
+    });
+  },
+  tick(dt){
+    const X=this.X,m=G.m;if(!X||!m)return;
+    X.diamond.rotation.y+=dt*0.8;X.replica.rotation.y+=dt*0.6;X.dGlint.material.opacity=0.5+0.3*Math.sin(G.world*3);
+    const armed=!(G.laserOff||m.powerOff);
+    X.lasers.forEach(l=>l.visible=armed);
+    if(m.secretT<1&&m.secretOpen){m.secretT=Math.min(1,m.secretT+dt/1.4);X.sp.rotation.y=-1.4*(1-Math.pow(1-m.secretT,3));}
+    if(X.ss.open&&X.ss.t<1){X.ss.t=Math.min(1,X.ss.t+dt/1.0);X.ss.pivot.rotation.y=-1.7*(1-Math.pow(1-X.ss.t,3));}
+    X.BOOKS.forEach(k=>{if(k.tilt>0){k.tilt=Math.max(0,k.tilt-dt);k.mesh.rotation.z=k===m.book&&m.secretOpen?0.35:Math.min(1,k.tilt*2)*0.35;}});
+    if(state!=="playing")return;
+    // tripping a beam
+    if(armed&&!DEV.ghost&&!G.alarm&&P.level===-1&&P.x>-10&&P.x<-7)for(const z of X.lzs)if(Math.abs(P.z-z)<0.3){triggerAlarm("You walked into the laser grid. Alarm!");break;}
+    // after a power cut someone goes down to check the fuse box
+    const br=X.brennan;
+    if(m.powerOff&&!G.alarm&&!br.down){
+      m.powerT+=dt;
+      if(m.powerT>40&&!m.fixing){m.fixing=true;br.route=[[14.85,-6,-Math.PI/2,999],[14.85,-6.05,-Math.PI/2,999]];br.wp=0;br.wait=0;br.face=null;toast("Somebody's going down to check the fuse box","warn",2400);}
+      if(m.fixing&&Math.hypot(br.x-14.85,br.z+6)<0.6){m.fixT+=dt;if(m.fixT>4){m.powerOff=false;m.fixing=false;m.fixT=0;m.powerT=0;br.route=X.brennanRoute;br.wp=0;X.H.forEach(l=>l.intensity=l.userData.base);X.fuseLed.color.setHex(0x40ff80);SFX.jamOn();toast("The power's back on. The lasers are live again","bad",2600);}}
+    }
+  },
+  interact(dt,facing){
+    const X=this.X,m=G.m;if(!X||!m)return null;
+    const hold=(id,secs,label)=>{
+      if(!keys.KeyE){if(m.holdId===id)m.holdT=0;return null;}
+      if(m.holdId!==id){m.holdId=id;m.holdT=0;}
+      m.holdT+=dt;P.fiddle=Math.max(P.fiddle,0.3);
+      if(m.holdT>=secs){m.holdT=0;m.holdId="";return "done";}
+      return {p:label,prog:m.holdT/secs};
+    };
+    const lv=P.level;
+    // the diary
+    if(lv===1&&!m.diary&&facing(-13.8,-7.5,1.8)>=0){
+      if(pressedE){m.diary=true;SFX.paper();showSub("D",`"…they will never find the Heart. It sleeps beneath the words, and only the ${m.book.c} book on the ${ORD[m.book.sh]} shelf knows the way down."`,6500,"LORD BLACKWOOD'S DIARY");}
+      return {p:m.diary?`The diary: the ${m.book.c} book, ${ORD[m.book.sh]} shelf, in the library`:"Press <kbd>E</kbd> to read the diary"};
+    }
+    // books in the library: look straight at one
+    if(lv===0&&!m.secretOpen&&P.x<-13&&P.x>-16.9&&P.z>-9.5&&P.z<-1.5){
+      const dir=new THREE.Vector3();camera.getWorldDirection(dir);let best=null,ba=0.2;
+      for(const k of X.BOOKS){const v=new THREE.Vector3(-16.3-camera.position.x,k.y-camera.position.y,k.z-camera.position.z);const d=v.length();if(d>2.6)continue;const a=dir.angleTo(v.normalize());if(a<ba){ba=a;best=k;}}
+      if(best){
+        if(pressedE){
+          best.tilt=1;
+          if(best===m.book){m.secretOpen=true;const i=colliders.indexOf(X.secretCol);if(i>=0)colliders.splice(i,1);colliders.push(X.secretLeaf);SFX.vault();toast("Click. A bookcase swings open…","good",2400);}
+          else{m.wrongBooks++;G.bang={x:-16.3,z:best.z,r:7,lvl:0};SFX.denied();noiseHit({type:"lowpass",freq:300,dur:.2,vol:.4});toast("Nothing happens. Just a very loud book","warn",1800);}
+        }
+        return {p:`Press <kbd>E</kbd> to pull the ${best.c} book (${ORD[best.sh]} shelf)`};
+      }
+    }
+    // notes with the two halves of the code
+    for(let i=0;i<2;i++){const n=X.notes[i];if(n.level!==lv)continue;const np=n.mesh.position;
+      const k=i?"knowB":"knowA";if(!m[k]&&facing(np.x,np.z,2.0)>=0){
+        if(pressedE&&!m[k]){m[k]=true;SFX.paper();toast(`A note: "vault, ${i?"2nd":"1st"} half: ${i?G.safeCode.slice(3):G.safeCode.slice(0,3)}"`,"good",3000);}
+        return {p:m[k]?`A note: "vault, ${i?"2nd":"1st"} half: ${i?G.safeCode.slice(3):G.safeCode.slice(0,3)}"`:"Press <kbd>E</kbd> to read the note"};}}
+    // the signet ring (right by the sleeping owner)
+    if(lv===1&&!m.ring&&facing(3.6,-11.5,1.6)>=0){
+      if(pressedE){m.ring=true;X.ring.visible=false;X.ringGlint.visible=false;P.fiddle=0.5;SFX.card();toast("The owner's signet ring. The vault reader wants it","good",2400);}
+      return {p:"Press <kbd>E</kbd> to take the signet ring · don't wake him"};
+    }
+    // the replica in the gallery
+    if(lv===1&&!m.replica&&facing(-12.5,6,1.7)>=0){
+      if(pressedE){m.replica=true;X.replica.visible=false;P.fiddle=0.6;SFX.pickup();toast("A glass copy of the Winter Heart. Same weight, worth nothing","good",2600);}
+      return {p:"Press <kbd>E</kbd> to take the replica diamond"};
+    }
+    // the study safe: crack the dial
+    if(lv===1&&!X.ss.open&&facing(X.ss.x,X.ss.z+0.3,1.8)>=0){
+      if(P.carry)return {p:"Drop what you're carrying to crack the safe. <kbd>Q</kbd>"};
+      if(keys.KeyE){if(pickTick(X.ss,8,dt)){X.ss.open=true;bags.forEach(b=>{if(b.state==="locked"&&b.box==="study")b.state="ground";});SFX.unlock();toast("The study safe is open","good",1800);}
+        return {p:`Cracking the dial… ${Math.min(5,Math.floor(X.ss.pickT/8*5)+1)}/5`,prog:X.ss.pickT/8};}
+      return {p:"Hold <kbd>E</kbd> to crack the study safe",prog:X.ss.pickT>0?X.ss.pickT/8:null};
+    }
+    // the security computer
+    if(lv===0&&!G.laserOff&&facing(-0.5,-8.6,1.7)>=0){
+      const r=hold("pc",2.5,"Shutting down the laser grid…");
+      if(r==="done"){G.laserOff=true;SFX.kpOk();toast("Vault lasers disabled from the security computer","good",2400);return null;}
+      return r||{p:"Hold <kbd>E</kbd> to shut down the vault lasers"};
+    }
+    // the fuse box
+    if(lv===-1&&facing(14.3,-6,1.7)>=0){
+      if(m.powerOff)return {p:"The power is off"};
+      const r=hold("fuse",2,"Pulling the main breaker…");
+      if(r==="done"){m.powerOff=true;m.powerT=0;X.H.forEach(l=>l.intensity=l.userData.base*0.12);X.fuseLed.color.setHex(0x3a2020);SFX.jamOff();toast("Power's out. The lasers are down, but someone will come to check the fuse box","warn",3200);return null;}
+      return r||{p:"Hold <kbd>E</kbd> to cut the power to the house"};
+    }
+    // the vault door: ring reader and keypad
+    if(lv===-1&&!G.vaultOpen&&!G.keypad&&facing(-8.5,-13.7,2.3)>=0&&P.z>-13.8){
+      const open=()=>{if(m.ringOk&&m.codeOk){openSafe();toast("The vault is open","good",2200);}};
+      VAULT.onCode=()=>{m.codeOk=true;X.ledK.color.setHex(0x40ff80);open();if(!m.ringOk)toast("Code accepted. The ring reader is still waiting","good",2200);};
+      if(!m.ringOk&&m.ring){if(pressedE){m.ringOk=true;X.ledR.color.setHex(0x40ff80);SFX.card();toast("The reader takes the signet ring","good",1800);open();}
+        return {p:"Press <kbd>E</kbd> to press the signet ring into the reader"};}
+      if(!m.codeOk){if(pressedE&&!P.carry)openKeypad();
+        const kn=(m.knowA?G.safeCode.slice(0,3):"···")+(m.knowB?G.safeCode.slice(3):"···");
+        return {p:`Press <kbd>E</kbd> for the vault keypad · ${m.knowA||m.knowB?"code "+kn:"you need a 6-digit code"}${m.ringOk?"":" · the reader wants the owner's signet ring"}`};}
+      return {p:"The code is in. The reader still wants the owner's signet ring"};
+    }
+    // the Winter Heart
+    if(lv===-1&&G.vaultOpen&&!G.hasDiamond&&facing(-8.5,-18.5,1.7)>=0){
+      if(m.replica){const r=hold("swap",1.5,"Swapping it for the replica…");
+        if(r==="done"){G.hasDiamond=true;G.diamondVal=this.diamondValue;SFX.cash();toast("You have the Winter Heart. The plate never noticed","good",2800);return null;}
+        return r||{p:"Hold <kbd>E</kbd> to swap the Winter Heart for the replica"};}
+      const r=hold("grab",1.0,"Lifting it off the plate…");
+      if(r==="done"){G.hasDiamond=true;G.diamondVal=this.diamondValue;X.diamond.visible=false;X.dGlint.visible=false;SFX.cash();triggerAlarm("The pressure plate! Alarm!");return null;}
+      return r||{p:"Hold <kbd>E</kbd> to grab the Winter Heart · it's on a pressure plate!"};
+    }
+    return null;
+  },
+  chip(){
+    const m=G.m;if(!m)return "";const p=[];
+    if(G.hasDiamond)p.push("THE WINTER HEART");
+    else{
+      if(m.diary&&!m.secretOpen)p.push(`${m.book.c.toUpperCase()} BOOK · ${ORD[m.book.sh].toUpperCase()} SHELF`);
+      if((m.knowA||m.knowB)&&!G.vaultOpen)p.push("CODE "+(m.knowA?G.safeCode.slice(0,3):"···")+(m.knowB?G.safeCode.slice(3):"···"));
+      if(m.ring&&!m.ringOk)p.push("SIGNET RING");
+      if(m.replica)p.push("REPLICA");
+    }
+    return p.join(" · ");
+  },
+  objective(){
+    const m=G.m;if(!m)return this.text.case;
+    if(P.carry&&P.carry.kind==="loot")return G.hasDiamond?this.text.van:"Get it to the van outside the east gate. You can't leave without the Winter Heart.";
+    if(G.hasDiamond)return "You have the Winter Heart. Take what else you want and get to the van outside the east gate.";
+    if(!P.masked&&!restricted(P.x,P.z))return this.text.case;
+    if(G.vaultOpen)return m.replica?"The vault is open. Swap the Winter Heart for the replica.":"The vault is open. The Winter Heart is on a pressure plate: swap in the replica from the first-floor gallery, or grab it and run.";
+    if(!m.secretOpen)return m.diary?`Pull the ${m.book.c} book on the ${ORD[m.book.sh]} shelf in the library (ground floor, back).`:"Find the vault. Lord Blackwood keeps a diary on his desk in the study (first floor).";
+    if(!(G.laserOff||m.powerOff))return "Behind the bookcase: stairs down to a corridor full of lasers. Cut the power at the fuse box in the cellar (stairs in the kitchen), or shut the grid off from the security computer.";
+    const need=[];
+    if(!m.ringOk)need.push(m.ring?"press the signet ring into the reader":"the owner's signet ring (on his nightstand; he's asleep in the master bedroom)");
+    if(!m.codeOk){const kn=(m.knowA?G.safeCode.slice(0,3):"···")+(m.knowB?G.safeCode.slice(3):"···");
+      const where=[];if(!m.knowA)where.push("the first half is in the butler's room in the attic");if(!m.knowB)where.push("the second half is in the master bedroom");
+      need.push(`the code ${kn}${where.length?" ("+where.join("; ")+")":""}`);}
+    return "Open the vault: "+need.join(", and ")+"."+(m.powerOff&&!G.laserOff?" The power won't stay off forever.":"");
+  }
+};
+const MAPS={harbor:MAP_HARBOR,meridian:MAP_MERIDIAN,harborDay:MAP_HARBOR_DAY,meridianDay:MAP_MERIDIAN_DAY,club:MAP_CLUB,manor:MAP_MANOR};
 
 // night: moonlight and sodium lamps. day: sun, blue sky, light haze
 function setSky(day){
@@ -3201,7 +3708,7 @@ function updateHUD(){
   $("objText").textContent=obj;
   $("bagsVal").textContent=`${G.secured}/${bags.length}`;
   {const tk=G.vanTake+G.pocket+G.diamondVal,t=G.pocket+G.diamondVal>0?`${money(tk)} (${money(G.pocket+G.diamondVal)} on you)`:money(G.vanTake);if($("takeVal").textContent!==t)$("takeVal").textContent=t;}
-  $("stance").textContent=(P.jh>P.gnd+0.05?"JUMPING":P.crouch?"CROUCHED · SILENT":P.sprinting?"SPRINTING · LOUD":P.gnd>0.1?"STANDING ON SOMETHING":"STANDING")+(musicCovers()&&!P.crouch?" · MUSIC COVERS YOU":"");
+  $("stance").textContent=DEV.ghost?"NOCLIP":P.ladder?"ON A LADDER":(P.jh>P.gnd+0.05?"JUMPING":P.crouch?"CROUCHED · SILENT":P.sprinting?"SPRINTING · LOUD":P.gnd>0.1?"STANDING ON SOMETHING":"STANDING")+(musicCovers()&&!P.crouch?" · MUSIC COVERS YOU":"");
   const cc=$("carry");cc.hidden=!P.carry;
   if(P.carry){const t=P.carry.kind==="body"?"CARRYING BODY · Q DROP":`CARRYING ${P.carry.gold?"GOLD":"LOOT"} ${money(P.carry.value)} · Q DROP`;if(cc.textContent!==t)cc.textContent=t;}
   const mc=$("maskChip"),r=restricted(P.x,P.z);
