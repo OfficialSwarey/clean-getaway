@@ -109,6 +109,9 @@ button{font:inherit;cursor:pointer}
 #endTake{display:grid;gap:2px}
 #endTakeVal{font-family:var(--f-mono);font-size:clamp(34px,7vw,48px);font-weight:700;color:var(--secure);line-height:1.05}
 #endTakeVal.zero{color:var(--dim)}
+#endBreak{display:grid;grid-template-columns:1fr auto;gap:2px 16px;margin:4px 0 2px;font-family:var(--f-mono);font-size:13px}
+#endBreak dt{color:var(--dim)}#endBreak dd{margin:0;text-align:right;font-weight:700}
+#endBreak dd.good{color:var(--secure)}#endBreak dd.lost{color:var(--dim);font-weight:400}
 #endBest{font-family:var(--f-mono);font-size:12px;letter-spacing:.08em;color:var(--dim)}
 #endBest.new{color:var(--sodium)}
 .job-best{font-family:var(--f-mono);font-size:11px;letter-spacing:.1em;color:var(--secure)}
@@ -164,7 +167,7 @@ details.help .keys{margin-bottom:14px}
   <div class="card wide">
     <span class="stamp">CHOOSE A JOB</span>
     <h1>Clean Getaway</h1>
-    <p>Case the place, slip in, crack the vault and get the money to the van before anyone knows you were there. Every bag and every stack of loose cash adds to your take, and you can drive off whenever you like. If the alarm goes off, the police arrive in 60 seconds.</p>
+    <p>Case the place, slip in, crack the vault and get the money to the van before anyone knows you were there. Every bag and every stack of loose cash adds to your take, and you can drive off whenever you like. Never set off the alarm for a 30% stealth bonus; on jobs with civilians, leave them all alive for another 15%. If the alarm goes off, the police arrive in 60 seconds.</p>
     <div class="jobs" role="radiogroup" aria-label="Job">
       <button class="job" type="button" role="radio" aria-checked="true" data-map="harbor">
         <span class="job-time">NIGHT · 02:40</span>
@@ -253,7 +256,7 @@ details.help .keys{margin-bottom:14px}
   <div class="card">
     <span class="stamp" id="endStamp">JOB REPORT</span>
     <h2 id="endTitle">Clean job</h2>
-    <div id="endTake"><span class="lbl" id="endTakeLbl">TAKE</span><b id="endTakeVal">$0</b><span id="endBest"></span></div>
+    <div id="endTake"><span class="lbl" id="endTakeLbl">TAKE</span><b id="endTakeVal">$0</b><dl id="endBreak"></dl><span id="endBest"></span></div>
     <p id="endReason"></p>
     <dl class="stats" id="endStats"></dl>
     <div class="row"><button class="btn" id="againBtn">Play again</button><button class="btn ghost" id="menuBtn">Back to jobs</button></div>
@@ -1026,7 +1029,7 @@ const money=n=>"$"+Math.round(n).toLocaleString("en-US");
 function rollValue(r,step){return Math.round((r[0]+Math.random()*(r[1]-r[0]))/step)*step;}
 function bestKey(){return "cg-best-"+LV.id;}
 function readBest(id){try{return +(localStorage.getItem("cg-best-"+id)||0);}catch(e){return 0;}}
-function showBests(){document.querySelectorAll(".job").forEach(b=>{let s=b.querySelector(".job-best");const v=readBest(b.dataset.map);if(!v){if(s)s.remove();return;}if(!s){s=document.createElement("span");s.className="job-best";b.appendChild(s);}s.textContent="BEST TAKE "+money(v);});}
+function showBests(){document.querySelectorAll(".job").forEach(b=>{let s=b.querySelector(".job-best");const v=readBest(b.dataset.map);if(!v){if(s)s.remove();return;}if(!s){s=document.createElement("span");s.className="job-best";b.appendChild(s);}s.textContent="BEST SCORE "+money(v);});}
 
 /* ---------- loot and body bags ---------- */
 function makeBag(){
@@ -2072,7 +2075,7 @@ const DEV={on:false,ghost:false};
 try{DEV.on=localStorage.getItem("cg-dev")==="1";}catch(e){}
 const G={time:0,world:0,susp:0,unseen:0,alarm:false,alarmT:60,drill:0,drillWas:false,vaultOpen:false,doorAnim:0,secured:0,takedowns:0,everAlarm:false,lastSpotter:"guard",lastCause:"player",noise:0,shotNoise:0,blipT:0,bodies:[],secAlert:0,bagT:0,binned:0};
 const BAG_TIME=2.0,PAGER_DELAY=2.5,PAGER_WINDOW=12,MAX_PAGERS=3,REPORT_TIME=6,JAM_TIME=15,JAMMERS=2;
-const LEAVE_TIME=1.5,LOOP_TIME=25,LOOP_HOLD=2.0,LOOP_REACH=2.4,PICK_DOOR=5,PICK_WIN=3.5,PINS=5,JUMP_V=5.6,GRAV=17;
+const STEALTH_BONUS=0.3,CIV_BONUS=0.15,LEAVE_TIME=1.5,LOOP_TIME=25,LOOP_HOLD=2.0,LOOP_REACH=2.4,PICK_DOOR=5,PICK_WIN=3.5,PINS=5,JUMP_V=5.6,GRAV=17;
 let state="menu",locked=false,everLocked=false,fallback=false,pendingStart=false,pressedE=false;
 const keys={};
 const DRILL_TIME=20,ALARM_TIME=60;
@@ -3063,10 +3066,20 @@ function endGame(won,reason){
     take===0?"You drove off with nothing. At least nobody got hurt. Probably.":
     all?(stealth?`All ${nw} bags are in the van and nobody at ${LV.def.place} ever knew you were there.`:`All ${nw} bags made it out, but the whole street heard the alarm.`):
     (G.secured?`You drove off with ${G.secured} of ${nb} bags${G.pocket?" and your pockets full of cash":""}.`:"You skipped the bags and drove off with your pockets full of cash.")+(stealth?" Nobody saw a thing.":"");
-  const tv=$("endTakeVal");tv.textContent=money(take);tv.className=take?"":"zero";
-  $("endTakeLbl").textContent=won?"TAKE":"TAKE · LOST";
+  // bonuses on top of the take: never raising the alarm, and (where there are civilians) nobody innocent killed
+  const bStealth=won&&take>0&&stealth?Math.round(take*STEALTH_BONUS):0;
+  const hasCivs=civs.length>0,bCivs=won&&take>0&&hasCivs&&!G.civKills?Math.round(take*CIV_BONUS):0;
+  const score=take+bStealth+bCivs;
+  const tv=$("endTakeVal");tv.textContent=money(score);tv.className=score?"":"zero";
+  $("endTakeLbl").textContent=won?"SCORE":"SCORE · TAKE LOST";
+  const br=[["Take",money(take),take?"":"lost"]];
+  if(won&&take>0){
+    br.push(["Stealth bonus +"+Math.round(STEALTH_BONUS*100)+"%",bStealth?"+"+money(bStealth):"alarm raised",bStealth?"good":"lost"]);
+    if(hasCivs)br.push(["No civilians killed +"+Math.round(CIV_BONUS*100)+"%",bCivs?"+"+money(bCivs):`${G.civKills} killed`,bCivs?"good":"lost"]);
+  }
+  $("endBreak").innerHTML=br.map(([a,b,c])=>`<dt>${a}</dt><dd class="${c}">${b}</dd>`).join("");
   const prev=readBest(LV.id),eb=$("endBest");
-  if(won&&take>prev){try{localStorage.setItem(bestKey(),String(take));}catch(e){}eb.textContent=prev?`NEW BEST · old best ${money(prev)}`:"NEW BEST FOR THIS JOB";eb.className="new";}
+  if(won&&score>prev){try{localStorage.setItem(bestKey(),String(score));}catch(e){}eb.textContent=prev?`NEW BEST · old best ${money(prev)}`:"NEW BEST FOR THIS JOB";eb.className="new";}
   else{eb.textContent=prev?`BEST ON THIS JOB ${money(prev)}`:"";eb.className="";}
   showBests();
   $("endStamp").textContent=(won?"JOB REPORT · PAID":"JOB REPORT · FAILED")+" · "+LV.def.job.toUpperCase();
