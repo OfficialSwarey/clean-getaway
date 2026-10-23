@@ -155,7 +155,7 @@ details.help .keys{margin-bottom:14px}
 <div id="hud" hidden>
   <div id="detect"><div class="lbl" id="detectLbl">Detection</div><div class="bar"><i id="detectFill"></i></div></div>
   <div id="clock"><span class="lbl" id="clockLbl">Elapsed</span><span id="clockVal">00:00</span></div>
-  <div id="obj"><div class="lbl">Objective</div><div id="objText">Get into the bank unseen.</div><div id="bagsRow">Bags in the van <b id="bagsVal">0/3</b> · Take <b id="takeVal">$0</b></div></div>
+  <div id="obj"><div class="lbl">Objective</div><div id="objText">Get into the bank unseen.</div><div id="bagsRow"><span id="bagsLbl">Bags in the van</span> <b id="bagsVal">0/3</b> · Take <b id="takeVal">$0</b></div></div>
   <div id="status"><span class="chip" id="devChip" hidden>DEV · GHOST OFF · V</span><span class="chip" id="posChip" hidden></span><span class="chip" id="ammo" hidden>PISTOL 12 / 36</span><span class="chip" id="pagerChip" hidden>PAGERS 0/3</span><span class="chip" id="tieChip" hidden>ZIP TIES 6</span><span class="chip" id="loopChip" hidden></span><span class="chip" id="jamChip" hidden>JAMMERS 2 · J</span><span class="chip ok" id="cardChip" hidden>KEYCARD</span><span class="chip ok" id="codeChip" hidden></span><span class="chip" id="maskChip">UNMASKED · OUTSIDE</span><span class="chip" id="carry" hidden>CARRYING BAG · SLOWED</span><span class="chip" id="stance">STANDING</span><span class="chip" id="sound">SOUND ON · M</span></div>
   <div id="crosshair"></div>
   <div id="prompt" hidden><span id="promptText"></span><div class="pbar" id="pbar" hidden><i id="pfill"></i></div></div>
@@ -4399,8 +4399,8 @@ function updateInteraction(dt){
       if(pressedE){
         const b=P.carry,slot=VAN_SLOTS[G.secured%VAN_SLOTS.length];b.state="secured";b.mesh.visible=true;b.mesh.position.set(slot[0],VAN_Y+Math.floor(G.secured/VAN_SLOTS.length)*0.42,slot[1]);b.mesh.rotation.set(0,G.secured*0.9,0);
         P.carry=null;showCarry();G.secured++;G.vanTake+=b.value;G.leaveBlock=true;SFX.load();
-        if(G.secured>=bags.length)toast(`Every bag is in the van · ${money(G.vanTake+G.pocket)}. Hold E here to drive off`,"good",3200);
-        else toast(`Bag in the van · +${money(b.value)} · take ${money(G.vanTake+G.pocket)}`,"good",2200);
+        if(G.secured>=bags.length)toast(`Every bag is in the ${LV.def.getaway||"van"} · ${money(G.vanTake+G.pocket)}. Hold E here to ${LV.def.leaveVerb||"drive off"}`,"good",3200);
+        else toast(`Bag in the ${LV.def.getaway||"van"} · +${money(b.value)} · take ${money(G.vanTake+G.pocket)}`,"good",2200);
       }
     }
   }else{
@@ -4632,10 +4632,10 @@ function updateHUD(){
   else if(!G.vaultOpen&&VAULT.safe)obj=G.knowCode?`Open the safe in the owner's office. The code is ${G.safeCode}.`:LV.def.text.vault;
   else if(!G.vaultOpen)obj=G.drilling?`Drill running: ${Math.round(G.drill*100)}%. Keep guards away from the vault.`:G.drill===0?LV.def.text.vault:`Drill stopped at ${Math.round(G.drill*100)}%.`;
   else if(P.carry)obj=LV.def.text.van;
-  else if(G.secured>=bags.length)obj="Every bag is in the van. Hold E at the van to drive off, or grab some loose cash first.";
+  else if(G.secured>=bags.length)obj=`Every bag is in the ${LV.def.getaway||"van"}. Hold E at the ${LV.def.getaway||"van"} to ${LV.def.leaveVerb||"drive off"}, or grab some loose cash first.`;
   else obj=(VAULT.safe?"Grab a loot bag from the safe.":"Grab a loot bag from the vault.")+(G.secured?" Or hold E at the van to drive off with what you have.":"");
   $("objText").textContent=obj;
-  $("bagsVal").textContent=`${G.secured}/${bags.length}`;
+  $("bagsLbl").textContent=`Bags in the ${LV.def.getaway||"van"}`;$("bagsVal").textContent=`${G.secured}/${bags.length}`;
   {const tk=G.vanTake+G.pocket+G.diamondVal,t=G.pocket+G.diamondVal>0?`${money(tk)} (${money(G.pocket+G.diamondVal)} on you)`:money(G.vanTake);if($("takeVal").textContent!==t)$("takeVal").textContent=t;}
   $("stance").textContent=DEV.ghost?"NOCLIP":P.ladder?"ON A LADDER":(P.jh>P.gnd+0.05?"JUMPING":P.crouch?"CROUCHED · SILENT":P.sprinting?"SPRINTING · LOUD":P.gnd>0.1?"STANDING ON SOMETHING":"STANDING")+(musicCovers()&&!P.crouch?" · MUSIC COVERS YOU":"");
   const cc=$("carry");cc.hidden=!P.carry;
@@ -4680,7 +4680,7 @@ function endGame(won,reason){
   if(won&&take===0){$("endTitle").textContent="Empty-handed";$("endTitle").className="bad";}
   $("endReason").textContent=!won?reason+(G.vanTake+G.pocket>0?` You leave ${money(G.vanTake+G.pocket)} behind.`:""):
     take===0?"You drove off with nothing. At least nobody got hurt. Probably.":
-    all?(stealth?`All ${nw} bags are in the van and nobody at ${LV.def.place} ever knew you were there.`:`All ${nw} bags made it out, but the whole street heard the alarm.`):
+    all?(stealth?`All ${nw} bags are in the ${LV.def.getaway||"van"} and nobody at ${LV.def.place} ever knew you were there.`:`All ${nw} bags made it out, but the whole street heard the alarm.`):
     (G.secured?`You drove off with ${G.secured} of ${nb} bags${G.pocket?" and your pockets full of cash":""}.`:"You skipped the bags and drove off with your pockets full of cash.")+(stealth?" Nobody saw a thing.":"");
   // bonuses on top of the take: never raising the alarm, and (where there are civilians) nobody innocent killed
   const bStealth=won&&take>0&&stealth?Math.round(take*STEALTH_BONUS):0;
@@ -4699,7 +4699,7 @@ function endGame(won,reason){
   else{eb.textContent=prev?`BEST ON THIS JOB ${money(prev)}`:"";eb.className="";}
   showBests();
   $("endStamp").textContent=(won?"JOB REPORT · PAID":"JOB REPORT · FAILED")+" · "+LV.def.job.toUpperCase();
-  const rows=[["Time",fmtUp(G.time)],["Bags in the van",`${G.secured}/${bags.length} · ${money(G.vanTake)}`],["Stealth",stealth?"Kept":"Broken"],["Loose cash",`${G.cashTaken}/${CASH.length} · ${money(G.pocket)}`],["Guards knocked out",String(G.takedowns)],["Guards shot",String(G.kills)],["Bodies hidden",String(G.binned)],["Pagers answered",`${G.pagersUsed}/${MAX_PAGERS}`],["Cameras shot",String(G.camsShot)],["Jammers used",String(G.jamsUsed)],["Shots fired",String(G.shots)]];
+  const rows=[["Time",fmtUp(G.time)],[`Bags in the ${LV.def.getaway||"van"}`,`${G.secured}/${bags.length} · ${money(G.vanTake)}`],["Stealth",stealth?"Kept":"Broken"],["Loose cash",`${G.cashTaken}/${CASH.length} · ${money(G.pocket)}`],["Guards knocked out",String(G.takedowns)],["Guards shot",String(G.kills)],["Bodies hidden",String(G.binned)],["Pagers answered",`${G.pagersUsed}/${MAX_PAGERS}`],["Cameras shot",String(G.camsShot)],["Jammers used",String(G.jamsUsed)],["Shots fired",String(G.shots)]];
   if(civs.length)rows.splice(6,0,["Civilians tied up",String(G.tied)],["Civilians killed",String(G.civKills)]);
   $("endStats").innerHTML=rows.map(([a,b],i)=>`<dt>${a}</dt><dd class="${i===2?(stealth?"good":"bad"):""}">${b}</dd>`).join("");
 }
