@@ -134,7 +134,7 @@ details.help .keys{margin-bottom:14px}
   <div id="detect"><div class="lbl" id="detectLbl">Detection</div><div class="bar"><i id="detectFill"></i></div></div>
   <div id="clock"><span class="lbl" id="clockLbl">Elapsed</span><span id="clockVal">00:00</span></div>
   <div id="obj"><div class="lbl">Objective</div><div id="objText">Get into the bank unseen.</div><div id="bagsRow">Bags secured <b id="bagsVal">0/3</b></div></div>
-  <div id="status"><span class="chip" id="devChip" hidden>DEV · GHOST OFF · V</span><span class="chip" id="posChip" hidden></span><span class="chip" id="ammo" hidden>PISTOL 12 / 36</span><span class="chip" id="pagerChip" hidden>PAGERS 0/3</span><span class="chip" id="tieChip" hidden>ZIP TIES 6</span><span class="chip" id="maskChip">UNMASKED · OUTSIDE</span><span class="chip" id="carry" hidden>CARRYING BAG · SLOWED</span><span class="chip" id="stance">STANDING</span><span class="chip" id="sound">SOUND ON · M</span></div>
+  <div id="status"><span class="chip" id="devChip" hidden>DEV · GHOST OFF · V</span><span class="chip" id="posChip" hidden></span><span class="chip" id="ammo" hidden>PISTOL 12 / 36</span><span class="chip" id="pagerChip" hidden>PAGERS 0/3</span><span class="chip" id="tieChip" hidden>ZIP TIES 6</span><span class="chip" id="jamChip" hidden>JAMMERS 2 · J</span><span class="chip ok" id="cardChip" hidden>KEYCARD</span><span class="chip" id="maskChip">UNMASKED · OUTSIDE</span><span class="chip" id="carry" hidden>CARRYING BAG · SLOWED</span><span class="chip" id="stance">STANDING</span><span class="chip" id="sound">SOUND ON · M</span></div>
   <div id="crosshair"></div>
   <div id="prompt" hidden><span id="promptText"></span><div class="pbar" id="pbar" hidden><i id="pfill"></i></div></div>
   <div id="subs" hidden><span id="subWho"></span><span id="subLine"></span></div>
@@ -157,7 +157,7 @@ details.help .keys{margin-bottom:14px}
         <span class="job-time">NIGHT · 03:15</span>
         <span class="job-name">Night Deposit</span>
         <span class="job-place">Meridian Trust</span>
-        <span class="job-meta">Large bank · 3 ways in: front, loading door, roof hatch · 6 guards · 5 cameras · 4 bags</span>
+        <span class="job-meta">Large bank · 3 ways in: front, loading door, roof hatch · keycard for the security room · 6 guards · 5 cameras · 4 bags</span>
       </button>
       <button class="job" type="button" role="radio" aria-checked="false" data-map="harborDay">
         <span class="job-time day">DAY · 11:20</span>
@@ -169,7 +169,7 @@ details.help .keys{margin-bottom:14px}
         <span class="job-time day">DAY · 12:45</span>
         <span class="job-name">Lunch Rush</span>
         <span class="job-place">Meridian Trust</span>
-        <span class="job-meta">Busy lunch hour · walk in, or use the loading door or roof · 6 guards · 11 civilians · 5 cameras · 4 bags</span>
+        <span class="job-meta">Busy lunch hour · walk in, or use the loading door or roof · keycard for the security room · 6 guards · 11 civilians · 5 cameras · 4 bags</span>
       </button>
     </div>
     <label class="dev" for="devToggle"><input type="checkbox" id="devToggle"><span>Dev mode<small>Press V during a job to turn invisible to guards and cameras. Shows your position.</small></span></label>
@@ -185,6 +185,7 @@ details.help .keys{margin-bottom:14px}
         <dt>HOLD G</dt><dd>Put on your mask</dd>
         <dt>E</dt><dd>Interact: doors, ladders, the drill, loot. Hold it to bag a body, answer a pager or zip-tie a civilian. Tap it to make a tied hostage follow you or stay</dd>
         <dt>Q</dt><dd>Drop what you're carrying</dd>
+        <dt>J</dt><dd>Put down a jammer: for 15 seconds no radio, phone or pager can raise the alarm (2 per job)</dd>
         <dt>CLICK</dt><dd>Fire the silenced pistol</dd>
         <dt>R-CLICK</dt><dd>Aim down the sights (click again to lower)</dd>
         <dt>R</dt><dd>Reload</dd>
@@ -194,7 +195,9 @@ details.help .keys{margin-bottom:14px}
       </dl>
       <ul class="tips">
         <li>Outside without a mask you're just someone on the street. Inside the closed bank, or on its roof, anyone who sees you fills the detection meter, mask or not.</li>
-        <li>Doors block sight. Guards open doors as they walk through and close them behind them.</li>
+        <li>When a guard spots you or finds a body, he takes 6 seconds to radio it in. Drop him before he finishes. If a camera spots you, the security guard calls it in, so take him out instead.</li>
+        <li>Doors block sight, and an open door hides whoever stands behind it. Guards open doors as they walk through and close them behind them.</li>
+        <li>At Meridian Trust the security room is locked. Find the keycard first: staff leave it lying on a desk somewhere, and it's in a different place every time.</li>
         <li>The drill runs by itself once it's set up, but it's loud: guards within about 6 m will hear it and look.</li>
         <li>A headshot drops a guard instantly. A body shot only wounds him, and he radios it in after 2 seconds unless you finish him.</li>
         <li>The security room guard watches every camera. Shoot a camera while he's up and he raises the alarm. Take him out and the cameras go dark.</li>
@@ -549,7 +552,7 @@ class Guard{
     const n=this.route[this.wp];this.yaw=this.route.length>1?Math.atan2(n[0]-this.x,n[1]-this.z):0;
     this.seated=this.seatedDefault;this.pager=null;this.body.position.y=0;this.sprite.position.set(0,2.25,0);this.sprite.scale.set(0.42,0.42,0.42);
     this.wait=0;this.down=false;this.sus=0;this.seeDist=-1;this.fall=0;this.chase=false;this.last=null;this.phase=0;this.speedNow=0;
-    this.heard=null;this.wasSeeing=false;this.hp=2;this.dead=false;this.wounded=0;this.face=null;
+    this.heard=null;this.wasSeeing=false;this.hp=2;this.dead=false;this.wounded=0;this.face=null;this.reportT=0;this.reportAt=null;
     this.bagged=false;this.bodyDist=-1;this.bodyAt=null;this.sawBody=false;this.root.visible=true;
     const r0=this.route[0];if(r0[2]!=null){this.face=r0[2];this.yaw=r0[2];this.wait=r0[3]||0;}
     if(this.item){this.item.state="none";this.item.mesh.visible=false;this.item.level=this.level;}
@@ -568,7 +571,7 @@ class Guard{
     return null;
   }
   knockDown(killed){
-    this.down=true;this.dead=killed;this.wounded=0;this.spot.intensity=0;this.sprite.visible=false;this.seeDist=-1;this.bodyDist=-1;this.heard=null;
+    this.down=true;this.dead=killed;this.wounded=0;this.reportT=0;this.spot.intensity=0;this.sprite.visible=false;this.seeDist=-1;this.bodyDist=-1;this.heard=null;
     this.seated=false;this.body.position.y=0;
     if(!G.alarm)this.pager={state:"pending",t:PAGER_DELAY,beepT:0}; // dispatch will check in on him
     if(this.security&&!G.alarm){G.secAlert=0;toast("Security guard down. The cameras are offline","good",2400);}
@@ -592,13 +595,18 @@ class Guard{
   update(dt,simOnly){
     if(this.down){this.fall=Math.min(1,this.fall+dt*2.6);this.body.rotation.x=this.fall*Math.PI/2*0.96;this.speedNow=0;this.sync(dt);return;}
     if(simOnly){this.seeDist=-1;this.bodyDist=-1;this.patrol(dt,1.45,false);this.sync(dt);return;}
-    const radioing=this.wounded>0||(this.security&&G.secAlert>0);
+    const radioing=this.wounded>0||this.reportT>0||(this.security&&G.secAlert>0);
     if(radioing&&!G.alarm){
-      // wounded guard, or the operator who saw a feed die: reaches for the radio
-      this.speedNow=0;this.seeDist=-1;this.bodyDist=-1;
+      // wounded guard, a guard who spotted you, or the operator who saw something on camera: reaches for the radio.
+      // A running jammer holds every countdown where it is.
+      this.speedNow=0;this.seeDist=-1;this.bodyDist=-1;const jam=G.jamT>0;
       if(this.wounded>0){
-        this.wounded-=dt;this.turn(Math.atan2(P.x-this.x,P.z-this.z),3,dt);
+        if(!jam)this.wounded-=dt;this.turn(Math.atan2(P.x-this.x,P.z-this.z),3,dt);
         if(this.wounded<=0)triggerAlarm("A wounded guard radioed it in. Alarm!");
+      }else if(this.reportT>0){
+        if(!jam)this.reportT-=dt;
+        if(this.reportAt)this.turn(Math.atan2(this.reportAt.x-this.x,this.reportAt.z-this.z),3,dt);
+        if(this.reportT<=0)triggerAlarm(this.reportMsg);
       }
       this.armL.rotation.x=-2.2;
       this.sprite.visible=true;this.sprite.material.map=TEX_RED;
@@ -771,7 +779,7 @@ class Civilian extends Guard{
     const sd=canSee(this.x,this.z,this.yaw,half,range,this.level);
     const fb=findBody(this.x,this.z,this.yaw,half,range,this,this.level);
     if(st==="calling"){
-      this.callT-=dt;
+      if(G.jamT<=0)this.callT-=dt;
       if(this.flee>0){
         this.flee-=dt;
         const dx=this.x-P.x,dz=this.z-P.z,d=Math.hypot(dx,dz)||1;
@@ -835,6 +843,35 @@ const CIV_DOWN=["Okay okay okay!","Please! I only came in for a free pen!","Not 
 const CIV_CALL=["Hello, police? There's a man in a mask and he looks very serious…","Police? A robber! Yes, a real one!","Hi, I'd like to report a mask. With a man in it.","Police! Someone's robbing the bank! No, not me!","911? Yes, I'll hold. …I'll hold?!"];
 const lastLine={};
 function pickLine(arr){let i;do{i=Math.random()*arr.length|0;}while(arr.length>1&&lastLine[arr[0]]===i);lastLine[arr[0]]=i;return arr[i];}
+
+/* ---------- jammer and keycard ---------- */
+const jammerMeshes=[];let KEYCARD=null;
+const jamBodyMat=phong(0x2a2d31,{shininess:40}),jamPanelMat=phong(0x3d4248);
+function makeJammer(x,z,y,yaw){
+  const g=new THREE.Group();g.position.set(x,y,z);g.rotation.y=yaw;lvAdd(g);
+  const b=new THREE.Mesh(new THREE.BoxGeometry(0.34,0.12,0.22),jamBodyMat);b.position.y=0.06;b.castShadow=true;g.add(b);
+  const pnl=new THREE.Mesh(new THREE.BoxGeometry(0.2,0.01,0.12),jamPanelMat);pnl.position.set(-0.03,0.125,0);g.add(pnl);
+  for(const [ax,az] of [[0.12,0.07],[0.12,-0.07],[-0.12,0.07]]){const a=new THREE.Mesh(new THREE.CylinderGeometry(0.008,0.008,0.32,5),M.pole);a.position.set(ax,0.28,az);g.add(a);}
+  const ledMat=new THREE.MeshBasicMaterial({color:0x40ff80});const led=new THREE.Mesh(new THREE.SphereGeometry(0.018,6,6),ledMat);led.position.set(0.08,0.13,0.05);g.add(led);
+  g.traverse(o=>o.userData.noHit=true);
+  const j={g,led,ledMat,x,z};jammerMeshes.push(j);return j;
+}
+const GLINT=tex(64,64,(g)=>{const gr=g.createRadialGradient(32,32,0,32,32,32);gr.addColorStop(0,"rgba(190,230,255,1)");gr.addColorStop(0.25,"rgba(120,200,255,.55)");gr.addColorStop(1,"rgba(120,200,255,0)");g.fillStyle=gr;g.fillRect(0,0,64,64);});
+function makeKeycard(spots){
+  const g=new THREE.Group();lvAdd(g);
+  const face=tex(128,80,(c,w,h)=>{c.fillStyle="#eef1f3";c.fillRect(0,0,w,h);c.fillStyle="#2a6fb0";c.fillRect(0,0,w,22);c.fillStyle="#c9a24a";c.fillRect(12,34,22,16);c.fillStyle="#3a4048";c.fillRect(44,38,64,5);c.fillRect(44,50,48,5);});
+  const card=new THREE.Mesh(new THREE.BoxGeometry(0.086,0.006,0.054),[M.cabinet,M.cabinet,new THREE.MeshBasicMaterial({map:face}),M.cabinet,M.cabinet,M.cabinet]);card.position.y=0.004;g.add(card);
+  const glint=new THREE.Sprite(new THREE.SpriteMaterial({map:GLINT,transparent:true,depthWrite:false,blending:THREE.AdditiveBlending}));glint.scale.set(0.22,0.22,0.22);glint.position.y=0.05;g.add(glint);
+  g.traverse(o=>o.userData.noHit=true);
+  KEYCARD={mesh:g,glint,spots};
+}
+// a card reader next to a locked door; the LED is red while locked, green while open
+function makeReader(d,x,y,z,ry){
+  const r=new THREE.Mesh(new THREE.BoxGeometry(0.12,0.18,0.04),phong(0x1d2024,{shininess:50}));r.position.set(x,y,z);r.rotation.y=ry||0;lvAdd(r);
+  const ledMat=new THREE.MeshBasicMaterial({color:0xff3a30});const led=new THREE.Mesh(new THREE.BoxGeometry(0.05,0.02,0.01),ledMat);
+  led.position.set(0,0.055,0.022);r.add(led);
+  d.locked=true;d.reader={ledMat,flash:0};
+}
 
 /* ---------- loot and body bags ---------- */
 function makeBag(){
@@ -1007,7 +1044,7 @@ const MAP_MERIDIAN={
   },
   fly(a){camera.position.set(Math.sin(a)*9+6,9,36+Math.cos(a)*3);camera.lookAt(0,2,6);},
   text:{
-    case:"Case Meridian Trust from the street. Three ways in: the glass front doors, the loading door on the east side, or the roof hatch. The roof ladder is in the back alley. Hold G to put on your mask when you're ready.",
+    case:"Case Meridian Trust from the street. Three ways in: the glass front doors, the loading door on the east side, or the roof hatch. The roof ladder is in the back alley. The security room needs a keycard: staff leave one on a desk somewhere. Hold G to put on your mask when you're ready.",
     vault:"Get to the vault behind the counting room and set up the drill.",
     van:"Carry the bag to the van in the east loading yard, just outside the loading door.",
     bins:"Dump the body in a bin: the dumpster in the back alley, the one in the east yard, or the trash cart in the break room. Q drops it."
@@ -1079,7 +1116,9 @@ const MAP_MERIDIAN={
     makeDoor(17,19,0,2.38,{mat:staffDoorMat,name:"loading bay door"});
     makeDoorZ(12,-5,-3,2.38,{mat:staffDoorMat,name:"bay side door"});
     makeDoor(-10,-8,-8,2.38,{name:"storage door"});
-    makeDoor(8,10,-8,2.38,{name:"security door"});
+    const secDoor=makeDoor(8,10,-8,2.38,{name:"security door"});
+    makeReader(secDoor,10.45,1.25,-7.77,0);
+    makeKeycard([[17.2,0.81,9.6],[-19.6,0.76,-4.0],[-21.3,0.79,7.4],[-16.9,0.79,11.6],[5.9,0.91,-3.8]]);
     makeDoor(-16,-14,-8,2.38,{name:"server room door"});
     // lobby: reception desk, benches, pillars, plants
     addBox(-4,8,4,9,1.1,M.counter); addBox(-4.1,7.9,4.1,9.1,1.16,M.counterTop,{y0:1.1,collide:false});
@@ -1093,7 +1132,7 @@ const MAP_MERIDIAN={
     // manager's office
     addBox(15.5,9,19.5,10.4,0.8,M.desk); addBox(23.2,5,23.8,12,2.2,M.cabinet);
     addBox(11,11.6,13.6,12.8,0.6,M.bench);
-    plaque(tex(256,160,(g,w,h)=>{g.fillStyle="#2b2117";g.fillRect(0,0,w,h);g.fillStyle="#6d5a3e";g.fillRect(10,10,w-20,h-20);g.fillStyle="#334a5c";g.fillRect(16,16,w-32,h-60);g.fillStyle="#d8b46a";g.beginPath();g.arc(180,50,14,0,7);g.fill();}),1.6,1.0,17.5,1.9,4.22);
+    plaque(tex(256,160,(g,w,h)=>{g.fillStyle="#2b2117";g.fillRect(0,0,w,h);g.fillStyle="#6d5a3e";g.fillRect(10,10,w-20,h-20);g.fillStyle="#334a5c";g.fillRect(16,16,w-32,h-60);g.fillStyle="#d8b46a";g.beginPath();g.arc(180,50,14,0,7);g.fill();}),1.6,1.0,20.9,1.75,4.22);
     // break room
     addBox(-21,-5,-18.5,-3.2,0.75,M.desk); addBox(-23.8,-7.6,-22.8,-6.6,1.9,phong(0xc9ccc8));
     addBox(-23.8,-6.4,-23.2,-1.5,0.95,M.counter); addBox(-15.2,-7.6,-12.6,-6.8,0.6,M.bench);
@@ -1195,7 +1234,7 @@ const MAP_MERIDIAN_DAY=Object.assign({},MAP_MERIDIAN,{
   id:"meridianDay",job:"Lunch Rush",time:"12:45",day:true,zipTies:8,
   isStaff(x,z){return x>-24&&x<24&&z>-18&&z<14&&!(x<10&&z>4);},
   text:{
-    case:"Walk in through the front doors. The lobby and the accounts office are public; everything past the staff door is off limits. Other ways in: the loading door on the east side and the roof hatch (ladder in the back alley). Hold G to put on your mask when you're ready.",
+    case:"Walk in through the front doors. The lobby and the accounts office are public; everything past the staff door is off limits. Other ways in: the loading door on the east side and the roof hatch (ladder in the back alley). The security room needs a keycard: staff leave one on a desk somewhere. Hold G to put on your mask when you're ready.",
     vault:MAP_MERIDIAN.text.vault,van:MAP_MERIDIAN.text.van,bins:MAP_MERIDIAN.text.bins
   }
 });
@@ -1220,7 +1259,7 @@ function buildMap(id){
     LV.group.traverse(o=>{if(o.geometry)o.geometry.dispose();if(o.shadow&&o.shadow.map){o.shadow.map.dispose();o.shadow.map=null;}});
   }
   colliders.length=0;doors.length=0;bins.length=0;cams.length=0;guards.length=0;civs.length=0;bags.length=0;transitions.length=0;hatches.length=0;
-  secGuard=null;VAULT=null;ring=null;civSeed=0;
+  secGuard=null;VAULT=null;ring=null;civSeed=0;KEYCARD=null;jammerMeshes.length=0;
   LV={group:new THREE.Group(),def,id:def.id,day:!!def.day};scene.add(LV.group);
   setSky(LV.day);
   def.build();
@@ -1466,6 +1505,11 @@ const SFX={
   camBreak(x,z){const s=spatial(x,z,30)||{vol:.5,pan:0};for(let i=0;i<7;i++)noiseHit({type:"highpass",freq:3500,q:.7,dur:.03,vol:(.25*s.vol+.05)*(1-i/8),pan:s.pan,delay:i*.04+Math.random()*.03});tone({type:"square",f0:900,f1:120,dur:.4,vol:.05*s.vol+.02,pan:s.pan,lp:1500});},
   gasp(x,z,l){const s=spatial(x,z,18,l);if(!s)return;tone({type:"triangle",f0:300,f1:520,dur:.18,vol:.16*s.vol+.03,pan:s.pan,lp:s.lp||2400});},
   scream(x,z,l){const s=spatial(x,z,30,l)||{vol:.3,pan:0};tone({type:"sawtooth",f0:620,f1:880,dur:.25,vol:.12*s.vol+.04,pan:s.pan,lp:s.lp||2600});tone({type:"sawtooth",f0:900,f1:520,dur:.5,vol:.12*s.vol+.04,pan:s.pan,lp:s.lp||2600,delay:.22});},
+  jamOn(){tone({type:"square",f0:300,f1:1400,dur:.35,vol:.08,lp:3000});noiseHit({type:"bandpass",freq:2800,q:.6,dur:.6,vol:.15,attack:.05});},
+  jamTick(x,z,fast){const s=spatial(x,z,20)||{vol:.2,pan:0};tone({type:"square",f0:fast?1500:1100,dur:.05,vol:.06*s.vol+.015,pan:s.pan,lp:s.lp||4000});noiseHit({freq:3000,q:.8,dur:.12,vol:.05*s.vol+.01,pan:s.pan});},
+  jamOff(){tone({type:"sawtooth",f0:900,f1:120,dur:.5,vol:.06,lp:1500});},
+  card(){tone({type:"sine",f0:1320,dur:.08,vol:.12});tone({type:"sine",f0:1760,dur:.12,vol:.12,delay:.09});},
+  denied(){tone({type:"square",f0:220,dur:.14,vol:.09,lp:1200});tone({type:"square",f0:180,dur:.2,vol:.09,lp:1200,delay:.16});},
   tie(){for(let i=0;i<9;i++)noiseHit({freq:3200+i*120,q:4,dur:.02,vol:.16,delay:i*.06});noiseHit({type:"lowpass",freq:500,dur:.1,vol:.2,delay:.6});},
   win(){[523,659,784,1046].forEach((f,i)=>tone({type:"triangle",f0:f,dur:.5,vol:.18,delay:i*.14}));},
   lose(){[392,330,262].forEach((f,i)=>tone({type:"sawtooth",f0:f,f1:f*0.97,dur:.6,vol:.12,lp:1200,delay:i*.22}));}
@@ -1583,7 +1627,7 @@ const P={x:2,z:20.5,yaw:0,pitch:0,crouch:false,eye:1.65,bobT:0,carry:null,sprint
 const DEV={on:false,ghost:false};
 try{DEV.on=localStorage.getItem("cg-dev")==="1";}catch(e){}
 const G={time:0,world:0,susp:0,unseen:0,alarm:false,alarmT:60,drill:0,drillWas:false,vaultOpen:false,doorAnim:0,secured:0,takedowns:0,everAlarm:false,lastSpotter:"guard",lastCause:"player",noise:0,shotNoise:0,blipT:0,bodies:[],secAlert:0,bagT:0,binned:0};
-const BAG_TIME=2.0,PAGER_DELAY=2.5,PAGER_WINDOW=12,MAX_PAGERS=3;
+const BAG_TIME=2.0,PAGER_DELAY=2.5,PAGER_WINDOW=12,MAX_PAGERS=3,REPORT_TIME=6,JAM_TIME=15,JAMMERS=2;
 let state="menu",locked=false,everLocked=false,fallback=false,pendingStart=false,pressedE=false;
 const keys={};
 const DRILL_TIME=20,ALARM_TIME=60;
@@ -1591,9 +1635,9 @@ const DRILL_TIME=20,ALARM_TIME=60;
 function resetGame(){
   const sp=LV.def.spawn;
   Object.assign(P,{x:sp.x,z:sp.z,yaw:sp.yaw||0,level:0,y:0,climb:null,pitch:0,crouch:false,eye:1.65,bobT:0,carry:null,sprinting:false,kick:0,
-    masked:false,maskT:0,mag:MAG,reserve:MAG*3,reload:0,fireCD:0,aim:false,aimT:0,recoil:0,raise:0,wasRestricted:false,ties:LV.def.zipTies||0,shoutCD:0});
+    masked:false,maskT:0,mag:MAG,reserve:MAG*3,reload:0,fireCD:0,aim:false,aimT:0,recoil:0,raise:0,wasRestricted:false,ties:LV.def.zipTies||0,shoutCD:0,jammers:JAMMERS,hasCard:false});
   Object.assign(G,{time:0,susp:0,unseen:0,alarm:false,alarmT:ALARM_TIME,drill:0,drillWas:false,vaultOpen:false,doorAnim:0,secured:0,takedowns:0,kills:0,camsShot:0,shots:0,everAlarm:false,noise:0,shotNoise:0,blipT:0,bodies:[],secAlert:0,bagT:0,binned:0,
-    loud:0,trail:[],trailBase:0,tieT:0,tied:0,civKills:0,callLine:-9,bodyHost:false});
+    loud:0,trail:[],trailBase:0,tieT:0,tied:0,civKills:0,callLine:-9,bodyHost:false,lastSpotter:null,secMsg:"",jamT:0,jamsUsed:0,jamBeep:0});
   cams.forEach(c=>{c.dead=false;c.cone.visible=true;c.spot.intensity=1.6;c.head.rotation.set(0.24,0,0);c.body.material=M.camBody;});
   bins.forEach(b=>{b.count=0;b.openT=0;b.piv.rotation.x=0;});
   doors.forEach(d=>{d.open=false;d.byGuard=false;d.t=0;d.leafCols=null;d.leaves.forEach(l=>l.piv.rotation.y=0);if(!colliders.includes(d.col))colliders.push(d.col);if(LV.day&&d.dayOpen)setDoorOpen(d,1);});
@@ -1608,6 +1652,8 @@ function resetGame(){
   DEV.ghost=false;
   showCarry();
   guards.forEach(g=>g.reset());civs.forEach(c=>c.reset());
+  jammerMeshes.forEach(m=>{LV.group.remove(m.g);});jammerMeshes.length=0;
+  if(KEYCARD){const sp=KEYCARD.spots[Math.random()*KEYCARD.spots.length|0];KEYCARD.mesh.position.set(sp[0],sp[1],sp[2]);KEYCARD.mesh.rotation.y=Math.random()*3;KEYCARD.mesh.visible=true;}
   $("alarmEdge").hidden=true;
   hideToast();
 }
@@ -1622,6 +1668,7 @@ addEventListener("keydown",e=>{
   if(e.code==="KeyF"&&!e.repeat)pressF();
   if(e.code==="KeyR"&&!e.repeat)startReload();
   if(e.code==="KeyQ"&&!e.repeat)dropCarry();
+  if(e.code==="KeyJ"&&!e.repeat)placeJammer();
   if(e.code==="KeyG"&&!e.repeat&&!P.masked)SFX.mask();
   if(e.code==="KeyM"&&!e.repeat){setMuted(!A.muted);toast(A.muted?"Sound off":"Sound on","",1200);}
   if(e.code==="KeyV"&&!e.repeat&&DEV.on){DEV.ghost=!DEV.ghost;toast(DEV.ghost?"Ghost on: guards and cameras can't see or hear you":"Ghost off","warn",1800);}
@@ -1811,6 +1858,27 @@ function shout(target){
   setTimeout(()=>{if(state!=="playing")return;speak(1.0,VOICE_CIV);showSub("C",pickLine(CIV_DOWN),2000,"CIVILIAN");},850);
   toast(stopped?"Call stopped. They're on the floor":n>1?`${n} people on the floor`:"On the floor","good",1500);
 }
+function placeJammer(){
+  if(P.locked||P.climb)return;
+  if(!P.masked){toast("Put on your mask first. Hold G","warn");return;}
+  if(G.jamT>0){toast("A jammer is already running","warn",1400);return;}
+  if(P.jammers<=0){toast("No jammers left","bad",1400);return;}
+  const fx=-Math.sin(P.yaw),fz=-Math.cos(P.yaw);
+  let p={x:P.x+fx*0.7,z:P.z+fz*0.7};
+  if(blocked(P.x,P.z,p.x,p.z,0.3,P.level))p={x:P.x,z:P.z};
+  resolve(p,0.2,P.level);
+  makeJammer(p.x,p.z,P.y+0.0,P.yaw);
+  P.jammers--;G.jamsUsed++;G.jamT=JAM_TIME;G.jamBeep=0;SFX.jamOn();
+  if(civs.some(c=>c.state==="calling")){speak(1.1,VOICE_CIV);showSub("C","Hello? Hello?! …I've got no signal!",2400,"CIVILIAN · ON THE PHONE");}
+  toast("Jammer on: no radios, phones or pagers for 15 s","good",2400);
+}
+function updateJammer(dt){
+  const j=jammerMeshes[jammerMeshes.length-1];
+  if(G.jamT<=0){if(j)j.ledMat.color.setHex(0x3a2020);return;}
+  G.jamT=Math.max(0,G.jamT-dt);G.jamBeep-=dt;
+  if(j){j.ledMat.color.setHex(Math.floor(G.world*6)%2?0x40ff80:0x0f3a1c);if(G.jamBeep<=0){SFX.jamTick(j.x,j.z,G.jamT<4);G.jamBeep=G.jamT<4?0.35:1.0;}}
+  if(G.jamT<=0){SFX.jamOff();toast("The jammer burned out","warn",1800);}
+}
 function tryTakedown(){
   if(!P.masked){toast("Put on your mask first. Hold G","warn");return;}
   const fx=-Math.sin(P.yaw),fz=-Math.cos(P.yaw);
@@ -1873,7 +1941,7 @@ function shoot(){
       c.dead=true;c.seeDist=-1;c.bodyDist=-1;c.cone.visible=false;c.spot.intensity=0;c.led.visible=false;c.head.rotation.set(0.95,0,0.35);c.body.material=CAM_DEAD;G.camsShot++;
       SFX.camBreak(c.x,c.z);
       if(secGuard&&!secGuard.down&&!G.alarm){
-        if(!(G.secAlert>0))G.secAlert=3;
+        if(!(G.secAlert>0)){G.secAlert=3;G.secMsg="The security guard saw a camera go dark. Alarm!";}
         toast("The security guard saw the feed die! Take him out","bad",2600);
       }else toast("Camera down","good",1200);
     }
@@ -1964,9 +2032,9 @@ function updateDetection(dt){
       let r=o.base*(1+2.2*(1-o.seeDist/range));
       if(P.sprinting)r*=1.7;if(P.crouch)r*=0.65;
       if(!P.masked)r*=0.6; // a lost customer gets a little benefit of the doubt
-      gain+=r;spotter=o.kind;
+      gain+=r;spotter=o;
     }
-    if(o.bodyDist>=0){bodyGain+=0.45*(1+1.5*(1-o.bodyDist/range));bodySpotter=o.kind;G.bodyHost=!!o.bodyHost;}
+    if(o.bodyDist>=0){bodyGain+=0.45*(1+1.5*(1-o.bodyDist/range));bodySpotter=o;G.bodyHost=!!o.bodyHost;}
   }
   G.blipT-=dt;
   const total=gain+bodyGain;
@@ -1978,10 +2046,24 @@ function updateDetection(dt){
   else{G.unseen+=dt;if(G.unseen>0.8)G.susp=Math.max(0,G.susp-0.16*dt);}
   G.bodyWatched=bodyGain>0;
   if(G.susp>=1){
-    const who=G.lastSpotter==="camera"?"A camera":"A guard";
-    if(G.lastCause==="body")triggerAlarm(G.bodyHost?`${who} spotted a hostage. Alarm!`:`${who} found a body. Alarm!`);
-    else triggerAlarm(P.masked?`${who} spotted you. Alarm!`:LV.day?`${who} caught you in a staff area. Alarm!`:`${who} caught you inside the closed bank. Alarm!`);
+    const o=G.lastSpotter,cam=o&&o.kind==="camera",who=cam?"A camera":"A guard";
+    const msg=G.lastCause==="body"?(G.bodyHost?`${who} spotted a hostage. Alarm!`:`${who} found a body. Alarm!`)
+      :P.masked?`${who} spotted you. Alarm!`:LV.day?`${who} caught you in a staff area. Alarm!`:`${who} caught you inside the closed bank. Alarm!`;
+    startReport(o,msg,G.lastCause==="body"&&o&&o.bodyAt?o.bodyAt:{x:P.x,z:P.z});
+    G.susp=0.7;
   }
+}
+// someone saw enough: they need REPORT_TIME seconds on the radio before the alarm goes off
+function startReport(o,msg,at){
+  if(o&&o.kind==="guard"&&!o.down){
+    if(o.reportT>0||o.wounded>0)return;
+    o.reportT=REPORT_TIME;o.reportMsg=msg;o.reportAt=at;SFX.squelch();
+    toast(G.lastCause==="body"?`${o.name} found something! Drop him before he radios it in`:`${o.name} spotted you! Drop him before he radios it in`,"bad",2600);
+  }else if(o&&o.kind==="camera"&&secGuard&&!secGuard.down){
+    if(G.secAlert>0)return;
+    G.secAlert=REPORT_TIME;G.secMsg=G.lastCause==="body"?"The security guard saw something on camera. Alarm!":"The security guard saw you on camera. Alarm!";
+    toast("The security guard saw it on camera! Take him out","bad",2600);
+  }else triggerAlarm(msg);
 }
 function triggerAlarm(msg){
   if(G.alarm)return;
@@ -2084,6 +2166,14 @@ function updateInteraction(dt){
   }
   if(!bagTarget||!keys.KeyE)G.bagT=0;
 
+  // the keycard: you can pick it up with or without the mask
+  if(!prompt&&KEYCARD&&KEYCARD.mesh.visible&&P.level===0){
+    const kp=KEYCARD.mesh.position;
+    if(facing(kp.x,kp.z,1.8)>=0){
+      prompt="Press <kbd>E</kbd> to take the keycard";
+      if(pressedE){KEYCARD.mesh.visible=false;P.hasCard=true;SFX.card();toast("Keycard. It opens the security room","good",2000);}
+    }
+  }
   if(!P.carry){
     // pick up loot or a body bag lying around
     let best=null,bd=1e9;
@@ -2125,7 +2215,15 @@ function updateInteraction(dt){
   if(!prompt){
     let door=null,bd=1e9;
     for(const dr of doors){if(P.level!==0)break;const d=facing(dr.x,dr.z,Math.max(1.9,dr.w/2+0.9));if(d>=0&&d<bd){door=dr;bd=d;}}
-    if(door){
+    if(door&&door.locked&&!door.open){
+      if(P.hasCard){
+        prompt=`Press <kbd>E</kbd> to swipe the keycard`;
+        if(pressedE){openDoor(door,P.x,P.z,false);SFX.card();door.reader.flash=0.6;}
+      }else{
+        prompt=`Locked · the ${door.name} needs a keycard`;
+        if(pressedE){SFX.denied();door.reader.flash=-0.6;toast("Locked. Find the keycard: staff leave it on a desk somewhere","warn",2200);}
+      }
+    }else if(door){
       prompt=`Press <kbd>E</kbd> to ${door.open?"close":"open"} the ${door.name}`;
       if(pressedE){if(door.open)closeDoor(door);else openDoor(door,P.x,P.z,false);}
     }
@@ -2186,7 +2284,7 @@ function updatePagers(dt){
   for(const g of guards){
     const pg=g.pager;if(!pg||pg.state==="done"||G.alarm)continue;
     if(pg.state==="pending"){
-      pg.t-=dt;
+      if(G.jamT<=0)pg.t-=dt;
       if(pg.t<=0){pg.state="ringing";pg.t=PAGER_WINDOW;pg.beepT=0;toast(`${g.name}'s pager is going off!`,"bad",2200);}
     }
     if(pg.state==="ringing"||pg.state==="answering"){
@@ -2195,7 +2293,7 @@ function updatePagers(dt){
       const k=pg.state==="ringing"?0.42+0.08*Math.sin(G.world*12):0.4;g.sprite.scale.set(k,k,k);
     }
     if(pg.state==="ringing"){
-      pg.t-=dt;pg.beepT-=dt;
+      if(G.jamT<=0){pg.t-=dt;pg.beepT-=dt;}
       if(pg.beepT<=0){SFX.pager(g.x,g.z);pg.beepT=1.0;}
       if(pg.t<=0){
         pg.state="done";g.sprite.visible=false;
@@ -2242,19 +2340,24 @@ function updateHUD(){
   const watched=!G.alarm&&([...guards,...cams,...civs].some(o=>o.seeDist>=0)||G.bodyWatched);
   const caller=G.alarm?null:civs.filter(c=>c.state==="calling").sort((a,b)=>a.callT-b.callT)[0]||null;
   let civSus=0;if(!G.alarm)for(const c of civs)if(c.state==="idle"&&c.sus>civSus)civSus=c.sus;
-  const radio=!G.alarm&&(G.secAlert>0||guards.some(g=>g.wounded>0&&!g.down));
+  const reporter=G.alarm?null:guards.filter(g=>!g.down&&(g.reportT>0||g.wounded>0)).sort((a,b)=>(a.reportT||a.wounded)-(b.reportT||b.wounded))[0]||null;
+  const repT=reporter?(reporter.wounded>0?reporter.wounded:reporter.reportT):G.secAlert>0?G.secAlert:0;
+  const radio=!G.alarm&&(G.secAlert>0||!!reporter);
+  const jam=G.jamT>0;
   const ringing=G.alarm?null:guards.find(g=>g.pager&&(g.pager.state==="ringing"||g.pager.state==="answering"));
   const hud=$("hud");hud.classList.toggle("alarm",G.alarm||radio);hud.classList.toggle("watched",watched);
-  const meter=G.alarm?1:caller?1-caller.callT/CALL_TIME:Math.max(G.susp,civSus);
+  const meter=G.alarm?1:radio?Math.max(0,1-repT/REPORT_TIME):caller?1-caller.callT/CALL_TIME:Math.max(G.susp,civSus);
   $("detectFill").style.width=(meter*100).toFixed(1)+"%";
   if(ringing||caller)hud.classList.add("alarm");
-  $("detectLbl").textContent=G.alarm?"Alarm raised":caller?`${caller.label} is calling the police · ${Math.ceil(caller.callT)} s`:ringing?(ringing.pager.state==="ringing"?`Pager going off · ${Math.ceil(ringing.pager.t)} s`:"On the line with dispatch"):radio?"A guard is reaching for his radio":G.bodyWatched?(G.bodyHost?"Hostage spotted":"Body spotted"):civSus>G.susp?"A civilian is getting suspicious":watched?"Being watched":"Detection";
+  const radioWho=reporter?reporter.name:"The security guard";
+  $("detectLbl").textContent=G.alarm?"Alarm raised":radio?(jam?`${radioWho}'s radio is jammed · ${Math.ceil(G.jamT)} s`:`${radioWho} is radioing it in · ${Math.ceil(repT)} s`):caller?(jam?`${caller.label} has no signal · ${Math.ceil(G.jamT)} s`:`${caller.label} is calling the police · ${Math.ceil(caller.callT)} s`):ringing?(ringing.pager.state==="ringing"?`Pager going off · ${Math.ceil(ringing.pager.t)} s`:"On the line with dispatch"):radio?"A guard is reaching for his radio":G.bodyWatched?(G.bodyHost?"Hostage spotted":"Body spotted"):civSus>G.susp?"A civilian is getting suspicious":watched?"Being watched":"Detection";
   $("seenEdge").style.opacity=G.alarm?0:(Math.max(G.susp,civSus)*0.55).toFixed(3);
   $("clockLbl").textContent=G.alarm?"Police arrive in":"Elapsed";
   $("clockVal").textContent=G.alarm?fmt(G.alarmT):fmtUp(G.time);
   let obj;
   const loose=G.bodies.filter(b=>!b.hostage).length;
-  if(caller)obj=`Stop the call! Look at ${caller.label.replace(/^A /,"the ").replace(/^The /,"the ")} and press F to shout before it goes through. ${Math.ceil(caller.callT)} s left.`;
+  if(radio)obj=reporter?`Drop ${reporter.name} before he radios it in! ${jam?`Jammed for ${Math.ceil(G.jamT)} s.`:`${Math.ceil(repT)} s left.`}`:`Take out the security guard before he calls it in! ${jam?`Jammed for ${Math.ceil(G.jamT)} s.`:`${Math.ceil(repT)} s left.`}`;
+  else if(caller)obj=`Stop the call! Look at ${caller.label.replace(/^A /,"the ").replace(/^The /,"the ")} and press F to shout before it goes through. ${Math.ceil(caller.callT)} s left.`;
   else if(ringing&&ringing.pager.state==="ringing")obj=`Answer ${ringing.name}'s pager! Hold E at his body and keep holding. ${Math.ceil(ringing.pager.t)} s left.`;
   else if(P.carry&&P.carry.kind==="body")obj=LV.def.text.bins;
   else if(loose&&!G.alarm)obj=`Hide ${loose>1?"the bodies":"the body"}. Hold E on a body to bag it, then dump it in a bin.`;
@@ -2271,6 +2374,9 @@ function updateHUD(){
   if(P.masked){mc.textContent="MASKED";mc.className="chip bad";}
   else if(r){mc.textContent=P.level===1?"UNMASKED · ON THE ROOF":LV.day?"UNMASKED · STAFF AREA":"UNMASKED · TRESPASSING";mc.className="chip warn";}
   else{mc.textContent=LV.day&&inside()?"UNMASKED · BLENDING IN":"UNMASKED · OUTSIDE";mc.className="chip ok";}
+  const jc=$("jamChip");jc.hidden=!P.masked&&!jam;
+  if(!jc.hidden){const t=jam?`JAMMER ON · ${Math.ceil(G.jamT)} s`:`JAMMERS ${P.jammers} · J`;if(jc.textContent!==t)jc.textContent=t;jc.className=jam?"chip warn":P.jammers?"chip":"chip bad";}
+  $("cardChip").hidden=!P.hasCard;
   const tc=$("tieChip");tc.hidden=!(P.masked&&civs.length);
   if(!tc.hidden){const nf=civs.filter(c=>c.follow&&!c.dead).length;const t=`ZIP TIES ${P.ties}`+(nf?` · ${nf} FOLLOWING`:"");if(tc.textContent!==t)tc.textContent=t;tc.className=P.ties===0?"chip bad":"chip";}
   $("obj").hidden=!$("subs").hidden; // subtitles take the bottom of the screen during a call
@@ -2298,7 +2404,7 @@ function endGame(won,reason){
   const nb=bags.length,nw=["","one","two","three","four","five","six"][nb]||String(nb);
   $("endReason").textContent=won?(stealth?`All ${nw} bags are in the van and nobody at ${LV.def.place} ever knew you were there.`:`All ${nw} bags made it out, but the whole street heard the alarm.`):reason;
   $("endStamp").textContent=(won?"JOB REPORT · PAID":"JOB REPORT · FAILED")+" · "+LV.def.job.toUpperCase();
-  const rows=[["Time",fmtUp(G.time)],["Bags secured",`${G.secured}/${bags.length}`],["Stealth",stealth?"Kept":"Broken"],["Guards knocked out",String(G.takedowns)],["Guards shot",String(G.kills)],["Bodies hidden",String(G.binned)],["Pagers answered",`${G.pagersUsed}/${MAX_PAGERS}`],["Cameras shot",String(G.camsShot)],["Shots fired",String(G.shots)]];
+  const rows=[["Time",fmtUp(G.time)],["Bags secured",`${G.secured}/${bags.length}`],["Stealth",stealth?"Kept":"Broken"],["Guards knocked out",String(G.takedowns)],["Guards shot",String(G.kills)],["Bodies hidden",String(G.binned)],["Pagers answered",`${G.pagersUsed}/${MAX_PAGERS}`],["Cameras shot",String(G.camsShot)],["Jammers used",String(G.jamsUsed)],["Shots fired",String(G.shots)]];
   if(civs.length)rows.splice(6,0,["Civilians tied up",String(G.tied)],["Civilians killed",String(G.civKills)]);
   $("endStats").innerHTML=rows.map(([a,b],i)=>`<dt>${a}</dt><dd class="${i===2?(stealth?"good":"bad"):""}">${b}</dd>`).join("");
 }
@@ -2310,12 +2416,13 @@ function stepGame(dt){
   updateWeapon(dt);
   updateDoors(dt,false);
   updateDrill(dt);
+  updateJammer(dt);
   updatePagers(dt);
   if(state!=="playing")return;
   G.bodies=collectBodies();
   if(G.secAlert>0&&!G.alarm){
-    G.secAlert-=dt;
-    if(G.secAlert<=0){G.secAlert=0;triggerAlarm("The security guard saw a camera go dark. Alarm!");}
+    if(G.jamT<=0)G.secAlert-=dt;
+    if(G.secAlert<=0){G.secAlert=0;triggerAlarm(G.secMsg||"The security guard raised the alarm.");}
   }
   updateCams(dt,false);
   for(const g of guards){g.update(dt,false);if(state!=="playing")return;}
@@ -2342,6 +2449,9 @@ function animate(dt){
   VAULT.wheel.rotation.z=G.vaultOpen?G.doorAnim*3:0;
   for(const h of hatches){const tg=h.open?1:0;if(h.t!==tg){h.t=clamp(h.t+(h.open?dt:-dt)/0.6,0,1);h.piv.rotation.z=h.t*1.9;}}
   for(const b of bins){if(b.openT>0){b.openT=Math.max(0,b.openT-dt*1.3);b.piv.rotation.x=-1.4*Math.sin(Math.PI*(1-b.openT));}}
+  for(const d of doors){if(!d.reader)continue;const r=d.reader;if(r.flash>0)r.flash-=dt;else if(r.flash<0)r.flash+=dt;
+    r.ledMat.color.setHex(r.flash<0?(Math.floor(r.flash*12)%2?0xff3a30:0x2a0806):(d.open||r.flash>0)?0x40ff80:0xff3a30);}
+  if(KEYCARD&&KEYCARD.mesh.visible){const k=0.16+0.06*Math.sin(G.world*4);KEYCARD.glint.scale.set(k,k,k);}
   for(const s of sparks){if(!s.visible)continue;s.life-=dt;s.material.opacity=clamp(s.life*8,0,1);if(s.life<=0)s.visible=false;}
 }
 renderer.autoClear=false;
