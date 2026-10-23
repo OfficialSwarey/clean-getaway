@@ -106,6 +106,12 @@ button{font:inherit;cursor:pointer}
 .stats{display:grid;grid-template-columns:1fr auto;gap:8px 16px;margin:0;font-variant-numeric:tabular-nums}
 .stats dt{color:var(--dim)}
 .stats dd{margin:0;font-family:var(--f-mono);font-weight:700;text-align:right}
+#endTake{display:grid;gap:2px}
+#endTakeVal{font-family:var(--f-mono);font-size:clamp(34px,7vw,48px);font-weight:700;color:var(--secure);line-height:1.05}
+#endTakeVal.zero{color:var(--dim)}
+#endBest{font-family:var(--f-mono);font-size:12px;letter-spacing:.08em;color:var(--dim)}
+#endBest.new{color:var(--sodium)}
+.job-best{font-family:var(--f-mono);font-size:11px;letter-spacing:.1em;color:var(--secure)}
 .good{color:var(--secure)}.bad{color:var(--alarm)}
 #note{color:var(--sodium)}
 .card.wide{width:min(700px,100%)}
@@ -143,7 +149,7 @@ details.help .keys{margin-bottom:14px}
 <div id="hud" hidden>
   <div id="detect"><div class="lbl" id="detectLbl">Detection</div><div class="bar"><i id="detectFill"></i></div></div>
   <div id="clock"><span class="lbl" id="clockLbl">Elapsed</span><span id="clockVal">00:00</span></div>
-  <div id="obj"><div class="lbl">Objective</div><div id="objText">Get into the bank unseen.</div><div id="bagsRow">Bags secured <b id="bagsVal">0/3</b></div></div>
+  <div id="obj"><div class="lbl">Objective</div><div id="objText">Get into the bank unseen.</div><div id="bagsRow">Bags in the van <b id="bagsVal">0/3</b> · Take <b id="takeVal">$0</b></div></div>
   <div id="status"><span class="chip" id="devChip" hidden>DEV · GHOST OFF · V</span><span class="chip" id="posChip" hidden></span><span class="chip" id="ammo" hidden>PISTOL 12 / 36</span><span class="chip" id="pagerChip" hidden>PAGERS 0/3</span><span class="chip" id="tieChip" hidden>ZIP TIES 6</span><span class="chip" id="loopChip" hidden></span><span class="chip" id="jamChip" hidden>JAMMERS 2 · J</span><span class="chip ok" id="cardChip" hidden>KEYCARD</span><span class="chip ok" id="codeChip" hidden></span><span class="chip" id="maskChip">UNMASKED · OUTSIDE</span><span class="chip" id="carry" hidden>CARRYING BAG · SLOWED</span><span class="chip" id="stance">STANDING</span><span class="chip" id="sound">SOUND ON · M</span></div>
   <div id="crosshair"></div>
   <div id="prompt" hidden><span id="promptText"></span><div class="pbar" id="pbar" hidden><i id="pfill"></i></div></div>
@@ -158,7 +164,7 @@ details.help .keys{margin-bottom:14px}
   <div class="card wide">
     <span class="stamp">CHOOSE A JOB</span>
     <h1>Clean Getaway</h1>
-    <p>Case the place, slip in, crack the vault and get every bag to the van before anyone knows you were there. If the alarm goes off, the police arrive in 60 seconds.</p>
+    <p>Case the place, slip in, crack the vault and get the money to the van before anyone knows you were there. Every bag and every stack of loose cash adds to your take, and you can drive off whenever you like. If the alarm goes off, the police arrive in 60 seconds.</p>
     <div class="jobs" role="radiogroup" aria-label="Job">
       <button class="job" type="button" role="radio" aria-checked="true" data-map="harbor">
         <span class="job-time">NIGHT · 02:40</span>
@@ -205,6 +211,7 @@ details.help .keys{margin-bottom:14px}
         <dt>HOLD G</dt><dd>Put on your mask</dd>
         <dt>E</dt><dd>Interact: doors, ladders, the drill, loot. Hold it to pick a lock, loop a camera (stand under it and look up), bag a body, answer a pager or zip-tie a civilian. Tap it to make a tied hostage follow you or stay</dd>
         <dt>0–9</dt><dd>Type a code on a keypad (Backspace erases)</dd>
+        <dt>HOLD E</dt><dd>At the van, with nothing in your hands: drive off with whatever you've got</dd>
         <dt>Q</dt><dd>Drop what you're carrying</dd>
         <dt>J</dt><dd>Put down a jammer: for 15 seconds no radio, phone or pager can raise the alarm (2 per job)</dd>
         <dt>CLICK</dt><dd>Fire the silenced pistol</dd>
@@ -246,6 +253,7 @@ details.help .keys{margin-bottom:14px}
   <div class="card">
     <span class="stamp" id="endStamp">JOB REPORT</span>
     <h2 id="endTitle">Clean job</h2>
+    <div id="endTake"><span class="lbl" id="endTakeLbl">TAKE</span><b id="endTakeVal">$0</b><span id="endBest"></span></div>
     <p id="endReason"></p>
     <dl class="stats" id="endStats"></dl>
     <div class="row"><button class="btn" id="againBtn">Play again</button><button class="btn ghost" id="menuBtn">Back to jobs</button></div>
@@ -1000,6 +1008,26 @@ function makeReader(d,x,y,z,ry){
   d.locked=true;d.reader={ledMat,flash:0};
 }
 
+/* ---------- loose cash: E to pocket it; it only counts if you get away ---------- */
+const CASH=[];
+const bandMat=phong(0xe8e2cc),cashTop=phong(0x6f8f5c,{shininess:20});
+function makeCashPile(sp){
+  const g=new THREE.Group();g.position.set(sp[0],sp[1],sp[2]);g.rotation.y=Math.random()*Math.PI;lvAdd(g);
+  const n=2+(Math.random()*3|0);
+  for(let i=0;i<n;i++){
+    const b=new THREE.Group();const lay=i%2;b.position.set((i>>1)*0.1-0.05+(Math.random()-0.5)*0.03,0.025+lay*0.045,(lay?0.02:-0.02));b.rotation.y=(Math.random()-0.5)*0.5;g.add(b);
+    const m=new THREE.Mesh(new THREE.BoxGeometry(0.16,0.045,0.07),cashTop);m.castShadow=true;b.add(m);
+    const band=new THREE.Mesh(new THREE.BoxGeometry(0.03,0.047,0.072),bandMat);b.add(band);
+  }
+  g.traverse(o=>o.userData.noHit=true);
+  const c={mesh:g,x:sp[0],z:sp[2],value:0,taken:false};CASH.push(c);return c;
+}
+const money=n=>"$"+Math.round(n).toLocaleString("en-US");
+function rollValue(r,step){return Math.round((r[0]+Math.random()*(r[1]-r[0]))/step)*step;}
+function bestKey(){return "cg-best-"+LV.id;}
+function readBest(id){try{return +(localStorage.getItem("cg-best-"+id)||0);}catch(e){return 0;}}
+function showBests(){document.querySelectorAll(".job").forEach(b=>{let s=b.querySelector(".job-best");const v=readBest(b.dataset.map);if(!v){if(s)s.remove();return;}if(!s){s=document.createElement("span");s.className="job-best";b.appendChild(s);}s.textContent="BEST TAKE "+money(v);});}
+
 /* ---------- loot and body bags ---------- */
 function makeBag(){
   const g=new THREE.Group();
@@ -1027,6 +1055,8 @@ scene.add(moon);scene.add(moon.target);
 /* ================= MAP 1 · Quiet Hours · Harbor Savings & Loan ================= */
 const MAP_HARBOR={
   id:"harbor",job:"Quiet Hours",place:"Harbor Savings & Loan",time:"02:40",
+  bagValue:[28000,52000],cashValue:[300,2200],
+  cash:[[-13.4,0.81,-6.2],[-13.5,0.81,-2.1],[-5.2,1.17,4.05],[-1.6,1.17,4.05],[2.0,1.17,4.05],[13.7,0.81,-8.5],[-5.4,1.41,-9.6]],
   spawn:{x:2,z:20.5,yaw:0},moon:32,
   bagSpots:[[-3,-9.6],[0,-10.6],[3,-9.6]],
   isInside:(x,z)=>x>-15&&x<15&&z>-12&&z<12,
@@ -1160,6 +1190,8 @@ const MAP_HARBOR_DAY=Object.assign({},MAP_HARBOR,{
 /* ================= MAP 2 · Night Deposit · Meridian Trust ================= */
 const MAP_MERIDIAN={
   id:"meridian",job:"Night Deposit",place:"Meridian Trust",time:"03:15",
+  bagValue:[42000,78000],cashValue:[500,3800],
+  cash:[[-6.4,0.91,-3.8],[-3.4,0.91,-3.8],[3.6,0.91,-3.8],[6.6,0.91,-3.8],[16.2,0.81,9.4],[-20.5,0.79,11.6],[-16.0,0.79,7.5],[2.8,1.17,8.5],[-20.4,0.76,-3.6],[11.3,0.81,-15.2]],
   spawn:{x:0,z:23,yaw:0},moon:44,
   bagSpots:[[-3.6,-14],[-1,-16.6],[1.6,-16.6],[3.8,-14]],
   isInside:(x,z)=>x>-24&&x<24&&z>-18&&z<14,
@@ -1373,6 +1405,8 @@ const MAP_MERIDIAN_DAY=Object.assign({},MAP_MERIDIAN,{
 const drawClub=(g,w,h)=>{g.fillStyle="#1a171e";g.fillRect(0,0,w,h);noise(g,w,h,5000,.1);};
 const MAP_CLUB={
   id:"club",job:"Last Call",place:"Club Halo",time:"01:30",day:true,night:true,zipTies:12,
+  bagValue:[24000,46000],cashValue:[150,1600],
+  cash:[[13.0,1.17,3.0],[13.0,1.17,6.6],[-3.6,1.17,12.1],[-13.6,0.46,13.3],[-14.3,1.17,7.0],[2.4,0.81,-8.0],[8.6,0.81,-10.7],[-14.8,0.51,-0.2],[5.2,0.51,-0.2]],
   spawn:{x:0,z:23,yaw:0},moon:40,
   bagSpots:[[-2.42,-15.3,0.3,0],[-1.58,-15.3,0.3,0],[-2.42,-15.3,1.02,0],[-1.58,-15.3,1.02,0]],
   music:{x:-6,z:6},
@@ -1594,13 +1628,14 @@ function buildMap(id){
     LV.group.traverse(o=>{if(o.geometry)o.geometry.dispose();if(o.shadow&&o.shadow.map){o.shadow.map.dispose();o.shadow.map=null;}});
   }
   colliders.length=0;doors.length=0;bins.length=0;cams.length=0;guards.length=0;civs.length=0;bags.length=0;transitions.length=0;hatches.length=0;windows.length=0;
-  secGuard=null;VAULT=null;ring=null;civSeed=0;KEYCARD=null;NOTE=null;jammerMeshes.length=0;
+  secGuard=null;VAULT=null;ring=null;civSeed=0;KEYCARD=null;NOTE=null;jammerMeshes.length=0;CASH.length=0;
   LV={group:new THREE.Group(),def,id:def.id,day:!!def.day,sunny:!!def.day&&!def.night,fx:null};scene.add(LV.group);
   setSky(LV.sunny);
   def.build();
   secGuard=guards.find(g=>g.security)||null;
   BAG_SPOTS=def.bagSpots;
   for(const s of BAG_SPOTS){const m=makeBag();m.userData.noHit=true;lvAdd(m);bags.push({kind:"loot",mesh:m,state:"ground",level:0});}
+  for(const sp of (def.cash||[]))makeCashPile(sp);
   for(const g of guards.concat(civs)){const m=makeBodyBag();m.visible=false;m.userData.noHit=true;lvAdd(m);g.item={kind:"body",guard:g,mesh:m,state:"none",level:g.level};}
   const mb=def.moon||32;Object.assign(moon.shadow.camera,{left:-mb,right:mb,top:mb,bottom:-mb});moon.shadow.camera.updateProjectionMatrix();
   rebuildHitList();
@@ -1862,6 +1897,8 @@ const SFX={
   jamOn(){tone({type:"square",f0:300,f1:1400,dur:.35,vol:.08,lp:3000});noiseHit({type:"bandpass",freq:2800,q:.6,dur:.6,vol:.15,attack:.05});},
   jamTick(x,z,fast){const s=spatial(x,z,20)||{vol:.2,pan:0};tone({type:"square",f0:fast?1500:1100,dur:.05,vol:.06*s.vol+.015,pan:s.pan,lp:s.lp||4000});noiseHit({freq:3000,q:.8,dur:.12,vol:.05*s.vol+.01,pan:s.pan});},
   jamOff(){tone({type:"sawtooth",f0:900,f1:120,dur:.5,vol:.06,lp:1500});},
+  cash(){noiseHit({freq:3000,q:.6,dur:.09,vol:.14});noiseHit({freq:2200,q:.6,dur:.08,vol:.1,delay:.07});tone({type:"sine",f0:1568,dur:.08,vol:.06,delay:.12});tone({type:"sine",f0:2093,dur:.12,vol:.06,delay:.19});},
+  engine(){tone({type:"sawtooth",f0:40,f1:90,dur:1.4,vol:.12,lp:500,attack:.3});noiseHit({type:"lowpass",freq:200,dur:1.4,vol:.2,attack:.3});},
   kpKey(d){tone({type:"sine",f0:900+(d||0)*45,dur:.07,vol:.09});},
   kpOk(){[1046,1318,1568].forEach((f,i)=>tone({type:"sine",f0:f,dur:.12,vol:.1,delay:i*.09}));noiseHit({type:"lowpass",freq:700,dur:.12,vol:.3,delay:.32});},
   kpBad(){tone({type:"square",f0:200,dur:.32,vol:.09,lp:1200});},
@@ -2035,7 +2072,7 @@ const DEV={on:false,ghost:false};
 try{DEV.on=localStorage.getItem("cg-dev")==="1";}catch(e){}
 const G={time:0,world:0,susp:0,unseen:0,alarm:false,alarmT:60,drill:0,drillWas:false,vaultOpen:false,doorAnim:0,secured:0,takedowns:0,everAlarm:false,lastSpotter:"guard",lastCause:"player",noise:0,shotNoise:0,blipT:0,bodies:[],secAlert:0,bagT:0,binned:0};
 const BAG_TIME=2.0,PAGER_DELAY=2.5,PAGER_WINDOW=12,MAX_PAGERS=3,REPORT_TIME=6,JAM_TIME=15,JAMMERS=2;
-const LOOP_TIME=25,LOOP_HOLD=2.0,LOOP_REACH=2.4,PICK_DOOR=5,PICK_WIN=3.5,PINS=5,JUMP_V=5.6,GRAV=17;
+const LEAVE_TIME=1.5,LOOP_TIME=25,LOOP_HOLD=2.0,LOOP_REACH=2.4,PICK_DOOR=5,PICK_WIN=3.5,PINS=5,JUMP_V=5.6,GRAV=17;
 let state="menu",locked=false,everLocked=false,fallback=false,pendingStart=false,pressedE=false;
 const keys={};
 const DRILL_TIME=20,ALARM_TIME=60;
@@ -2057,6 +2094,9 @@ function resetGame(){
   VAULT.pivot.rotation.y=0;VAULT.wheel.rotation.z=0;if(!colliders.includes(VAULT.col))colliders.push(VAULT.col);
   VAULT.drillGroup.visible=false;VAULT.drillLight.intensity=0;
   bags.forEach((b,i)=>{const sp=BAG_SPOTS[i];b.state=VAULT.safe?"locked":"ground";b.level=0;b.mesh.visible=true;b.mesh.position.set(sp[0],sp[2]!=null?sp[2]:0.22,sp[1]);b.mesh.rotation.set(0,sp[3]!=null?sp[3]:i*0.7,0);});
+  bags.forEach(b=>{b.value=rollValue(LV.def.bagValue||[30000,50000],100);});
+  CASH.forEach(c=>{c.taken=false;c.mesh.visible=true;c.value=rollValue(LV.def.cashValue||[300,2000],50);});
+  G.vanTake=0;G.pocket=0;G.cashTaken=0;G.leaveT=0;G.leaveBlock=false;
   if(VAULT.safe){const i=colliders.indexOf(VAULT.openCol);if(i>=0)colliders.splice(i,1);VAULT.screen.color.setHex(0x3aff8a);}
   G.safeCode=String(1000+Math.floor(Math.random()*9000));G.knowCode=false;G.safeFails=0;G.keypad=false;KP.entry="";$("keypad").hidden=true;placeCodeNote();
   hatches.forEach(h=>{h.open=false;h.t=0;h.piv.rotation.z=0;});
@@ -2146,6 +2186,7 @@ function pickMap(id){
 }
 document.querySelectorAll(".job").forEach(b=>b.addEventListener("click",()=>pickMap(b.dataset.map)));
 $("devToggle").checked=DEV.on;
+showBests();
 $("devToggle").addEventListener("change",e=>{DEV.on=e.target.checked;DEV.ghost=false;try{localStorage.setItem("cg-dev",DEV.on?"1":"0");}catch(err){}});
 setMuted(A.muted);
 
@@ -2708,6 +2749,18 @@ function updateInteraction(dt){
       if(pressedE){KEYCARD.mesh.visible=false;P.hasCard=true;SFX.card();toast("Keycard. It opens the security room","good",2000);}
     }
   }
+  // loose cash: quick grab, anyone who sees you do it gets suspicious
+  if(!prompt&&P.level===0){
+    let best=null,bd=1e9;
+    for(const c of CASH){if(c.taken)continue;const d=facing(c.x,c.z,1.7);if(d>=0&&d<bd){best=c;bd=d;}}
+    if(best){
+      prompt=`Press <kbd>E</kbd> to grab the cash · ${money(best.value)}`;
+      if(pressedE){
+        best.taken=true;best.mesh.visible=false;G.pocket+=best.value;G.cashTaken++;P.fiddle=Math.max(P.fiddle,0.6);SFX.cash();
+        toast(`+${money(best.value)} in your pockets · take ${money(G.vanTake+G.pocket)}`,"good",1600);
+      }
+    }
+  }
   if(!P.carry){
     // pick up loot or a body bag lying around
     let best=null,bd=1e9;
@@ -2718,18 +2771,29 @@ function updateInteraction(dt){
       prompt=best.kind==="body"?"Press <kbd>E</kbd> to pick up the body bag":"Press <kbd>E</kbd> to pick up the loot";
       if(pressedE){
         best.state="carried";best.mesh.visible=false;P.carry=best;showCarry();SFX.pickup();
-        if(best.kind==="loot")toast("Loot picked up. Get it to the van","warn");
+        if(best.kind==="loot")toast(`Loot bag · ${money(best.value)}. Get it to the van`,"warn",2000);
       }
     }
+    // at the van with empty hands: hold E to drive off with whatever you've got
+    const dv=P.level===0?Math.hypot(SECURE.x-P.x,SECURE.z-P.z):99;
+    if(!prompt&&dv<2.6){
+      const take=G.vanTake+G.pocket,all=G.secured>=bags.length;
+      prompt=all?`Hold <kbd>E</kbd> to drive off · every bag is in the van · ${money(take)}`:`Hold <kbd>E</kbd> to drive off with ${money(take)} · ${G.secured}/${bags.length} bags`;
+      if(keys.KeyE&&!G.leaveBlock){
+        if(G.leaveT===0)SFX.engine();
+        G.leaveT+=dt;prompt="Starting the engine…";prog=G.leaveT/LEAVE_TIME;
+        if(G.leaveT>=LEAVE_TIME){endGame(true);return;}
+      }else G.leaveT=0;
+    }else G.leaveT=0;
   }else if(P.carry.kind==="loot"){
     const d=P.level===0?Math.hypot(SECURE.x-P.x,SECURE.z-P.z):99;
     if(d<2.6&&!prompt){
       prompt="Press <kbd>E</kbd> to load the bag into the van";
       if(pressedE){
         const b=P.carry,slot=VAN_SLOTS[G.secured];b.state="secured";b.mesh.visible=true;b.mesh.position.set(slot[0],0.82,slot[1]);b.mesh.rotation.set(0,G.secured*0.9,0);
-        P.carry=null;showCarry();G.secured++;SFX.load();
-        if(G.secured>=bags.length){endGame(true);return;}
-        toast(`Bag secured ${G.secured}/${bags.length}`,"good");
+        P.carry=null;showCarry();G.secured++;G.vanTake+=b.value;G.leaveBlock=true;SFX.load();
+        if(G.secured>=bags.length)toast(`Every bag is in the van · ${money(G.vanTake+G.pocket)}. Hold E here to drive off`,"good",3200);
+        else toast(`Bag in the van · +${money(b.value)} · take ${money(G.vanTake+G.pocket)}`,"good",2200);
       }
     }
   }else{
@@ -2768,6 +2832,7 @@ function updateInteraction(dt){
     }
   }
   if(!loopCam||!keys.KeyE)G.loopHold=0;
+  if(!keys.KeyE)G.leaveBlock=false;
   // windows: hold E to pick the latch; shoot the glass to smash it; jump through once it's open
   if(!prompt&&P.level===0){
     let win=null,bd=1e9;
@@ -2949,12 +3014,14 @@ function updateHUD(){
   else if(!G.vaultOpen&&VAULT.safe)obj=G.knowCode?`Open the safe in the owner's office. The code is ${G.safeCode}.`:LV.def.text.vault;
   else if(!G.vaultOpen)obj=G.drilling?`Drill running: ${Math.round(G.drill*100)}%. Keep guards away from the vault.`:G.drill===0?LV.def.text.vault:`Drill stopped at ${Math.round(G.drill*100)}%.`;
   else if(P.carry)obj=LV.def.text.van;
-  else obj=VAULT.safe?"Grab a loot bag from the safe.":"Grab a loot bag from the vault.";
+  else if(G.secured>=bags.length)obj="Every bag is in the van. Hold E at the van to drive off, or grab some loose cash first.";
+  else obj=(VAULT.safe?"Grab a loot bag from the safe.":"Grab a loot bag from the vault.")+(G.secured?" Or hold E at the van to drive off with what you have.":"");
   $("objText").textContent=obj;
   $("bagsVal").textContent=`${G.secured}/${bags.length}`;
+  {const t=G.pocket>0?`${money(G.vanTake+G.pocket)} (${money(G.pocket)} in pockets)`:money(G.vanTake);if($("takeVal").textContent!==t)$("takeVal").textContent=t;}
   $("stance").textContent=(P.jh>P.gnd+0.05?"JUMPING":P.crouch?"CROUCHED · SILENT":P.sprinting?"SPRINTING · LOUD":P.gnd>0.1?"STANDING ON SOMETHING":"STANDING")+(musicCovers()&&!P.crouch?" · MUSIC COVERS YOU":"");
   const cc=$("carry");cc.hidden=!P.carry;
-  if(P.carry){const t=P.carry.kind==="body"?"CARRYING BODY · Q DROP":"CARRYING LOOT · Q DROP";if(cc.textContent!==t)cc.textContent=t;}
+  if(P.carry){const t=P.carry.kind==="body"?"CARRYING BODY · Q DROP":`CARRYING LOOT ${money(P.carry.value)} · Q DROP`;if(cc.textContent!==t)cc.textContent=t;}
   const mc=$("maskChip"),r=restricted(P.x,P.z);
   if(P.masked){mc.textContent="MASKED";mc.className="chip bad";}
   else if(r){mc.textContent=P.level===1?"UNMASKED · ON THE ROOF":LV.day?"UNMASKED · STAFF AREA":"UNMASKED · TRESPASSING";mc.className="chip warn";}
@@ -2990,9 +3057,20 @@ function endGame(won,reason){
   $("endTitle").textContent=won?(stealth?"Clean job":"Loud, but paid"):"Busted";
   $("endTitle").className=won?"good":"bad";
   const nb=bags.length,nw=["","one","two","three","four","five","six"][nb]||String(nb);
-  $("endReason").textContent=won?(stealth?`All ${nw} bags are in the van and nobody at ${LV.def.place} ever knew you were there.`:`All ${nw} bags made it out, but the whole street heard the alarm.`):reason;
+  const take=won?G.vanTake+G.pocket:0,all=G.secured>=nb;
+  if(won&&take===0){$("endTitle").textContent="Empty-handed";$("endTitle").className="bad";}
+  $("endReason").textContent=!won?reason+(G.vanTake+G.pocket>0?` You leave ${money(G.vanTake+G.pocket)} behind.`:""):
+    take===0?"You drove off with nothing. At least nobody got hurt. Probably.":
+    all?(stealth?`All ${nw} bags are in the van and nobody at ${LV.def.place} ever knew you were there.`:`All ${nw} bags made it out, but the whole street heard the alarm.`):
+    (G.secured?`You drove off with ${G.secured} of ${nb} bags${G.pocket?" and your pockets full of cash":""}.`:"You skipped the bags and drove off with your pockets full of cash.")+(stealth?" Nobody saw a thing.":"");
+  const tv=$("endTakeVal");tv.textContent=money(take);tv.className=take?"":"zero";
+  $("endTakeLbl").textContent=won?"TAKE":"TAKE · LOST";
+  const prev=readBest(LV.id),eb=$("endBest");
+  if(won&&take>prev){try{localStorage.setItem(bestKey(),String(take));}catch(e){}eb.textContent=prev?`NEW BEST · old best ${money(prev)}`:"NEW BEST FOR THIS JOB";eb.className="new";}
+  else{eb.textContent=prev?`BEST ON THIS JOB ${money(prev)}`:"";eb.className="";}
+  showBests();
   $("endStamp").textContent=(won?"JOB REPORT · PAID":"JOB REPORT · FAILED")+" · "+LV.def.job.toUpperCase();
-  const rows=[["Time",fmtUp(G.time)],["Bags secured",`${G.secured}/${bags.length}`],["Stealth",stealth?"Kept":"Broken"],["Guards knocked out",String(G.takedowns)],["Guards shot",String(G.kills)],["Bodies hidden",String(G.binned)],["Pagers answered",`${G.pagersUsed}/${MAX_PAGERS}`],["Cameras shot",String(G.camsShot)],["Jammers used",String(G.jamsUsed)],["Shots fired",String(G.shots)]];
+  const rows=[["Time",fmtUp(G.time)],["Bags in the van",`${G.secured}/${bags.length} · ${money(G.vanTake)}`],["Stealth",stealth?"Kept":"Broken"],["Loose cash",`${G.cashTaken}/${CASH.length} · ${money(G.pocket)}`],["Guards knocked out",String(G.takedowns)],["Guards shot",String(G.kills)],["Bodies hidden",String(G.binned)],["Pagers answered",`${G.pagersUsed}/${MAX_PAGERS}`],["Cameras shot",String(G.camsShot)],["Jammers used",String(G.jamsUsed)],["Shots fired",String(G.shots)]];
   if(civs.length)rows.splice(6,0,["Civilians tied up",String(G.tied)],["Civilians killed",String(G.civKills)]);
   $("endStats").innerHTML=rows.map(([a,b],i)=>`<dt>${a}</dt><dd class="${i===2?(stealth?"good":"bad"):""}">${b}</dd>`).join("");
 }
