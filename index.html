@@ -3,12 +3,12 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Quiet Hours</title>
+<title>Clean Getaway</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Semi+Condensed:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&family=Saira+Stencil+One&display=swap">
 <style>
-/* Layout: full-bleed WebGL scene; HUD pinned to the corners like a CCTV overlay; menus as a centered job dossier card. Single deliberate night look. */
+/* Layout: full-bleed WebGL scene; HUD pinned to the corners like a CCTV overlay; menus as a centered job dossier card with a job picker. Single deliberate dark look. */
 :root{
   --ink:#080b10;
   --panel:rgba(10,14,20,.86);
@@ -100,6 +100,24 @@ button{font:inherit;cursor:pointer}
 .stats dd{margin:0;font-family:var(--f-mono);font-weight:700;text-align:right}
 .good{color:var(--secure)}.bad{color:var(--alarm)}
 #note{color:var(--sodium)}
+.card.wide{width:min(700px,100%)}
+.jobs{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.job{display:grid;gap:4px;text-align:left;padding:14px 16px;background:rgba(255,255,255,.02);border:1px solid var(--line);color:var(--fg);min-width:0}
+.job:hover{border-color:rgba(244,171,61,.5)}
+.job:focus-visible{outline:2px solid var(--fg);outline-offset:2px}
+.job[aria-checked="true"]{border-color:var(--sodium);background:rgba(244,171,61,.08);box-shadow:inset 3px 0 0 var(--sodium)}
+.job-time{font-family:var(--f-mono);font-size:11px;letter-spacing:.16em;color:var(--sodium)}
+.job-name{font-family:var(--f-display);font-size:28px;line-height:1}
+.job-place{font-size:15px;color:#c7d0d3}
+.job-meta{font-family:var(--f-mono);font-size:11px;letter-spacing:.06em;color:var(--dim);line-height:1.5}
+.dev{display:flex;gap:10px;align-items:flex-start;font-size:15px;color:#c7d0d3;cursor:pointer}
+.dev input{accent-color:#f4ab3d;width:18px;height:18px;margin:2px 0 0;flex:none}
+.dev small{display:block;color:var(--dim);font-size:13px}
+details.help{border-top:1px solid var(--line);padding-top:12px}
+details.help summary{cursor:pointer;font-family:var(--f-mono);font-size:12px;letter-spacing:.14em;color:var(--dim);text-transform:uppercase}
+details.help[open] summary{margin-bottom:12px}
+details.help .keys{margin-bottom:14px}
+@media (max-width:560px){.jobs{grid-template-columns:1fr}}
 @media (max-width:640px){#obj{max-width:calc(100vw - 150px)}#objText{font-size:15px}}
 @media (prefers-reduced-motion:reduce){#alarmEdge{animation:none;opacity:.45}#toast{transition:none}}
 </style>
@@ -115,7 +133,7 @@ button{font:inherit;cursor:pointer}
   <div id="detect"><div class="lbl" id="detectLbl">Detection</div><div class="bar"><i id="detectFill"></i></div></div>
   <div id="clock"><span class="lbl" id="clockLbl">Elapsed</span><span id="clockVal">00:00</span></div>
   <div id="obj"><div class="lbl">Objective</div><div id="objText">Get into the bank unseen.</div><div id="bagsRow">Bags secured <b id="bagsVal">0/3</b></div></div>
-  <div id="status"><span class="chip" id="ammo" hidden>PISTOL 12 / 36</span><span class="chip" id="pagerChip" hidden>PAGERS 0/3</span><span class="chip" id="maskChip">UNMASKED · OUTSIDE</span><span class="chip" id="carry" hidden>CARRYING BAG · SLOWED</span><span class="chip" id="stance">STANDING</span><span class="chip" id="sound">SOUND ON · M</span></div>
+  <div id="status"><span class="chip" id="devChip" hidden>DEV · GHOST OFF · V</span><span class="chip" id="posChip" hidden></span><span class="chip" id="ammo" hidden>PISTOL 12 / 36</span><span class="chip" id="pagerChip" hidden>PAGERS 0/3</span><span class="chip" id="maskChip">UNMASKED · OUTSIDE</span><span class="chip" id="carry" hidden>CARRYING BAG · SLOWED</span><span class="chip" id="stance">STANDING</span><span class="chip" id="sound">SOUND ON · M</span></div>
   <div id="crosshair"></div>
   <div id="prompt" hidden><span id="promptText"></span><div class="pbar" id="pbar" hidden><i id="pfill"></i></div></div>
   <div id="subs" hidden><span id="subWho"></span><span id="subLine"></span></div>
@@ -123,39 +141,55 @@ button{font:inherit;cursor:pointer}
 </div>
 
 <div id="menu" class="overlay">
-  <div class="card">
-    <span class="stamp">HARBOR SAVINGS &amp; LOAN · 02:40</span>
-    <h1>Quiet Hours</h1>
-    <p>It's 02:40 and the bank is closed. Three bags of cash sit in the vault. Case the place from the street through the front windows first. When you're ready, put on your mask, get inside, set the drill on the vault and carry every bag to the van in the back alley. If the alarm goes off, police arrive in 60 seconds.</p>
-    <dl class="keys">
-      <dt>WASD</dt><dd>Move</dd>
-      <dt>MOUSE</dt><dd>Look around</dd>
-      <dt>SHIFT</dt><dd>Sprint (you get spotted faster)</dd>
-      <dt>C</dt><dd>Crouch on/off (hide behind the counter, cars, crates)</dd>
-      <dt>HOLD G</dt><dd>Put on your mask</dd>
-      <dt>E</dt><dd>Interact: open doors, start the drill. Hold it to bag a body</dd>
-      <dt>Q</dt><dd>Drop what you're carrying</dd>
-      <dt>CLICK</dt><dd>Fire the silenced pistol</dd>
-      <dt>R-CLICK</dt><dd>Aim down the sights</dd>
-      <dt>R</dt><dd>Reload</dd>
-      <dt>F</dt><dd>Take down a guard from behind</dd>
-      <dt>M</dt><dd>Sound on/off</dd>
-      <dt>ESC</dt><dd>Pause</dd>
-    </dl>
-    <ul class="tips">
-      <li>Outside without a mask you're just someone on the street. Inside, anyone who sees you fills the detection meter, mask or not.</li>
-      <li>Doors block sight. Guards open doors as they walk through and close them behind them. Crouch below the window sills to stay hidden.</li>
-      <li>The drill runs by itself once it's set up, but it's loud: guards within about 6 m will hear it and look.</li>
-      <li>Once the mask is on, anyone who sees you fills the detection meter. Break line of sight and it drains.</li>
-      <li>A headshot drops a guard instantly. A body shot only wounds him, and he radios it in after 2 seconds unless you finish him. Shoot cameras to blind them, but only after the security room guard is down, or he raises the alarm.</li>
-      <li>Guards and cameras raise the alarm if they find a body or a body bag. Bag bodies and dump them in a bin.</li>
-      <li>Every guard you drop carries a pager. When it goes off, hold E at the body and keep holding until the call is over. Let go and dispatch sends the police. Dispatch only buys 3 excuses a night.</li>
-      <li>Guards hear you. Sprinting and drilling are loud, walking is quiet up close, crouching is silent. Wear headphones to hear their footsteps.</li>
-      <li>Two ways in: the front door past the lobby, or the back door in the alley.</li>
-      <li>Bags slow you down. You can carry one at a time.</li>
-    </ul>
+  <div class="card wide">
+    <span class="stamp">CHOOSE A JOB</span>
+    <h1>Clean Getaway</h1>
+    <p>Case the place, slip in, crack the vault and get every bag to the van before anyone knows you were there. If the alarm goes off, the police arrive in 60 seconds.</p>
+    <div class="jobs" role="radiogroup" aria-label="Job">
+      <button class="job" type="button" role="radio" aria-checked="true" data-map="harbor">
+        <span class="job-time">NIGHT · 02:40</span>
+        <span class="job-name">Quiet Hours</span>
+        <span class="job-place">Harbor Savings &amp; Loan</span>
+        <span class="job-meta">Small bank · 2 ways in: front, back door · 4 guards · 2 cameras · 3 bags</span>
+      </button>
+      <button class="job" type="button" role="radio" aria-checked="false" data-map="meridian">
+        <span class="job-time">NIGHT · 03:15</span>
+        <span class="job-name">Night Deposit</span>
+        <span class="job-place">Meridian Trust</span>
+        <span class="job-meta">Large bank · 3 ways in: front, loading door, roof hatch · 6 guards · 5 cameras · 4 bags</span>
+      </button>
+    </div>
+    <label class="dev" for="devToggle"><input type="checkbox" id="devToggle"><span>Dev mode<small>Press V during a job to turn invisible to guards and cameras. Shows your position.</small></span></label>
     <div class="row"><button class="btn" id="startBtn">Start the job</button></div>
     <p class="lbl" id="note"></p>
+    <details class="help">
+      <summary>Controls and tips</summary>
+      <dl class="keys">
+        <dt>WASD</dt><dd>Move</dd>
+        <dt>MOUSE</dt><dd>Look around</dd>
+        <dt>SHIFT</dt><dd>Sprint (you get spotted faster)</dd>
+        <dt>C</dt><dd>Crouch on/off (hide behind counters, cars, crates, window sills)</dd>
+        <dt>HOLD G</dt><dd>Put on your mask</dd>
+        <dt>E</dt><dd>Interact: doors, ladders, the drill, loot. Hold it to bag a body or answer a pager</dd>
+        <dt>Q</dt><dd>Drop what you're carrying</dd>
+        <dt>CLICK</dt><dd>Fire the silenced pistol</dd>
+        <dt>R-CLICK</dt><dd>Aim down the sights</dd>
+        <dt>R</dt><dd>Reload</dd>
+        <dt>F</dt><dd>Take down a guard from behind</dd>
+        <dt>M</dt><dd>Sound on/off</dd>
+        <dt>ESC</dt><dd>Pause</dd>
+      </dl>
+      <ul class="tips">
+        <li>Outside without a mask you're just someone on the street. Inside the closed bank, or on its roof, anyone who sees you fills the detection meter, mask or not.</li>
+        <li>Doors block sight. Guards open doors as they walk through and close them behind them.</li>
+        <li>The drill runs by itself once it's set up, but it's loud: guards within about 6 m will hear it and look.</li>
+        <li>A headshot drops a guard instantly. A body shot only wounds him, and he radios it in after 2 seconds unless you finish him.</li>
+        <li>The security room guard watches every camera. Shoot a camera while he's up and he raises the alarm. Take him out and the cameras go dark.</li>
+        <li>Guards and cameras raise the alarm if they find a body or a body bag. Bag bodies and dump them in a bin.</li>
+        <li>Every guard you drop carries a pager. When it goes off, hold E at the body until the call is over. Dispatch only buys 3 excuses a night.</li>
+        <li>Guards hear you. Sprinting is loud, walking is quiet up close, crouching is silent.</li>
+      </ul>
+    </details>
   </div>
 </div>
 
@@ -164,7 +198,7 @@ button{font:inherit;cursor:pointer}
     <span class="stamp">PAUSED</span>
     <h2>Holding position</h2>
     <p id="pauseNote">The guards are frozen until you come back.</p>
-    <div class="row"><button class="btn" id="resumeBtn">Resume</button><button class="btn ghost" id="restartBtn">Restart job</button></div>
+    <div class="row"><button class="btn" id="resumeBtn">Resume</button><button class="btn ghost" id="restartBtn">Restart job</button><button class="btn ghost" id="pauseMenuBtn">Back to jobs</button></div>
   </div>
 </div>
 
@@ -174,7 +208,7 @@ button{font:inherit;cursor:pointer}
     <h2 id="endTitle">Clean job</h2>
     <p id="endReason"></p>
     <dl class="stats" id="endStats"></dl>
-    <div class="row"><button class="btn" id="againBtn">Play again</button></div>
+    <div class="row"><button class="btn" id="againBtn">Play again</button><button class="btn ghost" id="menuBtn">Back to jobs</button></div>
   </div>
 </div>
 
@@ -219,6 +253,8 @@ const drawTiles=(g,w,h)=>{g.fillStyle="#2c302f";g.fillRect(0,0,w,h);for(let i=0;
 const drawAsphalt=(g,w,h)=>{g.fillStyle="#1d2023";g.fillRect(0,0,w,h);noise(g,w,h,5000,.18);};
 const drawCarpet=(g,w,h)=>{g.fillStyle="#2a3140";g.fillRect(0,0,w,h);noise(g,w,h,6000,.14);};
 const drawPlate=(g,w,h)=>{g.fillStyle="#4c5256";g.fillRect(0,0,w,h);g.strokeStyle="#2f3437";g.lineWidth=3;g.strokeRect(2,2,w-4,h-4);g.fillStyle="#3a3f43";for(let i=0;i<8;i++)for(let j=0;j<8;j++){g.fillRect(i*32+14,j*32+14,4,4);}noise(g,w,h,1500,.1);};
+const drawConcrete=(g,w,h)=>{g.fillStyle="#4a4d4f";g.fillRect(0,0,w,h);noise(g,w,h,5000,.12);g.strokeStyle="rgba(0,0,0,.25)";g.lineWidth=2;g.strokeRect(1,1,w-2,h-2);};
+const drawGravel=(g,w,h)=>{g.fillStyle="#3a3c3e";g.fillRect(0,0,w,h);noise(g,w,h,9000,.3);};
 const drawDeposit=(g,w,h)=>{g.fillStyle="#6d7479";g.fillRect(0,0,w,h);for(let i=0;i<4;i++)for(let j=0;j<4;j++){g.fillStyle="#8a9196";g.fillRect(i*64+3,j*64+3,58,58);g.fillStyle="#3c4246";g.fillRect(i*64+26,j*64+28,12,5);g.beginPath();g.arc(i*64+50,j*64+12,3,0,7);g.fill();}};
 
 /* ================= materials ================= */
@@ -235,103 +271,68 @@ const M={
   lens:phong(0x050505,{shininess:100,specular:0x888888}), drill:phong(0xe0b31f,{shininess:40}),
   bench:phong(0x3b3029)
 };
-const floorMats={
-  lobby:phong(0xffffff,{map:tex(256,256,drawTiles,15,6),shininess:30,specular:0x1a1a1a}),
-  hall:phong(0xffffff,{map:tex(256,256,drawTiles,5,2.5),shininess:30,specular:0x1a1a1a}),
-  carpet1:phong(0xffffff,{map:tex(256,256,drawCarpet,5,6)}),
-  carpet2:phong(0xffffff,{map:tex(256,256,drawCarpet,5,6)}),
-  vault:phong(0xffffff,{map:tex(256,256,drawPlate,5,3.5),shininess:50,specular:0x222222}),
-  // pushed back in depth so indoor floors never fight with it
-  ground:phong(0xffffff,{map:tex(256,256,drawAsphalt,16,16),polygonOffset:true,polygonOffsetFactor:2,polygonOffsetUnits:2})
-};
+const plantMat=phong(0x2f4a2c),rackMat=phong(0x1b1e22,{shininess:40}),cashMat=phong(0x5f7a4f),forkMat=phong(0xc99a1e,{shininess:30});
+const acMat=phong(0x8b9094,{shininess:30}),skylightMat=phong(0x223646,{emissive:0x0a1620,shininess:90,specular:0x666666});
+const ledMat=new THREE.MeshBasicMaterial({map:tex(128,64,(g,w,h)=>{g.fillStyle="#0b0d10";g.fillRect(0,0,w,h);for(let y=4;y<h;y+=8)for(let x=4;x<w;x+=10){const r=Math.random();g.fillStyle=r<.6?"#2dff7a":r<.85?"#3fa9ff":"#ffb23f";if(Math.random()<.7)g.fillRect(x,y,3,2);}},4,2),transparent:true,opacity:.85});
 const depositMat=phong(0xffffff,{map:tex(256,256,drawDeposit,4,1.3),shininess:50});
 
-/* ================= level geometry ================= */
-const colliders=[];
+/* ================= level system =================
+   Everything that belongs to a map is built into LV.group, so switching maps swaps one group.
+   Maps can have a second walkable level: the roof (level 1, floor at ROOF_Y). Colliders,
+   sight lines, guards, cameras and items all carry the level they live on. */
+const ROOF_Y=4.0;
+let LV={group:null,def:null};
+const colliders=[],doors=[],bins=[],cams=[],guards=[],bags=[],transitions=[],hatches=[];
+let secGuard=null,VAULT=null,SECURE={x:0,z:0},VAN_SLOTS=[],BAG_SPOTS=[],DRILL_POS={x:0,z:0},ring=null;
+const DRILL_NOISE=6;
+function lvAdd(o){LV.group.add(o);return o;}
+
+/* ---------- building blocks ---------- */
 function addBox(x1,z1,x2,z2,h,mat,o){
-  o=o||{};const y0=o.y0||0;
+  o=o||{};const y0=o.y0||0,lvl=o.lvl||0,base=lvl?ROOF_Y:0;
   const minX=Math.min(x1,x2),maxX=Math.max(x1,x2),minZ=Math.min(z1,z2),maxZ=Math.max(z1,z2);
   const m=new THREE.Mesh(new THREE.BoxGeometry(maxX-minX,h-y0,maxZ-minZ),mat);
-  m.position.set((minX+maxX)/2,y0+(h-y0)/2,(minZ+maxZ)/2);
-  m.castShadow=o.cast!==false;m.receiveShadow=true;(o.parent||scene).add(m);
+  m.position.set((minX+maxX)/2,base+y0+(h-y0)/2,(minZ+maxZ)/2);
+  m.castShadow=o.cast!==false;m.receiveShadow=true;(o.parent||LV.group).add(m);
   let col=null;
-  if(o.collide!==false&&y0<0.5){col={minX,maxX,minZ,maxZ,h};colliders.push(col);}
+  if(o.collide!==false&&y0<0.5){col={minX,maxX,minZ,maxZ,h,lvl};colliders.push(col);}
   return {mesh:m,col};
 }
-const wallX=(z,a,b,h,mat)=>addBox(a,z-0.2,b,z+0.2,h,mat);
-const wallZ=(x,a,b,h,mat)=>addBox(x-0.2,a,x+0.2,b,h,mat);
+const wallX=(z,a,b,h,mat,o)=>addBox(a,z-0.2,b,z+0.2,h,mat,o);
+const wallZ=(x,a,b,h,mat,o)=>addBox(x-0.2,a,x+0.2,b,h,mat,o);
 const lintelX=(z,a,b,y0,h,mat)=>addBox(a,z-0.2,b,z+0.2,h,mat,{y0,collide:false});
-function floor(x1,z1,x2,z2,mat,y){const m=new THREE.Mesh(new THREE.PlaneGeometry(x2-x1,z2-z1),mat);m.rotation.x=-Math.PI/2;m.position.set((x1+x2)/2,y!=null?y:0.03,(z1+z2)/2);m.receiveShadow=true;scene.add(m);return m;}
+const lintelZ=(x,a,b,y0,h,mat)=>addBox(x-0.2,a,x+0.2,b,h,mat,{y0,collide:false});
+function floor(x1,z1,x2,z2,mat,y){const m=new THREE.Mesh(new THREE.PlaneGeometry(x2-x1,z2-z1),mat);m.rotation.x=-Math.PI/2;m.position.set((x1+x2)/2,y!=null?y:0.03,(z1+z2)/2);m.receiveShadow=true;lvAdd(m);return m;}
 function pointLight(x,y,z,color,intensity,dist,fixture){
-  const l=new THREE.PointLight(color,intensity,dist,2);l.position.set(x,y,z);scene.add(l);
-  if(fixture){const f=new THREE.Mesh(new THREE.BoxGeometry(1.2,0.05,0.3),M.fluoro);f.position.set(x,3.18,z);scene.add(f);}
+  const l=new THREE.PointLight(color,intensity,dist,2);l.position.set(x,y,z);lvAdd(l);
+  if(fixture){const f=new THREE.Mesh(new THREE.BoxGeometry(1.2,0.05,0.3),M.fluoro);f.position.set(x,y+0.18,z);lvAdd(f);}
   return l;
 }
 function signTex(text,w,h,fg,bg,font){return tex(w,h,(g)=>{g.fillStyle=bg;g.fillRect(0,0,w,h);g.fillStyle=fg;g.font=font;g.textAlign="center";g.textBaseline="middle";g.fillText(text,w/2,h/2+2);});}
+function plaque(map,w,h,x,y,z,ry){const p=new THREE.Mesh(new THREE.PlaneGeometry(w,h),new THREE.MeshBasicMaterial({map}));p.position.set(x,y,z);p.rotation.y=ry||0;lvAdd(p);return p;}
+function floorMat(draw,rx,ry,o){return phong(0xffffff,Object.assign({map:tex(256,256,draw,rx,ry)},o||{}));}
+const closedTex=()=>tex(256,140,(g,w,h)=>{g.fillStyle="#e9e3d0";g.fillRect(0,0,w,h);g.fillStyle="#a8261c";g.font="bold 54px Arial, sans-serif";g.textAlign="center";g.fillText("CLOSED",w/2,64);g.fillStyle="#1a1d22";g.font="600 24px Arial, sans-serif";g.fillText("Open Mon–Fri 9–17",w/2,108);});
+const staffTex=()=>signTex("STAFF ONLY",256,96,"#0b0d10","#f4ab3d","bold 46px Arial, sans-serif");
 
-// --- exterior
-floor(-32,-32,32,32,floorMats.ground,0);
-addBox(-24,15.6,24,16.4,0.12,phong(0x4a4c4c),{collide:false,cast:false}); // curb/sidewalk edge
-for(let x=-22;x<24;x+=5){const d=new THREE.Mesh(new THREE.PlaneGeometry(2.4,0.18),M.line);d.rotation.x=-Math.PI/2;d.position.set(x,0.02,20.5);scene.add(d);}
-wallZ(-24,-22,24,2.6,M.brick); wallZ(24,-22,24,2.6,M.brick);
-wallX(-22,-24,24,2.6,M.brick); wallX(24,-24,24,2.6,M.brick);
-
-// --- bank shell (outer walls 4m tall, parapet above the ceiling)
-// front wall with real window openings (sill 1.05 m: crouch below it to stay out of sight)
+// front windows: sill 1.05 m, so standing guards see over it and a crouched player is hidden
 const WIN_LO=1.05,WIN_HI=2.65;
-wallX(12,-15.2,-10.2,4,M.outer); wallX(12,-5.8,-1.5,4,M.outer); wallX(12,1.5,5.8,4,M.outer); wallX(12,10.2,15.2,4,M.outer);
-lintelX(12,-1.5,1.5,2.6,4,M.outer);
 const winGlass=new THREE.MeshPhongMaterial({color:0x9fb8c8,transparent:true,opacity:.16,shininess:90,specular:0x666666,depthWrite:false,side:THREE.DoubleSide});
-for(const [a,b] of [[-10.2,-5.8],[5.8,10.2]]){
-  addBox(a,11.8,b,12.2,WIN_LO,M.outer);                                  // sill (collides, low enough to see over)
-  addBox(a,11.8,b,12.2,4,M.outer,{y0:WIN_HI,collide:false});              // header
-  const g=new THREE.Mesh(new THREE.PlaneGeometry(b-a,WIN_HI-WIN_LO),winGlass);g.position.set((a+b)/2,(WIN_LO+WIN_HI)/2,12);g.userData.noHit=true;scene.add(g);
-  addBox((a+b)/2-0.04,11.95,(a+b)/2+0.04,12.05,WIN_HI,M.trim,{y0:WIN_LO,collide:false}); // mullion
+function windowX(z,a,b,h){
+  addBox(a,z-0.2,b,z+0.2,WIN_LO,M.outer);
+  addBox(a,z-0.2,b,z+0.2,h,M.outer,{y0:WIN_HI,collide:false});
+  const g=new THREE.Mesh(new THREE.PlaneGeometry(b-a,WIN_HI-WIN_LO),winGlass);g.position.set((a+b)/2,(WIN_LO+WIN_HI)/2,z);g.userData.noHit=true;lvAdd(g);
+  addBox((a+b)/2-0.04,z-0.05,(a+b)/2+0.04,z+0.05,WIN_HI,M.trim,{y0:WIN_LO,collide:false});
 }
-wallX(-12,-15.2,-12,4,M.outer); wallX(-12,-9.5,15.2,4,M.outer); lintelX(-12,-12,-9.5,2.4,4,M.outer);
-wallZ(-15,-12.2,12.2,4,M.outer); wallZ(15,-12.2,12.2,4,M.outer);
-addBox(-15.2,-12.2,15.2,12.2,3.4,M.ceil,{y0:3.2,collide:false});
-// front facade details
-const sign=new THREE.Mesh(new THREE.PlaneGeometry(9,1.2),new THREE.MeshBasicMaterial({map:signTex("HARBOR SAVINGS & LOAN",1024,136,"#e9eef2","#11161d","bold 76px 'Arial Narrow', Arial, sans-serif")}));
-sign.position.set(0,3.35,12.215);scene.add(sign);
-addBox(-1.8,12.2,-1.5,12.5,2.6,M.trim,{collide:false});addBox(1.5,12.2,1.8,12.5,2.6,M.trim,{collide:false});
-
-// --- interior walls (3.2m) with doorways
-wallX(0,-14.8,-11,3.2,M.wall); wallX(0,-9,-1.2,3.2,M.wall); wallX(0,1.2,9,3.2,M.wall); wallX(0,11,14.8,3.2,M.wall);
-lintelX(0,-11,-9,2.4,3.2,M.wall); lintelX(0,-1.2,1.2,2.4,3.2,M.wall); lintelX(0,9,11,2.4,3.2,M.wall);
-wallZ(-5,-12,0,3.2,M.wall); wallZ(5,-12,0,3.2,M.wall);
-wallX(-5,-5,-1.5,3.2,M.wall); wallX(-5,1.5,5,3.2,M.wall); lintelX(-5,-1.5,1.5,2.8,3.2,M.steel);
-
-// --- floors
-floor(-15,0,15,12,floorMats.lobby);
-floor(-15,-12,-5,0,floorMats.carpet1);
-floor(5,-12,15,0,floorMats.carpet2);
-floor(-5,-5,5,0,floorMats.hall);
-floor(-5,-12,5,-5,floorMats.vault);
-
-// --- lobby props
-addBox(-9,3.6,6,4.4,1.1,M.counter);
-addBox(-9.1,3.5,6.1,4.5,1.16,M.counterTop,{y0:1.1,collide:false});
-for(let x=-7;x<=4;x+=3.6){addBox(x-0.02,3.95,x+0.02,4.05,1.9,M.glass,{y0:1.16,collide:false});}
-addBox(-7.4,9.6,-6.6,10.4,3.2,M.pillar); addBox(6.6,9.6,7.4,10.4,3.2,M.pillar);
-addBox(-13,10.6,-10,11.2,0.5,M.bench); addBox(10,10.6,13,11.2,0.5,M.bench);
-const counterSign=new THREE.Mesh(new THREE.PlaneGeometry(3.4,0.5),new THREE.MeshBasicMaterial({map:signTex("TELLERS 1 – 4",512,76,"#c9d2d6","#1a2028","600 44px Arial, sans-serif")}));
-counterSign.position.set(-1.5,2.6,4.05);scene.add(counterSign);
-// it's night: the whole bank is closed
-const closedSign=new THREE.Mesh(new THREE.PlaneGeometry(0.9,0.5),new THREE.MeshBasicMaterial({map:tex(256,140,(g,w,h)=>{g.fillStyle="#e9e3d0";g.fillRect(0,0,w,h);g.fillStyle="#a8261c";g.font="bold 54px Arial, sans-serif";g.textAlign="center";g.fillText("CLOSED",w/2,64);g.fillStyle="#1a1d22";g.font="600 24px Arial, sans-serif";g.fillText("Open Mon–Fri 9–17",w/2,108);})}));
-closedSign.position.set(2.35,1.6,12.215);scene.add(closedSign);
-const staffSignBack=new THREE.Mesh(new THREE.PlaneGeometry(0.75,0.28),new THREE.MeshBasicMaterial({map:signTex("STAFF ONLY",256,96,"#0b0d10","#f4ab3d","bold 46px Arial, sans-serif")}));
-staffSignBack.position.set(-10.75,2.75,-12.22);staffSignBack.rotation.y=Math.PI;scene.add(staffSignBack);
 
 /* ---------- doors: E to open/close; guards open them as they walk through; closed doors block sight ---------- */
-const doors=[];
 const doorMat=phong(0x4f4236),doorMetal=phong(0x7a8186,{shininess:50,specular:0x333333}),staffDoorMat=phong(0x5d6469);
 const glassDoorMat=new THREE.MeshPhongMaterial({color:0xa9c2d2,transparent:true,opacity:.22,shininess:90,specular:0x777777,depthWrite:false,side:THREE.DoubleSide});
-function makeDoor(x1,x2,z,h,o){
+function makeDoorAt(cx,cz,w,h,rot,o){
   o=o||{};
-  const w=x2-x1,dbl=w>2.2,lw=dbl?w/2:w,leaves=[];
-  for(const [hx,dir] of (dbl?[[x1,1],[x2,-1]]:[[x1,1]])){
-    const piv=new THREE.Group();piv.position.set(hx,0,z);scene.add(piv);
+  const grp=new THREE.Group();grp.position.set(cx,0,cz);grp.rotation.y=rot;lvAdd(grp);
+  const dbl=w>2.2,lw=dbl?w/2:w,leaves=[];
+  for(const [hx,dir] of (dbl?[[-w/2,1],[w/2,-1]]:[[-w/2,1]])){
+    const piv=new THREE.Group();piv.position.set(hx,0,0);grp.add(piv);
     if(o.glass){
       const pane=new THREE.Mesh(new THREE.BoxGeometry(lw-0.16,h-0.2,0.02),glassDoorMat);pane.position.set(dir*lw/2,h/2,0);pane.userData.noHit=true;piv.add(pane);
       for(const [fx,fy,fw,fh] of [[lw/2,0.05,lw-0.03,0.1],[lw/2,h-0.06,lw-0.03,0.1],[0.06,h/2,0.08,h-0.04],[lw-0.06,h/2,0.08,h-0.04]]){
@@ -344,18 +345,20 @@ function makeDoor(x1,x2,z,h,o){
     }
     leaves.push({piv,dir});
   }
-  const col={minX:x1,maxX:x2,minZ:z-0.07,maxZ:z+0.07,h,see:!!o.glass};colliders.push(col);
-  const d={x:(x1+x2)/2,z,w,leaves,col,t:0,open:false,swing:1,byGuard:false,name:o.name||"door"};
+  const alongZ=Math.abs(Math.sin(rot))>0.5;
+  const col=alongZ?{minX:cx-0.07,maxX:cx+0.07,minZ:cz-w/2,maxZ:cz+w/2,h,see:!!o.glass,lvl:0}
+                  :{minX:cx-w/2,maxX:cx+w/2,minZ:cz-0.07,maxZ:cz+0.07,h,see:!!o.glass,lvl:0};
+  colliders.push(col);
+  const d={x:cx,z:cz,w,rot,leaves,col,t:0,open:false,swing:1,byGuard:false,name:o.name||"door"};
   doors.push(d);return d;
 }
-makeDoor(-1.5,1.5,12,2.58,{glass:true,name:"front door"});
-makeDoor(-12,-9.5,-12,2.38,{mat:staffDoorMat,name:"back door"});
-makeDoor(-11,-9,0,2.38,{name:"office door"});
-makeDoor(-1.2,1.2,0,2.38,{mat:staffDoorMat,name:"vault hall door"});
-makeDoor(9,11,0,2.38,{name:"security door"});
+function makeDoor(x1,x2,z,h,o){return makeDoorAt((x1+x2)/2,z,x2-x1,h,0,o);}        // door in a wall running along x
+function makeDoorZ(x,z1,z2,h,o){return makeDoorAt(x,(z1+z2)/2,z2-z1,h,Math.PI/2,o);} // door in a wall running along z
 function openDoor(d,fromX,fromZ,byGuard){
   if(d.open)return;
-  d.open=true;d.byGuard=byGuard;d.swing=fromZ>d.z?1:-1;
+  // swing away from whoever opens it (measured along the door's own facing axis)
+  const lz=(fromX-d.x)*Math.sin(d.rot)+(fromZ-d.z)*Math.cos(d.rot);
+  d.open=true;d.byGuard=byGuard;d.swing=lz>0?1:-1;
   const i=colliders.indexOf(d.col);if(i>=0)colliders.splice(i,1);
   SFX.door(d.x,d.z,true);
 }
@@ -363,15 +366,14 @@ function closeDoor(d){if(!d.open)return;d.open=false;d.byGuard=false;SFX.door(d.
 function updateDoors(dt,simOnly){
   for(const d of doors){
     if(!simOnly){
-      // guards open a door when they walk into it, and close it again once they're through
       for(const g of guards){
-        if(g.down||d.open)continue;
+        if(g.down||d.open||g.level!==0)continue;
         const dx=d.x-g.x,dz=d.z-g.z,dist=Math.hypot(dx,dz);
         const fwd=Math.sin(g.yaw)*dx/dist+Math.cos(g.yaw)*dz/dist;
         if(dist<1.3&&(fwd>0.5||dist<0.6)&&g.speedNow>0)openDoor(d,g.x,g.z,true);
       }
       if(d.open&&d.byGuard&&d.t>=1){
-        const guardNear=guards.some(g=>!g.down&&Math.hypot(d.x-g.x,d.z-g.z)<2.4);
+        const guardNear=guards.some(g=>!g.down&&g.level===0&&Math.hypot(d.x-g.x,d.z-g.z)<2.4);
         if(!guardNear&&Math.hypot(d.x-P.x,d.z-P.z)>1.3)closeDoor(d);
       }
     }
@@ -385,98 +387,72 @@ function updateDoors(dt,simOnly){
   }
 }
 
-// --- office
-addBox(-14,-7,-12.8,-5,0.8,M.desk); addBox(-14,-3,-12.8,-1.5,0.8,M.desk);
-addBox(-5.6,-11,-5.2,-8,1.4,M.cabinet);
-addBox(-14.8,-11.8,-13.2,-11.2,1.9,M.cabinet);
-
-// --- security room
-addBox(12.8,-10,14.4,-8,0.8,M.desk);
-const monTex=signTex("CAM 01   CAM 02",256,64,"#9fc4ff","#0d1a2c","bold 24px monospace");
-for(let i=0;i<2;i++){const s=new THREE.Mesh(new THREE.BoxGeometry(0.1,0.5,0.7),[M.cabinet,new THREE.MeshBasicMaterial({map:monTex}),M.cabinet,M.cabinet,M.cabinet,M.cabinet]);s.position.set(14.1,1.1,-9.4+i*0.8);s.rotation.y=Math.PI;scene.add(s);}
-addBox(14.2,-4,14.8,-1,2,M.cabinet);
-
-// --- vault interior
-addBox(-4.8,-11.8,4.8,-11.4,2.6,depositMat,{collide:true});
-addBox(-4.8,-11.4,-4.4,-6.2,2.6,depositMat); addBox(4.4,-11.4,4.8,-6.2,2.6,depositMat);
-
-// vault door (pivot on the west edge, swings into the vault)
-const vaultPivot=new THREE.Group();vaultPivot.position.set(-1.5,0,-5);scene.add(vaultPivot);
-const doorFront=new THREE.MeshPhongMaterial({map:signTex("VAULT 02",256,256,"#2b3034","#9aa1a6","bold 34px Arial"),shininess:80,specular:0x555555});
-const vaultDoor=new THREE.Mesh(new THREE.BoxGeometry(3,2.8,0.5),[M.steel,M.steel,M.steel,M.steel,doorFront,M.steel]);
-vaultDoor.position.set(1.5,1.4,0);vaultDoor.castShadow=true;vaultPivot.add(vaultDoor);
-const wheel=new THREE.Mesh(new THREE.TorusGeometry(0.42,0.05,8,24),M.steel);wheel.position.set(1.5,1.35,0.3);vaultPivot.add(wheel);
-for(let i=0;i<3;i++){const sp=new THREE.Mesh(new THREE.BoxGeometry(0.84,0.05,0.05),M.steel);sp.rotation.z=i*Math.PI/3;sp.position.copy(wheel.position);vaultPivot.add(sp);}
-const vaultCol={minX:-1.5,maxX:1.5,minZ:-5.25,maxZ:-4.75,h:2.8};colliders.push(vaultCol);
-const drillGroup=new THREE.Group();drillGroup.position.set(0.45,1.3,-4.5);scene.add(drillGroup);
-const drillBody=new THREE.Mesh(new THREE.BoxGeometry(0.5,0.35,0.35),M.drill);drillGroup.add(drillBody);
-const drillBit=new THREE.Mesh(new THREE.CylinderGeometry(0.04,0.04,0.35,6),M.steel);drillBit.rotation.x=Math.PI/2;drillBit.position.z=-0.3;drillGroup.add(drillBit);
-const drillLegs=new THREE.Mesh(new THREE.BoxGeometry(0.06,1.3,0.06),M.pole);drillLegs.position.set(0,-0.65,0.1);drillGroup.add(drillLegs);
-drillGroup.visible=false;drillGroup.userData.noHit=true;
-const drillLight=new THREE.PointLight(0xffa040,0,4,2);drillLight.position.set(0.45,1.3,-4.3);scene.add(drillLight);
-
-// --- alley & yard props
-// bins: bodies can be dumped here
-const bins=[];
+/* ---------- vault, van, bins, lamps, ladders, hatches ---------- */
+function makeVault(x,z,label){
+  const pivot=new THREE.Group();pivot.position.set(x-1.5,0,z);lvAdd(pivot);
+  const front=new THREE.MeshPhongMaterial({map:signTex(label,256,256,"#2b3034","#9aa1a6","bold 34px Arial"),shininess:80,specular:0x555555});
+  const door=new THREE.Mesh(new THREE.BoxGeometry(3,2.8,0.5),[M.steel,M.steel,M.steel,M.steel,front,M.steel]);
+  door.position.set(1.5,1.4,0);door.castShadow=true;pivot.add(door);
+  const wheel=new THREE.Mesh(new THREE.TorusGeometry(0.42,0.05,8,24),M.steel);wheel.position.set(1.5,1.35,0.3);pivot.add(wheel);
+  for(let i=0;i<3;i++){const sp=new THREE.Mesh(new THREE.BoxGeometry(0.84,0.05,0.05),M.steel);sp.rotation.z=i*Math.PI/3;sp.position.copy(wheel.position);pivot.add(sp);}
+  const col={minX:x-1.5,maxX:x+1.5,minZ:z-0.25,maxZ:z+0.25,h:2.8,lvl:0};colliders.push(col);
+  const drillGroup=new THREE.Group();drillGroup.position.set(x+0.45,1.3,z+0.5);lvAdd(drillGroup);
+  drillGroup.add(new THREE.Mesh(new THREE.BoxGeometry(0.5,0.35,0.35),M.drill));
+  const drillBit=new THREE.Mesh(new THREE.CylinderGeometry(0.04,0.04,0.35,6),M.steel);drillBit.rotation.x=Math.PI/2;drillBit.position.z=-0.3;drillGroup.add(drillBit);
+  const legs=new THREE.Mesh(new THREE.BoxGeometry(0.06,1.3,0.06),M.pole);legs.position.set(0,-0.65,0.1);drillGroup.add(legs);
+  drillGroup.visible=false;drillGroup.userData.noHit=true;
+  const drillLight=new THREE.PointLight(0xffa040,0,4,2);drillLight.position.set(x+0.45,1.3,z+0.7);lvAdd(drillLight);
+  DRILL_POS={x:x+0.45,z:z+0.5};
+  VAULT={x,z,pivot,wheel,col,drillGroup,drillBit,drillLight};
+}
+// getaway van; xr = x of the open rear doors, dir=+1 when the rear faces +x, -1 when it faces -x
+function makeVan(xr,zc,dir){
+  const L=3.8,CAB=1.7,z1=zc-1.1,z2=zc+1.1,xa=xr-dir*L,xc=xa-dir*CAB;
+  const lo=(a,b)=>Math.min(a,b),hi=(a,b)=>Math.max(a,b);
+  addBox(lo(xa,xr),z1,hi(xa,xr),z2,0.6,M.van,{y0:0.45,collide:false});
+  addBox(lo(xa,xr),z1,hi(xa,xr),z1+0.08,2.3,M.van,{y0:0.6,collide:false});
+  addBox(lo(xa,xr),z2-0.08,hi(xa,xr),z2,2.3,M.van,{y0:0.6,collide:false});
+  addBox(lo(xa,xr),z1,hi(xa,xr),z2,2.38,M.van,{y0:2.3,collide:false});
+  addBox(lo(xa,xa+dir*0.1),z1,hi(xa,xa+dir*0.1),z2,2.3,M.vanIn,{y0:0.6,collide:false});
+  addBox(lo(xc,xa),z1,hi(xc,xa),z2,1.9,M.van,{y0:0.45,collide:false});
+  addBox(lo(xc+dir*0.5,xa-dir*0.1),z1+0.05,hi(xc+dir*0.5,xa-dir*0.1),z2-0.05,1.85,M.glass,{y0:1.3,collide:false});
+  addBox(lo(xr,xr+dir*1.1),z1-0.02,hi(xr,xr+dir*1.1),z1+0.04,2.25,M.van,{y0:0.6,collide:false});
+  addBox(lo(xr,xr+dir*1.1),z2-0.04,hi(xr,xr+dir*1.1),z2+0.02,2.25,M.van,{y0:0.6,collide:false});
+  colliders.push({minX:lo(xc,xr),maxX:hi(xc,xr),minZ:z1,maxZ:z2,h:2.3,lvl:0});
+  for(const wx of [xr-dir*1.0,xc+dir*0.9])for(const wz of [z1,z2]){const w=new THREE.Mesh(new THREE.CylinderGeometry(0.4,0.4,0.26,12),M.tire);w.rotation.x=Math.PI/2;w.position.set(wx,0.4,wz);w.castShadow=true;lvAdd(w);}
+  SECURE={x:xr+dir*1.2,z:zc};
+  VAN_SLOTS=[[xr-dir*0.8,zc-0.45],[xr-dir*1.6,zc+0.45],[xr-dir*2.5,zc-0.45],[xr-dir*3.2,zc+0.45]];
+  ring=new THREE.Mesh(new THREE.RingGeometry(0.9,1.1,40),new THREE.MeshBasicMaterial({color:0x78d8a3,transparent:true,opacity:.35,depthWrite:false}));
+  ring.rotation.x=-Math.PI/2;ring.position.set(SECURE.x,0.05,SECURE.z);ring.userData.noHit=true;lvAdd(ring);
+}
 const lidMat=phong(0x1f3627),cartMat=phong(0x5b6066),cartLid=phong(0x3e4348);
 function makeBin(cx,cz,w,d,h,mat,lmat,label){
   addBox(cx-w/2,cz-d/2,cx+w/2,cz+d/2,h,mat);
   addBox(cx-w/2-0.04,cz-d/2+0.1,cx-w/2,cz+d/2-0.1,h*0.6,M.pole,{y0:h*0.4,collide:false}); // side handle
-  const piv=new THREE.Group();piv.position.set(cx,h,cz-d/2);scene.add(piv);
+  const piv=new THREE.Group();piv.position.set(cx,h,cz-d/2);lvAdd(piv);
   const lid=new THREE.Mesh(new THREE.BoxGeometry(w+0.06,0.06,d+0.04),lmat);lid.position.set(0,0.03,d/2);lid.castShadow=true;piv.add(lid);
-  const t=new THREE.Mesh(new THREE.PlaneGeometry(Math.min(w*0.6,0.9),0.22),new THREE.MeshBasicMaterial({map:signTex(label,256,64,"#0b0d10","#c9d2d6","bold 34px Arial, sans-serif")}));
-  t.position.set(cx,h*0.62,cz+d/2+0.01);scene.add(t);
+  plaque(signTex(label,256,64,"#0b0d10","#c9d2d6","bold 34px Arial, sans-serif"),Math.min(w*0.6,0.9),0.22,cx,h*0.62,cz+d/2+0.01);
   bins.push({x:cx,z:cz,w,d,piv,count:0,openT:0});
 }
-makeBin(-7.5,-13.8,1.8,1.2,1.3,M.dumpster,lidMat,"WASTE");
-makeBin(8,-13.9,1.8,1.2,1.3,M.dumpster,lidMat,"WASTE");
-makeBin(-8,-11.3,1.2,0.8,1.0,cartMat,cartLid,"LINEN");
-addBox(-14.6,-15.6,-13.4,-14.4,1.2,M.crate); addBox(-14.4,-15.4,-13.6,-14.6,1.9,M.crate,{y0:1.2,collide:false});
-addBox(-17.6,3,-16.4,4.2,1.1,M.crate); addBox(-17.8,5,-16.6,6.2,1.1,M.crate);
-// parked car on the street
-addBox(6,17.2,10.5,19,0.95,M.car,{});
-addBox(7,17.35,9.4,18.85,1.45,M.glass,{y0:0.95,collide:false});
-for(const [wx,wz] of [[6.8,17.15],[9.7,17.15],[6.8,19.05],[9.7,19.05]]){const w=new THREE.Mesh(new THREE.CylinderGeometry(0.33,0.33,0.22,12),M.tire);w.rotation.x=Math.PI/2;w.position.set(wx,0.33,wz);scene.add(w);}
-// mark car as sight-blocker for a crouched player
-colliders.forEach(c=>{if(c.minX===6&&c.maxX===10.5)c.h=1.4;});
+function lamp(x,z,color){addBox(x-0.12,z-0.12,x+0.12,z+0.12,4.6,M.pole);const h=new THREE.Mesh(new THREE.BoxGeometry(0.7,0.15,0.35),M.lamp);h.position.set(x,4.6,z);lvAdd(h);return pointLight(x,4.3,z,color,1.3,15);}
+function makeLadder(x,z,y0,y1,ry){
+  const g=new THREE.Group();g.position.set(x,0,z);g.rotation.y=ry||0;lvAdd(g);
+  for(const s of [-0.25,0.25]){const r=new THREE.Mesh(new THREE.BoxGeometry(0.05,y1-y0,0.06),M.steel);r.position.set(s,(y0+y1)/2,0);r.castShadow=true;g.add(r);}
+  for(let y=y0+0.3;y<y1-0.1;y+=0.3){const r=new THREE.Mesh(new THREE.BoxGeometry(0.5,0.035,0.035),M.steel);r.position.set(0,y,0);g.add(r);}
+}
+function makeHatch(x,z){
+  // a lid on the roof over a hole in the roof slab
+  for(const [a,b,c,d] of [[x-0.7,z-0.7,x+0.7,z-0.6],[x-0.7,z+0.6,x+0.7,z+0.7],[x-0.7,z-0.6,x-0.6,z+0.6],[x+0.6,z-0.6,x+0.7,z+0.6]])addBox(a,b,c,d,0.12,M.steel,{lvl:1,collide:false});
+  const piv=new THREE.Group();piv.position.set(x-0.6,ROOF_Y+0.12,z);lvAdd(piv);
+  const lid=new THREE.Mesh(new THREE.BoxGeometry(1.2,0.07,1.2),M.steel);lid.position.set(0.6,0.035,0);lid.castShadow=true;piv.add(lid);
+  const h={x,z,piv,open:false,t:0};hatches.push(h);return h;
+}
+function openHatch(h){if(h.open)return;h.open=true;SFX.door(h.x,h.z,true);}
 
-// getaway van (rear open, facing the building)
-const VAN={x1:-21.2,x2:-17.4,z1:-18.1,z2:-15.9};
-addBox(VAN.x1,VAN.z1,VAN.x2,VAN.z2,0.6,M.van,{y0:0.45,collide:false});
-addBox(VAN.x1,VAN.z1,VAN.x2,VAN.z1+0.08,2.3,M.van,{y0:0.6,collide:false});
-addBox(VAN.x1,VAN.z2-0.08,VAN.x2,VAN.z2,2.3,M.van,{y0:0.6,collide:false});
-addBox(VAN.x1,VAN.z1,VAN.x2,VAN.z2,2.38,M.van,{y0:2.3,collide:false});
-addBox(VAN.x1,VAN.z1,VAN.x1+0.1,VAN.z2,2.3,M.vanIn,{y0:0.6,collide:false});
-addBox(VAN.x1+0.1,VAN.z1+0.08,VAN.x2,VAN.z2-0.08,2.3,M.vanIn,{y0:0.6,collide:false,cast:false});
-addBox(-22.9,VAN.z1,VAN.x1,VAN.z2,1.9,M.van,{y0:0.45,collide:false});
-addBox(-22.4,VAN.z1+0.05,-21.3,VAN.z2-0.05,1.85,M.glass,{y0:1.3,collide:false});
-addBox(VAN.x2,VAN.z1-0.02,VAN.x2+1.1,VAN.z1+0.04,2.25,M.van,{y0:0.6,collide:false});
-addBox(VAN.x2,VAN.z2-0.04,VAN.x2+1.1,VAN.z2+0.02,2.25,M.van,{y0:0.6,collide:false});
-colliders.push({minX:-22.9,maxX:VAN.x2,minZ:VAN.z1,maxZ:VAN.z2,h:2.3});
-for(const [wx,wz] of [[-22,VAN.z1],[-18.4,VAN.z1],[-22,VAN.z2],[-18.4,VAN.z2]]){const w=new THREE.Mesh(new THREE.CylinderGeometry(0.4,0.4,0.26,12),M.tire);w.rotation.x=Math.PI/2;w.position.set(wx,0.4,wz);w.castShadow=true;scene.add(w);}
-const SECURE={x:-16.2,z:-17};
-const ring=new THREE.Mesh(new THREE.RingGeometry(0.9,1.1,40),new THREE.MeshBasicMaterial({color:0x78d8a3,transparent:true,opacity:.35,depthWrite:false}));
-ring.rotation.x=-Math.PI/2;ring.position.set(SECURE.x,0.03,SECURE.z);ring.userData.noHit=true;scene.add(ring);
-
-// street lamps
-function lamp(x,z,color){addBox(x-0.12,z-0.12,x+0.12,z+0.12,4.6,M.pole);const h=new THREE.Mesh(new THREE.BoxGeometry(0.7,0.15,0.35),M.lamp);h.position.set(x,4.6,z);scene.add(h);return pointLight(x,4.3,z,color,1.3,15);}
-lamp(-9,15.2,0xffb050); lamp(11,15.2,0xffb050); lamp(-21,-12.6,0xffa848);
-pointLight(-10.7,2.9,-12.6,0xd8e2ff,0.6,6);
-
-/* ================= lighting ================= */
-scene.add(new THREE.HemisphereLight(0x3d4c6a,0x0b0d10,0.55));
-const moon=new THREE.DirectionalLight(0x8ea4d4,0.35);moon.position.set(-18,30,14);moon.target.position.set(0,0,0);
-moon.castShadow=true;moon.shadow.mapSize.set(2048,2048);
-Object.assign(moon.shadow.camera,{left:-32,right:32,top:32,bottom:-32,near:1,far:80});moon.shadow.bias=-0.0004;moon.shadow.normalBias=0.03;
-scene.add(moon);scene.add(moon.target);
-pointLight(-7,3,6,0xdfe8ff,0.9,10,true); pointLight(7,3,6,0xdfe8ff,0.9,10,true);
-pointLight(-9.5,3,-6,0xcad6ff,0.5,8,true); pointLight(10,3,-6,0x7fa4e8,0.6,8,true);
-pointLight(0,3,-2.5,0xe8f0ff,0.6,7,true); pointLight(0,3,-8.5,0xd8ffe8,0.7,8,true);
-
-/* ================= cameras (CCTV) ================= */
-const cams=[];
-function makeCam(x,y,z,center,amp,period,phase,range,half){
-  const g=new THREE.Group();g.position.set(x,y,z);scene.add(g);
+/* ---------- CCTV ---------- */
+function makeCam(x,y,z,center,amp,period,phase,range,half,lvl,o){
+  o=o||{};
+  const g=new THREE.Group();g.position.set(x,y,z);lvAdd(g);
   const head=new THREE.Group();head.rotation.x=0.24;g.add(head);
   const bracket=new THREE.Mesh(new THREE.BoxGeometry(0.08,0.35,0.08),M.pole);bracket.position.y=0.2;g.add(bracket);
   const body=new THREE.Mesh(new THREE.BoxGeometry(0.22,0.2,0.5),M.camBody);body.castShadow=true;head.add(body);
@@ -488,26 +464,30 @@ function makeCam(x,y,z,center,amp,period,phase,range,half){
   const coneMat=new THREE.MeshBasicMaterial({color:0x9fc0ff,transparent:true,opacity:.1,depthWrite:false,side:THREE.DoubleSide,blending:THREE.AdditiveBlending});
   const cone=new THREE.Mesh(cg,coneMat);cone.userData.noHit=true;head.add(cone);
   const spot=new THREE.SpotLight(0x9fc0ff,1.6,range+3,half+0.1,0.35,1.1);
-  spot.position.set(0,0,0.3);spot.castShadow=true;spot.shadow.mapSize.set(512,512);
+  spot.position.set(0,0,0.3);spot.castShadow=o.shadow!==false;spot.shadow.mapSize.set(512,512);
   spot.shadow.camera.near=0.3;spot.shadow.camera.far=range+3;spot.shadow.bias=-0.0005;spot.shadow.normalBias=0.04;head.add(spot);
   const st=new THREE.Object3D();st.position.set(0,0,6);head.add(st);spot.target=st;
-  const c={g,head,cone,spot,body,led,coneMat,x,z,center,amp,period,phase,range,half,yaw:center,seeDist:-1,bodyDist:-1,base:0.33,kind:"camera",dead:false};
+  const c={g,head,cone,spot,body,led,coneMat,x,z,center,amp,period,phase,range,half,level:lvl||0,yaw:center,seeDist:-1,bodyDist:-1,base:0.33,kind:"camera",dead:false};
   [body,lens,bracket].forEach(m=>m.userData.cam=c);
   cams.push(c);return c;
 }
-makeCam(14.15,2.85,11.15,-3*Math.PI/4,0.78,9,0,15,0.45);
-makeCam(-4,2.85,-12.75,-3*Math.PI/4,0.78,8,1.6,12,0.45);
 
-/* ================= guards ================= */
+/* ---------- guards ---------- */
 function alertTex(color){return tex(64,64,(g)=>{g.fillStyle="rgba(0,0,0,0)";g.fillRect(0,0,64,64);g.fillStyle=color;g.beginPath();g.moveTo(32,4);g.lineTo(60,58);g.lineTo(4,58);g.closePath();g.fill();g.fillStyle="#0a0d12";g.fillRect(29,20,6,22);g.fillRect(29,46,6,6);});}
 const TEX_AMBER=alertTex("#f4ab3d"),TEX_RED=alertTex("#ff4b3e");
 const TEX_PAGER=tex(64,64,(g)=>{g.clearRect(0,0,64,64);g.fillStyle="#ff4b3e";g.fillRect(8,14,48,36);g.fillStyle="#0a0d12";g.fillRect(14,20,36,14);g.fillStyle="#ff4b3e";g.fillRect(17,24,8,6);g.fillRect(28,24,8,6);g.fillRect(39,24,8,6);g.fillStyle="#0a0d12";g.fillRect(16,39,8,6);g.fillRect(28,39,8,6);g.fillRect(40,39,8,6);});
 const TEX_HEAR=tex(64,64,(g)=>{g.clearRect(0,0,64,64);g.strokeStyle="#f4ab3d";g.lineWidth=5;g.beginPath();g.arc(32,32,26,0,7);g.stroke();g.fillStyle="#f4ab3d";g.font="bold 38px Arial";g.textAlign="center";g.textBaseline="middle";g.fillText("?",32,34);});
 
 class Guard{
-  constructor(route,pause,opts){this.route=route;this.pause=pause;this.security=!!(opts&&opts.security);this.seatedDefault=!!(opts&&opts.seated);this.name=(opts&&opts.name)||"Unit";this.build();this.reset();this.kind="guard";this.base=0.28;}
+  constructor(route,pause,opts){
+    opts=opts||{};
+    this.route=route;this.pause=pause;this.security=!!opts.security;this.seatedDefault=!!opts.seated;
+    this.name=opts.name||"Unit";this.level=opts.level||0;this.flashShadow=opts.flashShadow!==false;
+    this.build();this.reset();this.kind="guard";this.base=0.28;
+    guards.push(this);
+  }
   build(){
-    const root=new THREE.Group(),body=new THREE.Group();root.add(body);scene.add(root);
+    const root=new THREE.Group(),body=new THREE.Group();root.add(body);lvAdd(root);
     const part=(geo,mat,x,y,z,parent)=>{const m=new THREE.Mesh(geo,mat);m.position.set(x,y,z);m.castShadow=true;m.userData.guard=this;(parent||body).add(m);return m;};
     const legL=new THREE.Group(),legR=new THREE.Group();legL.position.set(-0.11,0.86,0);legR.position.set(0.11,0.86,0);body.add(legL,legR);
     part(new THREE.BoxGeometry(0.18,0.86,0.2),M.pants,0,-0.43,0,legL);part(new THREE.BoxGeometry(0.18,0.86,0.2),M.pants,0,-0.43,0,legR);
@@ -522,11 +502,12 @@ class Guard{
      .forEach(m=>m.userData.head=true);
     part(new THREE.BoxGeometry(0.08,0.08,0.02),M.badge,-0.13,1.32,0.15);
     const spot=new THREE.SpotLight(0xffeccc,1.5,15,0.42,0.55,1.6);spot.position.set(0.32,1.18,0.56);body.add(spot);
-    spot.castShadow=true;spot.shadow.mapSize.set(256,256);spot.shadow.camera.near=0.3;spot.shadow.camera.far=15;spot.shadow.bias=-0.0005;spot.shadow.normalBias=0.05;
+    spot.castShadow=this.flashShadow;spot.shadow.mapSize.set(256,256);spot.shadow.camera.near=0.3;spot.shadow.camera.far=15;spot.shadow.bias=-0.0005;spot.shadow.normalBias=0.05;
     const tgt=new THREE.Object3D();tgt.position.set(0.1,0,7);body.add(tgt);spot.target=tgt;
     const sprite=new THREE.Sprite(new THREE.SpriteMaterial({map:TEX_AMBER,depthTest:false,transparent:true}));sprite.scale.set(0.42,0.42,0.42);sprite.position.y=2.25;sprite.renderOrder=9;root.add(sprite);
     Object.assign(this,{root,body,legL,legR,armL,spot,sprite});
   }
+  get ly(){return this.level*ROOF_Y;}
   reset(){
     this.x=this.route[0][0];this.z=this.route[0][1];this.wp=this.route.length>1?1:0;
     const n=this.route[this.wp];this.yaw=this.route.length>1?Math.atan2(n[0]-this.x,n[1]-this.z):0;
@@ -535,17 +516,17 @@ class Guard{
     this.heard=null;this.wasSeeing=false;this.hp=2;this.dead=false;this.wounded=0;this.face=null;
     this.bagged=false;this.bodyDist=-1;this.bodyAt=null;this.sawBody=false;this.root.visible=true;
     const r0=this.route[0];if(r0[2]!=null){this.face=r0[2];this.yaw=r0[2];this.wait=r0[3]||0;}
-    if(this.item){this.item.state="none";this.item.mesh.visible=false;}
+    if(this.item){this.item.state="none";this.item.mesh.visible=false;this.item.level=this.level;}
     this.body.rotation.x=0;this.spot.intensity=this.seated?0.35:1.5;this.sprite.visible=false;this.sync(0);
   }
   hearCheck(){
     const srcs=[];
     const n=Math.max(G.noise,G.shotNoise);
-    if(n>0&&exposed())srcs.push({x:P.x,z:P.z,r:n});
-    if(G.drilling)srcs.push({x:DRILL_POS.x,z:DRILL_POS.z,r:DRILL_NOISE}); // a running drill is never innocent
+    if(n>0&&exposed()&&!DEV.ghost)srcs.push({x:P.x,z:P.z,r:n,lvl:P.level});
+    if(G.drilling)srcs.push({x:DRILL_POS.x,z:DRILL_POS.z,r:DRILL_NOISE,lvl:0}); // a running drill is never innocent
     for(const s of srcs){
       const d=Math.hypot(s.x-this.x,s.z-this.z);
-      const eff=blocked(this.x,this.z,s.x,s.z,2.0)?d*1.7:d;
+      let eff=s.lvl!==this.level?d*2.2:blocked(this.x,this.z,s.x,s.z,2.0,this.level)?d*1.7:d; // through a roof is very muffled
       if(eff<s.r)return {x:s.x,z:s.z};
     }
     return null;
@@ -554,13 +535,13 @@ class Guard{
     this.down=true;this.dead=killed;this.wounded=0;this.spot.intensity=0;this.sprite.visible=false;this.seeDist=-1;this.bodyDist=-1;this.heard=null;
     this.seated=false;this.body.position.y=0;
     if(!G.alarm)this.pager={state:"pending",t:PAGER_DELAY,beepT:0}; // dispatch will check in on him
-    if(this.security&&G.secAlert>0&&!G.alarm){G.secAlert=0;toast("Security guard down. The cameras are yours","good",2200);}
+    if(this.security&&!G.alarm){G.secAlert=0;toast("Security guard down. The cameras are offline","good",2400);}
   }
   turn(target,rate,dt){const d=wrap(target-this.yaw);this.yaw+=clamp(d,-rate*dt,rate*dt);return Math.abs(d);}
   walk(nx,nz,speed,dt,collide){
     const diff=this.turn(Math.atan2(nx,nz),3.4,dt);
     if(diff<0.5){this.x+=nx*speed*dt;this.z+=nz*speed*dt;this.speedNow=speed;
-      if(collide){const p={x:this.x,z:this.z};resolve(p,0.3);this.x=p.x;this.z=p.z;}
+      if(collide){const p={x:this.x,z:this.z};resolve(p,0.3,this.level);this.x=p.x;this.z=p.z;}
     }else this.speedNow=0;
   }
   patrol(dt,speed,collide){
@@ -571,7 +552,7 @@ class Guard{
     if(d<0.15){this.wait=t[3]!=null?t[3]:this.pause;this.face=t[2]!=null?t[2]:null;this.wp=(this.wp+1)%this.route.length;return;}
     this.walk(dx/d,dz/d,Math.min(speed,d/Math.max(dt,1e-4)),dt,collide);
   }
-  nearestWaypoint(){let b=0,bd=1e9;this.route.forEach((p,i)=>{const d=Math.hypot(p[0]-this.x,p[1]-this.z);if(d<bd&&!blocked(this.x,this.z,p[0],p[1],0.5)){bd=d;b=i;}});return b;}
+  nearestWaypoint(){let b=0,bd=1e9;this.route.forEach((p,i)=>{const d=Math.hypot(p[0]-this.x,p[1]-this.z);if(d<bd&&!blocked(this.x,this.z,p[0],p[1],0.5,this.level)){bd=d;b=i;}});return b;}
   update(dt,simOnly){
     if(this.down){this.fall=Math.min(1,this.fall+dt*2.6);this.body.rotation.x=this.fall*Math.PI/2*0.96;this.speedNow=0;this.sync(dt);return;}
     if(simOnly){this.seeDist=-1;this.bodyDist=-1;this.patrol(dt,1.45,false);this.sync(dt);return;}
@@ -585,13 +566,13 @@ class Guard{
       }
       this.armL.rotation.x=-2.2;
       this.sprite.visible=true;this.sprite.material.map=TEX_RED;
-      this.root.position.set(this.x,0,this.z);this.root.rotation.y=this.yaw;
+      this.root.position.set(this.x,this.ly,this.z);this.root.rotation.y=this.yaw;
       return;
     }
     const range=G.alarm?18:14,half=G.alarm?1.05:0.85;
-    this.seeDist=canSee(this.x,this.z,this.yaw,half,range);
+    this.seeDist=canSee(this.x,this.z,this.yaw,half,range,this.level);
     const seeing=this.seeDist>=0;
-    const fb=G.alarm?null:findBody(this.x,this.z,this.yaw,half,range,this);
+    const fb=G.alarm?null:findBody(this.x,this.z,this.yaw,half,range,this,this.level);
     this.bodyDist=fb?fb.d:-1;this.bodyAt=fb;
     if(G.alarm){
       if(this.seated){this.seated=false;this.body.position.y=0;this.spot.intensity=1.5;} // jumps out of his chair
@@ -601,17 +582,17 @@ class Guard{
         if(d<0.5&&!seeing){this.chase=false;this.wp=this.nearestWaypoint();}
         else if(d>0.01)this.walk(dx/d,dz/d,3.3,dt,true);
       }else this.patrol(dt,1.9,true);
-      if(Math.hypot(P.x-this.x,P.z-this.z)<1.15)endGame(false,"A guard caught you.");
+      if(!DEV.ghost&&this.level===P.level&&Math.hypot(P.x-this.x,P.z-this.z)<1.15)endGame(false,"A guard caught you.");
     }else{
       if(seeing){
-        if(!this.wasSeeing)SFX.spot(this.x,this.z);
+        if(!this.wasSeeing)SFX.spot(this.x,this.z,this.level);
         this.sus=2.4;this.heard=null;this.speedNow=0;this.turn(Math.atan2(P.x-this.x,P.z-this.z),2.6,dt);
       }else if(fb){
-        if(!this.sawBody)SFX.spot(this.x,this.z);
+        if(!this.sawBody)SFX.spot(this.x,this.z,this.level);
         this.sus=2.4;this.heard=null;this.speedNow=0;this.turn(Math.atan2(fb.x-this.x,fb.z-this.z),2.6,dt);
       }else{
         const hd=this.hearCheck();
-        if(hd){if(!this.heard)SFX.hear(this.x,this.z);this.heard=hd;this.sus=3.2;}
+        if(hd){if(!this.heard)SFX.hear(this.x,this.z,this.level);this.heard=hd;this.sus=3.2;}
         if(this.sus>0){
           this.sus-=dt;this.speedNow=0;
           if(this.heard)this.turn(Math.atan2(this.heard.x-this.x,this.heard.z-this.z),2.4,dt);
@@ -627,29 +608,19 @@ class Guard{
     this.sync(dt);
   }
   sync(dt){
-    this.root.position.set(this.x,0,this.z);this.root.rotation.y=this.yaw;
+    this.root.position.set(this.x,this.ly,this.z);this.root.rotation.y=this.yaw;
     if(this.seated){this.body.position.y=-0.42;this.legL.rotation.x=this.legR.rotation.x=-1.5;this.armL.rotation.x=-1.0;return;}
     if(this.speedNow>0){
       const before=Math.floor(this.phase/Math.PI);
       this.phase+=this.speedNow*dt*4.2;
-      if(state==="playing"&&Math.floor(this.phase/Math.PI)!==before){const s=spatial(this.x,this.z,15);if(s)stepSound(this.x,this.z,0.5*s.vol*(this.speedNow>2?1.4:1),s.pan,s.lp);}
+      if(state==="playing"&&Math.floor(this.phase/Math.PI)!==before){const s=spatial(this.x,this.z,15,this.level);if(s)stepSound(this.x,this.z,0.5*s.vol*(this.speedNow>2?1.4:1),s.pan,s.lp,this.level);}
     }
     const s=this.speedNow>0?Math.sin(this.phase)*0.55:0;
     this.legL.rotation.x=s;this.legR.rotation.x=-s;this.armL.rotation.x=-s*0.6;
   }
 }
-const guards=[
-  new Guard([[-12,8],[12,8],[12,1.5],[-12,1.5]],1.1,{name:"Morris"}),
-  new Guard([[-12,-2],[-7,-2],[-7,-10],[-10.7,-10],[-10.7,-16],[-10.7,-10]],1.2,{name:"Okafor"}),
-  new Guard([[10,-9],[13,-3],[10,-2],[10,1.5],[0,1.5],[0,-2.5],[-3.5,-3],[3.5,-3],[0,-2.5],[0,1.5],[10,1.5],[10,-2]],1.0,{name:"Lindqvist"}),
-  // security room operator: sits facing the monitors, back to the door; only turns if he hears something
-  new Guard([[12.2,-9.1,Math.PI/2,0]],0,{security:true,seated:true,name:"Patel"})
-];
-const secGuard=guards.find(g=>g.security);
-// office chair for the operator
-addBox(11.95,-9.35,12.45,-8.85,0.45,M.cabinet,{collide:false});addBox(11.86,-9.35,11.94,-8.85,1.15,M.cabinet,{y0:0.45,collide:false}); // his chair
 
-/* ================= loot bags ================= */
+/* ---------- loot and body bags ---------- */
 function makeBag(){
   const g=new THREE.Group();
   const b=new THREE.Mesh(new THREE.CylinderGeometry(0.22,0.22,0.75,10),M.bag);b.rotation.z=Math.PI/2;b.scale.set(1,1,0.85);b.castShadow=true;g.add(b);
@@ -657,9 +628,6 @@ function makeBag(){
   const tag=new THREE.Mesh(new THREE.BoxGeometry(0.14,0.1,0.01),phong(0xd8d2b8));tag.position.set(0.2,0.05,0.19);g.add(tag);
   return g;
 }
-const BAG_SPOTS=[[-3,-9.6],[0,-10.6],[3,-9.6]];
-const VAN_SLOTS=[[-18.2,-17.4],[-19.1,-16.6],[-20.1,-17.2]];
-const bags=BAG_SPOTS.map(()=>{const m=makeBag();m.userData.noHit=true;scene.add(m);return {kind:"loot",mesh:m,state:"ground"};});
 const bodyBagMat=phong(0x23271f,{shininess:25,specular:0x222222});
 function makeBodyBag(){
   const g=new THREE.Group();
@@ -668,7 +636,318 @@ function makeBodyBag(){
   const zip=new THREE.Mesh(new THREE.BoxGeometry(1.5,0.012,0.025),M.strap);zip.position.y=0.2;g.add(zip);
   return g;
 }
-guards.forEach(g=>{const m=makeBodyBag();m.visible=false;m.userData.noHit=true;scene.add(m);g.item={kind:"body",guard:g,mesh:m,state:"none"};});
+
+/* ---------- world light shared by every map ---------- */
+scene.add(new THREE.HemisphereLight(0x3d4c6a,0x0b0d10,0.55));
+const moon=new THREE.DirectionalLight(0x8ea4d4,0.35);moon.position.set(-18,30,14);moon.target.position.set(0,0,0);
+moon.castShadow=true;moon.shadow.mapSize.set(2048,2048);
+Object.assign(moon.shadow.camera,{left:-32,right:32,top:32,bottom:-32,near:1,far:90});moon.shadow.bias=-0.0004;moon.shadow.normalBias=0.03;
+scene.add(moon);scene.add(moon.target);
+
+/* ================= MAP 1 · Quiet Hours · Harbor Savings & Loan ================= */
+const MAP_HARBOR={
+  id:"harbor",job:"Quiet Hours",place:"Harbor Savings & Loan",time:"02:40",
+  spawn:{x:2,z:20.5,yaw:0},moon:32,
+  bagSpots:[[-3,-9.6],[0,-10.6],[3,-9.6]],
+  isInside:(x,z)=>x>-15&&x<15&&z>-12&&z<12,
+  surface(x,z){
+    if(x>-5&&x<5&&z>-12&&z<-5)return "steel";
+    if(((x>-15&&x<-5)||(x>5&&x<15))&&z>-12&&z<0)return "carpet";
+    if(x>-15&&x<15&&z>-12&&z<12)return "tile";
+    return "asphalt";
+  },
+  fly(a){camera.position.set(Math.sin(a)*6+4,5.5,27+Math.cos(a)*2);camera.lookAt(0,1.5,4);},
+  text:{
+    case:"Case the bank from the street. Watch the guards through the front windows. Hold G to put on your mask when you're ready.",
+    vault:"Get to the vault behind the tellers and set up the drill.",
+    van:"Carry the bag to the van in the back alley (northwest corner).",
+    bins:"Dump the body in a bin: the two dumpsters behind the bank or the linen cart in the office. Q drops it."
+  },
+  build(){
+    const fm={
+      lobby:floorMat(drawTiles,15,6,{shininess:30,specular:0x1a1a1a}),hall:floorMat(drawTiles,5,2.5,{shininess:30,specular:0x1a1a1a}),
+      carpet1:floorMat(drawCarpet,5,6),carpet2:floorMat(drawCarpet,5,6),vault:floorMat(drawPlate,5,3.5,{shininess:50,specular:0x222222}),
+      ground:floorMat(drawAsphalt,16,16,{polygonOffset:true,polygonOffsetFactor:2,polygonOffsetUnits:2})
+    };
+    // exterior
+    floor(-32,-32,32,32,fm.ground,0);
+    addBox(-24,15.6,24,16.4,0.12,phong(0x4a4c4c),{collide:false,cast:false});
+    for(let x=-22;x<24;x+=5){const d=new THREE.Mesh(new THREE.PlaneGeometry(2.4,0.18),M.line);d.rotation.x=-Math.PI/2;d.position.set(x,0.02,20.5);lvAdd(d);}
+    wallZ(-24,-22,24,2.6,M.brick); wallZ(24,-22,24,2.6,M.brick);
+    wallX(-22,-24,24,2.6,M.brick); wallX(24,-24,24,2.6,M.brick);
+    // shell: front wall with windows, back door, ceiling
+    wallX(12,-15.2,-10.2,4,M.outer); wallX(12,-5.8,-1.5,4,M.outer); wallX(12,1.5,5.8,4,M.outer); wallX(12,10.2,15.2,4,M.outer);
+    lintelX(12,-1.5,1.5,2.6,4,M.outer);
+    windowX(12,-10.2,-5.8,4); windowX(12,5.8,10.2,4);
+    wallX(-12,-15.2,-12,4,M.outer); wallX(-12,-9.5,15.2,4,M.outer); lintelX(-12,-12,-9.5,2.4,4,M.outer);
+    wallZ(-15,-12.2,12.2,4,M.outer); wallZ(15,-12.2,12.2,4,M.outer);
+    addBox(-15.2,-12.2,15.2,12.2,3.4,M.ceil,{y0:3.2,collide:false});
+    plaque(signTex("HARBOR SAVINGS & LOAN",1024,136,"#e9eef2","#11161d","bold 76px 'Arial Narrow', Arial, sans-serif"),9,1.2,0,3.35,12.215);
+    addBox(-1.8,12.2,-1.5,12.5,2.6,M.trim,{collide:false});addBox(1.5,12.2,1.8,12.5,2.6,M.trim,{collide:false});
+    // interior walls
+    wallX(0,-14.8,-11,3.2,M.wall); wallX(0,-9,-1.2,3.2,M.wall); wallX(0,1.2,9,3.2,M.wall); wallX(0,11,14.8,3.2,M.wall);
+    lintelX(0,-11,-9,2.4,3.2,M.wall); lintelX(0,-1.2,1.2,2.4,3.2,M.wall); lintelX(0,9,11,2.4,3.2,M.wall);
+    wallZ(-5,-12,0,3.2,M.wall); wallZ(5,-12,0,3.2,M.wall);
+    wallX(-5,-5,-1.5,3.2,M.wall); wallX(-5,1.5,5,3.2,M.wall); lintelX(-5,-1.5,1.5,2.8,3.2,M.steel);
+    // floors
+    floor(-15,0,15,12,fm.lobby); floor(-15,-12,-5,0,fm.carpet1); floor(5,-12,15,0,fm.carpet2);
+    floor(-5,-5,5,0,fm.hall); floor(-5,-12,5,-5,fm.vault);
+    // lobby
+    addBox(-9,3.6,6,4.4,1.1,M.counter);
+    addBox(-9.1,3.5,6.1,4.5,1.16,M.counterTop,{y0:1.1,collide:false});
+    for(let x=-7;x<=4;x+=3.6){addBox(x-0.02,3.95,x+0.02,4.05,1.9,M.glass,{y0:1.16,collide:false});}
+    addBox(-7.4,9.6,-6.6,10.4,3.2,M.pillar); addBox(6.6,9.6,7.4,10.4,3.2,M.pillar);
+    addBox(-13,10.6,-10,11.2,0.5,M.bench); addBox(10,10.6,13,11.2,0.5,M.bench);
+    plaque(signTex("TELLERS 1 – 4",512,76,"#c9d2d6","#1a2028","600 44px Arial, sans-serif"),3.4,0.5,-1.5,2.6,4.05);
+    plaque(closedTex(),0.9,0.5,2.35,1.6,12.215);
+    plaque(staffTex(),0.75,0.28,-10.75,2.75,-12.22,Math.PI);
+    // doors
+    makeDoor(-1.5,1.5,12,2.58,{glass:true,name:"front door"});
+    makeDoor(-12,-9.5,-12,2.38,{mat:staffDoorMat,name:"back door"});
+    makeDoor(-11,-9,0,2.38,{name:"office door"});
+    makeDoor(-1.2,1.2,0,2.38,{mat:staffDoorMat,name:"vault hall door"});
+    makeDoor(9,11,0,2.38,{name:"security door"});
+    // office
+    addBox(-14,-7,-12.8,-5,0.8,M.desk); addBox(-14,-3,-12.8,-1.5,0.8,M.desk);
+    addBox(-5.6,-11,-5.2,-8,1.4,M.cabinet); addBox(-14.8,-11.8,-13.2,-11.2,1.9,M.cabinet);
+    // security room
+    addBox(12.8,-10,14.4,-8,0.8,M.desk);
+    const monTex=signTex("CAM 01   CAM 02",256,64,"#9fc4ff","#0d1a2c","bold 24px monospace");
+    for(let i=0;i<2;i++){const s=new THREE.Mesh(new THREE.BoxGeometry(0.1,0.5,0.7),[M.cabinet,new THREE.MeshBasicMaterial({map:monTex}),M.cabinet,M.cabinet,M.cabinet,M.cabinet]);s.position.set(14.1,1.1,-9.4+i*0.8);s.rotation.y=Math.PI;lvAdd(s);}
+    addBox(14.2,-4,14.8,-1,2,M.cabinet);
+    addBox(11.95,-9.35,12.45,-8.85,0.45,M.cabinet,{collide:false});addBox(11.86,-9.35,11.94,-8.85,1.15,M.cabinet,{y0:0.45,collide:false});
+    // vault
+    addBox(-4.8,-11.8,4.8,-11.4,2.6,depositMat);
+    addBox(-4.8,-11.4,-4.4,-6.2,2.6,depositMat); addBox(4.4,-11.4,4.8,-6.2,2.6,depositMat);
+    makeVault(0,-5,"VAULT 02");
+    // bins, yard props, street car, van
+    makeBin(-7.5,-13.8,1.8,1.2,1.3,M.dumpster,lidMat,"WASTE");
+    makeBin(8,-13.9,1.8,1.2,1.3,M.dumpster,lidMat,"WASTE");
+    makeBin(-8,-11.3,1.2,0.8,1.0,cartMat,cartLid,"LINEN");
+    addBox(-14.6,-15.6,-13.4,-14.4,1.2,M.crate); addBox(-14.4,-15.4,-13.6,-14.6,1.9,M.crate,{y0:1.2,collide:false});
+    addBox(-17.6,3,-16.4,4.2,1.1,M.crate); addBox(-17.8,5,-16.6,6.2,1.1,M.crate);
+    const car=addBox(6,17.2,10.5,19,0.95,M.car);car.col.h=1.4;
+    addBox(7,17.35,9.4,18.85,1.45,M.glass,{y0:0.95,collide:false});
+    for(const [wx,wz] of [[6.8,17.15],[9.7,17.15],[6.8,19.05],[9.7,19.05]]){const w=new THREE.Mesh(new THREE.CylinderGeometry(0.33,0.33,0.22,12),M.tire);w.rotation.x=Math.PI/2;w.position.set(wx,0.33,wz);lvAdd(w);}
+    makeVan(-17.4,-17,1);
+    // lights
+    lamp(-9,15.2,0xffb050); lamp(11,15.2,0xffb050); lamp(-21,-12.6,0xffa848);
+    pointLight(-10.7,2.9,-12.6,0xd8e2ff,0.6,6);
+    pointLight(-7,3,6,0xdfe8ff,0.9,10,true); pointLight(7,3,6,0xdfe8ff,0.9,10,true);
+    pointLight(-9.5,3,-6,0xcad6ff,0.5,8,true); pointLight(10,3,-6,0x7fa4e8,0.6,8,true);
+    pointLight(0,3,-2.5,0xe8f0ff,0.6,7,true); pointLight(0,3,-8.5,0xd8ffe8,0.7,8,true);
+    // cameras
+    makeCam(14.15,2.85,11.15,-3*Math.PI/4,0.78,9,0,15,0.45);
+    makeCam(-4,2.85,-12.75,-3*Math.PI/4,0.78,8,1.6,12,0.45);
+    // guards
+    new Guard([[-12,8],[12,8],[12,1.5],[-12,1.5]],1.1,{name:"Morris"});
+    new Guard([[-12,-2],[-7,-2],[-7,-10],[-10.7,-10],[-10.7,-16],[-10.7,-10]],1.2,{name:"Okafor"});
+    new Guard([[10,-9],[13,-3],[10,-2],[10,1.5],[0,1.5],[0,-2.5],[-3.5,-3],[3.5,-3],[0,-2.5],[0,1.5],[10,1.5],[10,-2]],1.0,{name:"Lindqvist"});
+    new Guard([[12.2,-9.1,Math.PI/2,0]],0,{security:true,seated:true,name:"Patel",flashShadow:false});
+  }
+};
+
+/* ================= MAP 2 · Night Deposit · Meridian Trust ================= */
+const MAP_MERIDIAN={
+  id:"meridian",job:"Night Deposit",place:"Meridian Trust",time:"03:15",
+  spawn:{x:0,z:23,yaw:0},moon:44,
+  bagSpots:[[-3.6,-14],[-1,-16.6],[1.6,-16.6],[3.8,-14]],
+  isInside:(x,z)=>x>-24&&x<24&&z>-18&&z<14,
+  surface(x,z){
+    if(!(x>-24&&x<24&&z>-18&&z<14))return "asphalt";
+    if((x>-6&&x<6&&z>-18&&z<-8)||(x>-24&&x<-12&&z>-18&&z<-8))return "steel";
+    if((z>4&&(x<-10||x>10))||(x>6&&x<12&&z>-18&&z<-8))return "carpet";
+    if((x>12&&z<0)||(x>-12&&x<-6&&z>-18&&z<-8))return "asphalt";
+    return "tile";
+  },
+  fly(a){camera.position.set(Math.sin(a)*9+6,9,36+Math.cos(a)*3);camera.lookAt(0,2,6);},
+  text:{
+    case:"Case Meridian Trust from the street. Three ways in: the glass front doors, the loading door on the east side, or the roof hatch. The roof ladder is in the back alley. Hold G to put on your mask when you're ready.",
+    vault:"Get to the vault behind the counting room and set up the drill.",
+    van:"Carry the bag to the van in the east loading yard, just outside the loading door.",
+    bins:"Dump the body in a bin: the dumpster in the back alley, the one in the east yard, or the trash cart in the break room. Q drops it."
+  },
+  build(){
+    const fm={
+      ground:floorMat(drawAsphalt,19,16,{polygonOffset:true,polygonOffsetFactor:2,polygonOffsetUnits:2}),
+      lobby:floorMat(drawTiles,10,5,{shininess:30,specular:0x1a1a1a}),corridor:floorMat(drawTiles,24,2,{shininess:30,specular:0x1a1a1a}),
+      officeA:floorMat(drawCarpet,7,5),officeB:floorMat(drawCarpet,7,5),secur:floorMat(drawCarpet,3,5),
+      breakR:floorMat(drawTiles,6,4,{shininess:20}),count:floorMat(drawTiles,12,4,{shininess:30,specular:0x1a1a1a}),
+      server:floorMat(drawPlate,6,5,{shininess:50,specular:0x222222}),vault:floorMat(drawPlate,6,5,{shininess:50,specular:0x222222}),
+      concrete:floorMat(drawConcrete,6,9),concreteS:floorMat(drawConcrete,3,5)
+    };
+    const H=4.8,IW=3.2;
+    // exterior: street, compound walls, curb
+    floor(-38,-34,38,30,fm.ground,0);
+    addBox(-34,16.6,34,17.4,0.12,phong(0x4a4c4c),{collide:false,cast:false});
+    for(let x=-32;x<34;x+=5){const d=new THREE.Mesh(new THREE.PlaneGeometry(2.4,0.18),M.line);d.rotation.x=-Math.PI/2;d.position.set(x,0.02,22.5);lvAdd(d);}
+    wallZ(-34,-30,28,2.6,M.brick); wallZ(34,-30,28,2.6,M.brick);
+    wallX(-30,-34,34,2.6,M.brick); wallX(28,-34,34,2.6,M.brick);
+    // shell: 4.8 m outer walls = 0.8 m parapet above the roof
+    wallX(14,-24.2,-21,H,M.outer); windowX(14,-21,-15,H); wallX(14,-15,-9,H,M.outer); windowX(14,-9,-4,H); wallX(14,-4,-1.5,H,M.outer);
+    lintelX(14,-1.5,1.5,2.6,H,M.outer);
+    wallX(14,1.5,4,H,M.outer); windowX(14,4,9,H); wallX(14,9,15,H,M.outer); windowX(14,15,21,H); wallX(14,21,24.2,H,M.outer);
+    wallX(-18,-24.2,24.2,H,M.outer);
+    wallZ(-24,-18.2,14.2,H,M.outer);
+    wallZ(24,-18.2,-12,H,M.outer); wallZ(24,-10,14.2,H,M.outer); lintelZ(24,-12,-10,2.4,H,M.outer);
+    // roof slab with a hole for the hatch at (-9,-15)
+    const roofTop=phong(0xffffff,{map:tex(256,256,drawGravel,4,4)});
+    const roofMat=[M.ceil,M.ceil,roofTop,M.ceil,M.ceil,M.ceil];
+    const slab=(x1,z1,x2,z2)=>addBox(x1,z1,x2,z2,ROOF_Y,roofMat,{y0:3.2,collide:false});
+    slab(-24.2,-14.4,24.2,14.2); slab(-24.2,-18.2,24.2,-15.6); slab(-24.2,-15.6,-9.6,-14.4); slab(-8.4,-15.6,24.2,-14.4);
+    // parapet on the roof level
+    for(const c of [{minX:-24.4,maxX:24.4,minZ:13.6,maxZ:14.4},{minX:-24.4,maxX:24.4,minZ:-18.4,maxZ:-17.6},{minX:-24.4,maxX:-23.6,minZ:-18.4,maxZ:14.4},{minX:23.6,maxX:24.4,minZ:-18.4,maxZ:14.4}])colliders.push(Object.assign(c,{h:0.8,lvl:1}));
+    // facade
+    plaque(signTex("MERIDIAN TRUST",1024,136,"#e9eef2","#10161c","bold 80px 'Arial Narrow', Arial, sans-serif"),10,1.3,0,3.75,14.215);
+    addBox(-1.8,14.2,-1.5,14.5,2.6,M.trim,{collide:false});addBox(1.5,14.2,1.8,14.5,2.6,M.trim,{collide:false});
+    plaque(closedTex(),0.9,0.5,2.35,1.6,14.215);
+    plaque(staffTex(),0.75,0.28,24.22,2.75,-11,Math.PI/2);
+    // roller shutter on the east wall (decor) and a light over the loading door
+    plaque(tex(128,256,(g,w,h)=>{g.fillStyle="#6c7176";g.fillRect(0,0,w,h);g.fillStyle="#50555a";for(let y=0;y<h;y+=10)g.fillRect(0,y,w,3);}),3.4,3.2,24.22,1.6,-15.2,Math.PI/2);
+    pointLight(24.9,2.9,-11,0xd8e2ff,0.7,7);
+    // interior walls
+    wallX(4,-23.8,-18,IW,M.wall); wallX(4,-16,-1.2,IW,M.wall); wallX(4,1.2,16,IW,M.wall); wallX(4,18,23.8,IW,M.wall);
+    lintelX(4,-18,-16,2.4,IW,M.wall); lintelX(4,-1.2,1.2,2.4,IW,M.wall); lintelX(4,16,18,2.4,IW,M.wall);
+    wallZ(-10,4,13.8,IW,M.wall); wallZ(10,4,13.8,IW,M.wall);
+    wallX(0,-23.8,-19,IW,M.wall); wallX(0,-17,-1.2,IW,M.wall); wallX(0,1.2,17,IW,M.wall); wallX(0,19,23.8,IW,M.wall);
+    lintelX(0,-19,-17,2.4,IW,M.wall); lintelX(0,-1.2,1.2,2.4,IW,M.wall); lintelX(0,17,19,2.4,IW,M.wall);
+    wallZ(-12,-17.8,0,IW,M.wall);
+    wallZ(12,-17.8,-5,IW,M.wall); wallZ(12,-3,0,IW,M.wall); lintelZ(12,-5,-3,2.4,IW,M.wall);
+    wallX(-8,-12,-10,IW,M.wall); wallX(-8,-8,-1.5,IW,M.wall); wallX(-8,1.5,8,IW,M.wall); wallX(-8,10,12,IW,M.wall);
+    lintelX(-8,-10,-8,2.4,IW,M.wall); lintelX(-8,-1.5,1.5,2.8,IW,M.steel); lintelX(-8,8,10,2.4,IW,M.wall);
+    wallZ(-6,-17.8,-8,IW,M.wall); wallZ(6,-17.8,-8,IW,M.wall);
+    wallX(-8,-23.8,-16,IW,M.wall); wallX(-8,-14,-12,IW,M.wall); lintelX(-8,-16,-14,2.4,IW,M.wall);
+    // floors
+    floor(-10,4,10,14,fm.lobby); floor(-24,4,-10,14,fm.officeA); floor(10,4,24,14,fm.officeB);
+    floor(-24,0,24,4,fm.corridor); floor(-24,-8,-12,0,fm.breakR); floor(-24,-18,-12,-8,fm.server);
+    floor(-12,-8,12,0,fm.count); floor(-12,-18,-6,-8,fm.concreteS); floor(-6,-18,6,-8,fm.vault);
+    floor(6,-18,12,-8,fm.secur); floor(12,-18,24,0,fm.concrete);
+    // doors (3 ways in: front, loading door, roof hatch)
+    makeDoor(-1.5,1.5,14,2.58,{glass:true,name:"front door"});
+    makeDoorZ(24,-12,-10,2.38,{mat:staffDoorMat,name:"loading door"});
+    makeDoor(-18,-16,4,2.38,{name:"office door"});
+    makeDoor(-1.2,1.2,4,2.38,{mat:staffDoorMat,name:"staff door"});
+    makeDoor(16,18,4,2.38,{name:"manager's door"});
+    makeDoor(-19,-17,0,2.38,{name:"break room door"});
+    makeDoor(-1.2,1.2,0,2.38,{mat:staffDoorMat,name:"counting room door"});
+    makeDoor(17,19,0,2.38,{mat:staffDoorMat,name:"loading bay door"});
+    makeDoorZ(12,-5,-3,2.38,{mat:staffDoorMat,name:"bay side door"});
+    makeDoor(-10,-8,-8,2.38,{name:"storage door"});
+    makeDoor(8,10,-8,2.38,{name:"security door"});
+    makeDoor(-16,-14,-8,2.38,{name:"server room door"});
+    // lobby: reception desk, benches, pillars, plants
+    addBox(-4,8,4,9,1.1,M.counter); addBox(-4.1,7.9,4.1,9.1,1.16,M.counterTop,{y0:1.1,collide:false});
+    plaque(signTex("RECEPTION",512,76,"#c9d2d6","#1a2028","600 44px Arial, sans-serif"),2.6,0.4,0,2.5,9.12);
+    addBox(-6.4,10.6,-5.6,11.4,IW,M.pillar); addBox(5.6,10.6,6.4,11.4,IW,M.pillar);
+    addBox(-9.6,5,-8.8,8,0.5,M.bench); addBox(8.8,5,9.6,8,0.5,M.bench);
+    for(const [px,pz] of [[-9.3,13.3],[9.3,13.3],[-23.3,3.3],[23.3,3.3]])addBox(px-0.3,pz-0.3,px+0.3,pz+0.3,0.9,plantMat);
+    // west office: desks and filing cabinets
+    for(const [dx,dz] of [[-22,7],[-17.5,7],[-22,11],[-17.5,11]])addBox(dx,dz,dx+2,dz+1,0.78,M.desk);
+    addBox(-23.8,4.4,-23.2,7,1.4,M.cabinet); addBox(-11.2,10.5,-10.4,13.6,1.9,M.cabinet);
+    // manager's office
+    addBox(15.5,9,19.5,10.4,0.8,M.desk); addBox(23.2,5,23.8,12,2.2,M.cabinet);
+    addBox(11,11.6,13.6,12.8,0.6,M.bench);
+    plaque(tex(256,160,(g,w,h)=>{g.fillStyle="#2b2117";g.fillRect(0,0,w,h);g.fillStyle="#6d5a3e";g.fillRect(10,10,w-20,h-20);g.fillStyle="#334a5c";g.fillRect(16,16,w-32,h-60);g.fillStyle="#d8b46a";g.beginPath();g.arc(180,50,14,0,7);g.fill();}),1.6,1.0,17.5,1.9,4.22);
+    // break room
+    addBox(-21,-5,-18.5,-3.2,0.75,M.desk); addBox(-23.8,-7.6,-22.8,-6.6,1.9,phong(0xc9ccc8));
+    addBox(-23.8,-6.4,-23.2,-1.5,0.95,M.counter); addBox(-15.2,-7.6,-12.6,-6.8,0.6,M.bench);
+    makeBin(-13.2,-1.0,1.2,0.8,1.0,cartMat,cartLid,"TRASH");
+    // server room: rows of racks with blinking LEDs
+    for(const rx of [-22,-19,-16]){
+      addBox(rx-0.5,-17,rx+0.5,-10.2,2.1,rackMat);
+      for(const s of [-1,1]){const l=new THREE.Mesh(new THREE.PlaneGeometry(6.4,1.6),ledMat);l.position.set(rx+s*0.505,1.1,-13.6);l.rotation.y=s*Math.PI/2;lvAdd(l);}
+    }
+    // counting room: tables with cash stacks
+    for(const tx of [-7,3]){
+      addBox(tx,-5,tx+4,-3.5,0.9,M.desk);
+      for(let i=0;i<5;i++)addBox(tx+0.4+i*0.7,-4.5,tx+0.8+i*0.7,-4.1,1.05,cashMat,{y0:0.9,collide:false});
+    }
+    // storage: shelves, boxes, ladder up to the roof hatch
+    addBox(-11.8,-17.8,-6.2,-17.2,2.2,M.cabinet); addBox(-11.8,-13,-11.2,-9,2.2,M.cabinet);
+    addBox(-7.6,-12,-6.4,-10.8,1.0,M.crate); addBox(-7.5,-11.9,-6.5,-10.9,1.7,M.crate,{y0:1.0,collide:false});
+    makeLadder(-9,-15.55,0,ROOF_Y,0);
+    // vault
+    addBox(-5.8,-17.8,5.8,-17.4,2.6,depositMat);
+    addBox(-5.8,-17.4,-5.4,-9,2.6,depositMat); addBox(5.4,-17.4,5.8,-9,2.6,depositMat);
+    makeVault(0,-8,"VAULT 01");
+    // security room: desk and wall of monitors, operator's chair
+    addBox(10.8,-16,11.8,-12,0.8,M.desk);
+    const monTex=signTex("CAM 01  02  03  04  05",256,64,"#9fc4ff","#0d1a2c","bold 20px monospace");
+    for(let i=0;i<3;i++){const s=new THREE.Mesh(new THREE.BoxGeometry(0.1,0.55,1.0),[M.cabinet,new THREE.MeshBasicMaterial({map:monTex}),M.cabinet,M.cabinet,M.cabinet,M.cabinet]);s.position.set(11.6,1.15,-15.1+i*1.1);s.rotation.y=Math.PI;lvAdd(s);}
+    addBox(6.2,-17.8,7.4,-16.4,2,M.cabinet);
+    addBox(9.95,-14.25,10.45,-13.75,0.45,M.cabinet,{collide:false});addBox(9.86,-14.25,9.94,-13.75,1.15,M.cabinet,{y0:0.45,collide:false});
+    // loading bay: crates, pallet, forklift
+    addBox(13,-17.6,15,-15.6,1.2,M.crate); addBox(13.2,-17.4,14.8,-15.8,2.2,M.crate,{y0:1.2,collide:false});
+    addBox(13,-14.8,14.6,-13.2,1.2,M.crate); addBox(21.8,-3.6,23.6,-1.8,1.2,M.crate);
+    addBox(17.4,-17.6,19.6,-16.2,0.2,M.crate);
+    addBox(19,-9,20.4,-6.8,1.3,forkMat); addBox(19.2,-9,20.2,-8.2,2.1,forkMat,{y0:1.3,collide:false});
+    addBox(19.1,-6.8,19.3,-5.6,0.1,M.pole,{collide:false}); addBox(20.1,-6.8,20.3,-5.6,0.1,M.pole,{collide:false});
+    // outside: bins, crates, van, street car, ladder to the roof
+    makeBin(-6,-21,1.8,1.2,1.3,M.dumpster,lidMat,"WASTE");
+    makeBin(29,2,1.8,1.2,1.3,M.dumpster,lidMat,"WASTE");
+    addBox(-28,-24,-26.8,-22.8,1.2,M.crate); addBox(10,-22,11.2,-20.8,1.1,M.crate);
+    const car=addBox(-12,18.8,-7.5,20.6,0.95,M.car);car.col.h=1.4;
+    addBox(-11,18.95,-8.6,20.45,1.45,M.glass,{y0:0.95,collide:false});
+    for(const [wx,wz] of [[-11.2,18.75],[-8.3,18.75],[-11.2,20.65],[-8.3,20.65]]){const w=new THREE.Mesh(new THREE.CylinderGeometry(0.33,0.33,0.22,12),M.tire);w.rotation.x=Math.PI/2;w.position.set(wx,0.33,wz);lvAdd(w);}
+    makeVan(27.4,-11,-1);
+    makeLadder(-18,-18.35,0,H+0.4,0);
+    plaque(signTex("ROOF ACCESS",256,64,"#0b0d10","#c9d2d6","bold 30px Arial, sans-serif"),0.8,0.2,-16.9,2.0,-18.22,Math.PI);
+    // roof: AC units, vents, skylight, a camera on a pole, the hatch
+    addBox(4,1,7,3.4,1.3,acMat,{lvl:1}); addBox(14,-6,16.6,-3.6,1.3,acMat,{lvl:1}); addBox(-20,4,-17.6,6.2,1.3,acMat,{lvl:1});
+    addBox(-4,7,-3,8,0.9,M.pole,{lvl:1}); addBox(10,9,11,10,0.9,M.pole,{lvl:1});
+    addBox(-3,-4,3,0,0.5,skylightMat,{lvl:1});
+    addBox(22.5,12.5,22.8,12.8,2.5,M.pole,{lvl:1});
+    const hatch=makeHatch(-9,-15);
+    // ladders and the hatch move you between the ground (level 0) and the roof (level 1)
+    transitions.push({x:-18,z:-19,lvl:0,to:{x:-18,z:-16.9,lvl:1},label:"climb the ladder to the roof"});
+    transitions.push({x:-18,z:-17.0,lvl:1,to:{x:-18,z:-19.2,lvl:0},label:"climb down the ladder"});
+    transitions.push({x:-9,z:-14.0,lvl:1,to:{x:-9,z:-14.6,lvl:0},label:"climb down through the hatch",hatch});
+    transitions.push({x:-9,z:-14.7,lvl:0,to:{x:-9,z:-13.8,lvl:1},label:"climb up to the roof",hatch});
+    // lights
+    lamp(-10,16.2,0xffb050); lamp(10,16.2,0xffb050); lamp(-26,-20,0xffa848); lamp(26,-4,0xffa848);
+    pointLight(-18,ROOF_Y+2.2,-16.6,0xd8e2ff,0.45,8);
+    pointLight(-5,3,9,0xdfe8ff,0.85,11,true); pointLight(5,3,9,0xdfe8ff,0.85,11,true);
+    pointLight(-17,3,9,0xcad6ff,0.5,9,true); pointLight(17,3,8,0xffd9a8,0.55,9,true);
+    pointLight(-10,3,2,0xe8f0ff,0.6,11,true); pointLight(10,3,2,0xe8f0ff,0.6,11,true);
+    pointLight(-18,3,-4,0xf0f4ff,0.5,8,true); pointLight(-18,3,-13,0x6f9cff,0.55,9,true);
+    pointLight(0,3,-4,0xe8f0ff,0.7,11,true); pointLight(0,3,-13,0xd8ffe8,0.7,9,true);
+    pointLight(9,3,-13,0x7fa4e8,0.55,7,true); pointLight(18,3,-9,0xe0e6f0,0.6,12,true);
+    // cameras (all fed to the security room)
+    makeCam(9.55,2.85,13.55,-3*Math.PI/4,0.7,9,0,16,0.45);
+    makeCam(-23.55,2.85,3.55,Math.PI/2+0.15,0.3,10,0.8,20,0.4);
+    makeCam(11.55,2.85,-0.45,-3*Math.PI/4,0.6,8,1.2,14,0.45);
+    makeCam(24.6,3.4,-17.6,Math.PI/4,0.5,9,2,14,0.45);
+    makeCam(22.65,ROOF_Y+2.4,12.65,-3*Math.PI/4,0.7,11,0.4,18,0.45,1);
+    // guards
+    new Guard([[-8,6],[8,6],[8,12.5],[-8,12.5]],1.2,{name:"Morris"});
+    new Guard([[-22,2,null,2],[22,2,null,2]],1.0,{name:"Okafor"});
+    new Guard([[-10,-2],[10,-2],[10,-6],[-9,-6],[-9,-11],[-9,-16.5,null,2],[-9,-11],[-9,-6]],1.0,{name:"Lindqvist"});
+    new Guard([[14,-2],[22,-2],[22,-11],[26,-11],[26,-4,null,2],[26,-11],[22,-11],[22,-16],[16,-16]],1.2,{name:"Reyes"});
+    new Guard([[10.2,-14,Math.PI/2,0]],0,{security:true,seated:true,name:"Patel",flashShadow:false});
+    new Guard([[-21,-15.5],[21,-15.5,null,2],[21,11.5],[-21,11.5,null,2]],1.5,{name:"Novak",level:1,flashShadow:false});
+  }
+};
+const MAPS={harbor:MAP_HARBOR,meridian:MAP_MERIDIAN};
+
+function buildMap(id){
+  const def=MAPS[id]||MAP_HARBOR;
+  if(LV.group){
+    scene.remove(LV.group);
+    LV.group.traverse(o=>{if(o.geometry)o.geometry.dispose();if(o.shadow&&o.shadow.map){o.shadow.map.dispose();o.shadow.map=null;}});
+  }
+  colliders.length=0;doors.length=0;bins.length=0;cams.length=0;guards.length=0;bags.length=0;transitions.length=0;hatches.length=0;
+  secGuard=null;VAULT=null;ring=null;
+  LV={group:new THREE.Group(),def,id:def.id};scene.add(LV.group);
+  def.build();
+  secGuard=guards.find(g=>g.security)||null;
+  BAG_SPOTS=def.bagSpots;
+  for(const s of BAG_SPOTS){const m=makeBag();m.userData.noHit=true;lvAdd(m);bags.push({kind:"loot",mesh:m,state:"ground",level:0});}
+  for(const g of guards){const m=makeBodyBag();m.visible=false;m.userData.noHit=true;lvAdd(m);g.item={kind:"body",guard:g,mesh:m,state:"none",level:g.level};}
+  const mb=def.moon||32;Object.assign(moon.shadow.camera,{left:-mb,right:mb,top:mb,bottom:-mb});moon.shadow.camera.updateProjectionMatrix();
+  rebuildHitList();
+  try{localStorage.setItem("cg-map",def.id);}catch(e){}
+}
+
 
 /* ================= first-person view models (own scene, drawn on top so they never clip into walls) ================= */
 const vmScene=new THREE.Scene();
@@ -711,11 +990,14 @@ const muzzleLight=new THREE.PointLight(0xffc070,0,6,2);muzzleLight.position.set(
 
 // everything a bullet can hit (static level, guards, cameras)
 const hitList=[];
-scene.traverse(o=>{
-  if(!o.isMesh)return;
-  for(let p=o;p;p=p.parent){if(p===camera||(p.userData&&p.userData.noHit))return;}
-  hitList.push(o);
-});
+function rebuildHitList(){
+  hitList.length=0;
+  LV.group.traverse(o=>{
+    if(!o.isMesh)return;
+    for(let p=o;p;p=p.parent){if(p.userData&&p.userData.noHit)return;}
+    hitList.push(o);
+  });
+}
 const raycaster=new THREE.Raycaster();raycaster.far=70;
 
 // impact sparks
@@ -725,8 +1007,10 @@ let sparkI=0;
 function spark(pt,big){const s=sparks[sparkI++%sparks.length];s.position.copy(pt);s.life=big?0.35:0.12;s.scale.setScalar(big?2.2:1);s.visible=true;}
 
 /* ================= collision & sight ================= */
-function resolve(p,r){
+function resolve(p,r,lvl){
+  lvl=lvl||0;
   for(let it=0;it<3;it++)for(const c of colliders){
+    if((c.lvl||0)!==lvl)continue;
     const cx=clamp(p.x,c.minX,c.maxX),cz=clamp(p.z,c.minZ,c.maxZ);
     const dx=p.x-cx,dz=p.z-cz,d2=dx*dx+dz*dz;
     if(d2<r*r){
@@ -744,37 +1028,37 @@ function segBox(ax,az,bx,bz,c){
   else{let a=(c.minZ-az)/dz,b=(c.maxZ-az)/dz;if(a>b){const t=a;a=b;b=t;}if(a>t0)t0=a;if(b<t1)t1=b;if(t0>t1)return false;}
   return true;
 }
-function blocked(ax,az,bx,bz,minH){for(const c of colliders){if(c.h<minH||c.see)continue;if(segBox(ax,az,bx,bz,c))return true;}return false;}
-const BANK={minX:-15,maxX:15,minZ:-12,maxZ:12};
-// the bank is closed at night: anywhere inside is off limits
-function restricted(x,z){return x>BANK.minX&&x<BANK.maxX&&z>BANK.minZ&&z<BANK.maxZ;}
+function blocked(ax,az,bx,bz,minH,lvl){lvl=lvl||0;for(const c of colliders){if(c.h<minH||c.see||(c.lvl||0)!==lvl)continue;if(segBox(ax,az,bx,bz,c))return true;}return false;}
+// the bank is closed at night: anywhere inside, and the roof, is off limits
+function restricted(x,z,lvl){if(lvl==null)lvl=P.level;return lvl===1||LV.def.isInside(x,z);}
 // unmasked outside you're just someone on the street: nobody reacts
 function exposed(){return G.alarm||P.masked||restricted(P.x,P.z);}
-function canSee(ox,oz,yaw,half,range){
-  if(!exposed())return -1;
+function canSee(ox,oz,yaw,half,range,lvl){
+  if(DEV.ghost||!exposed())return -1;
+  if((lvl||0)!==P.level)return -1;
   const dx=P.x-ox,dz=P.z-oz,d=Math.hypot(dx,dz);
   if(d>range)return -1;
   if(Math.abs(wrap(Math.atan2(dx,dz)-yaw))>half)return -1;
-  if(blocked(ox,oz,P.x,P.z,P.crouch?1.0:1.6))return -1;
+  if(blocked(ox,oz,P.x,P.z,P.crouch?1.0:1.6,P.level))return -1;
   return d;
 }
 // bodies on the floor and body bags left in the open
 function collectBodies(){
   const out=[];
   for(const g of guards){
-    if(g.down&&!g.bagged)out.push({x:g.x,z:g.z,src:g});
-    if(g.item.state==="ground")out.push({x:g.item.mesh.position.x,z:g.item.mesh.position.z,src:g});
+    if(g.down&&!g.bagged)out.push({x:g.x,z:g.z,src:g,lvl:g.level});
+    if(g.item.state==="ground")out.push({x:g.item.mesh.position.x,z:g.item.mesh.position.z,src:g,lvl:g.item.level||0});
   }
   return out;
 }
-function findBody(ox,oz,yaw,half,range,self){
-  let best=null;
+function findBody(ox,oz,yaw,half,range,self,lvl){
+  let best=null;lvl=lvl||0;
   for(const b of G.bodies){
-    if(b.src===self)continue;
+    if(b.src===self||b.lvl!==lvl)continue;
     const dx=b.x-ox,dz=b.z-oz,d=Math.hypot(dx,dz);
     if(d>range||(best&&d>=best.d))continue;
     if(d>0.5&&Math.abs(wrap(Math.atan2(dx,dz)-yaw))>half)continue;
-    if(blocked(ox,oz,b.x,b.z,0.7))continue;
+    if(blocked(ox,oz,b.x,b.z,0.7,lvl))continue;
     best={x:b.x,z:b.z,d};
   }
   return best;
@@ -782,7 +1066,7 @@ function findBody(ox,oz,yaw,half,range,self){
 
 /* ================= audio (Web Audio, all synthesized) ================= */
 const A={ctx:null,master:null,muted:false,noise:null,brown:null,amb:null,hum:null,drill:null,alarm:null};
-try{A.muted=localStorage.getItem("qh-muted")==="1";}catch(e){}
+try{A.muted=localStorage.getItem("cg-muted")==="1";}catch(e){}
 function initAudio(){
   if(A.ctx){if(A.ctx.state!=="running")A.ctx.resume().catch(()=>{});return;}
   const AC=window.AudioContext||window.webkitAudioContext;if(!AC)return;
@@ -802,7 +1086,7 @@ function initAudio(){
   h1.connect(A.hum);h2.connect(h2g).connect(A.hum);A.hum.connect(A.master);h1.start();h2.start();
 }
 function setMuted(m){
-  A.muted=m;try{localStorage.setItem("qh-muted",m?"1":"0");}catch(e){}
+  A.muted=m;try{localStorage.setItem("cg-muted",m?"1":"0");}catch(e){}
   if(A.master)A.master.gain.setTargetAtTime(m?0:0.9,A.ctx.currentTime,0.05);
   $("sound").textContent=m?"SOUND OFF · M":"SOUND ON · M";
 }
@@ -829,23 +1113,19 @@ function tone(o){
   osc.connect(g).connect(chain(o.pan,o.lp));osc.start(t);osc.stop(t+dur+0.05);
 }
 // position a sound in the world relative to the player: volume falloff, stereo pan, muffled through walls
-function spatial(x,z,maxD){
+function spatial(x,z,maxD,lvl){
   const dx=x-P.x,dz=z-P.z,d=Math.hypot(dx,dz);if(d>maxD)return null;
   const rx=Math.cos(P.yaw),rz=-Math.sin(P.yaw);
   const pan=d>0.3?(dx*rx+dz*rz)/d*0.85:0;
   let vol=Math.pow(1-d/maxD,1.6),lp=null;
-  if(blocked(P.x,P.z,x,z,2.0)){vol*=0.4;lp=700;}
+  if((lvl||0)!==P.level){vol*=0.35;lp=500;}           // through the roof
+  else if(blocked(P.x,P.z,x,z,2.0,P.level)){vol*=0.4;lp=700;}
   return {vol,pan,lp};
 }
-function surface(x,z){
-  if(x>-5&&x<5&&z>-12&&z<-5)return "steel";
-  if(((x>-15&&x<-5)||(x>5&&x<15))&&z>-12&&z<0)return "carpet";
-  if(x>-15&&x<15&&z>-12&&z<12)return "tile";
-  return "asphalt";
-}
-const STEP={tile:{freq:1700,q:1.4,dur:.07,v:1},carpet:{freq:420,q:.7,dur:.1,v:.5},steel:{freq:2400,q:3,dur:.08,v:1,ping:true},asphalt:{freq:850,q:.9,dur:.08,v:.85}};
-function stepSound(x,z,vol,pan,lp){
-  const s=STEP[surface(x,z)];
+function surface(x,z,lvl){return lvl===1?"gravel":LV.def.surface(x,z);}
+const STEP={gravel:{freq:1300,q:.5,dur:.1,v:.8},tile:{freq:1700,q:1.4,dur:.07,v:1},carpet:{freq:420,q:.7,dur:.1,v:.5},steel:{freq:2400,q:3,dur:.08,v:1,ping:true},asphalt:{freq:850,q:.9,dur:.08,v:.85}};
+function stepSound(x,z,vol,pan,lp,lvl){
+  const s=STEP[surface(x,z,lvl||0)];
   noiseHit({freq:s.freq*(0.9+Math.random()*0.2),q:s.q,dur:s.dur,vol:vol*s.v,pan,lp});
   noiseHit({type:"lowpass",freq:220,dur:.09,vol:vol*0.8*s.v,pan,lp});
   if(s.ping)tone({type:"sine",f0:1900+Math.random()*300,f1:1700,dur:.12,vol:vol*0.1,pan,lp});
@@ -853,8 +1133,8 @@ function stepSound(x,z,vol,pan,lp){
 const SFX={
   takedown(x,z){const s=spatial(x,z,20)||{pan:0};noiseHit({type:"lowpass",freq:180,dur:.25,vol:.9,pan:s.pan});tone({type:"sine",f0:120,f1:45,dur:.3,vol:.6,pan:s.pan});noiseHit({freq:600,q:.8,dur:.12,vol:.3,delay:.05,pan:s.pan});},
   whiff(){noiseHit({type:"highpass",freq:1800,q:.6,dur:.14,vol:.18,attack:.03});},
-  hear(x,z){const s=spatial(x,z,25);if(!s)return;tone({type:"triangle",f0:170,f1:250,dur:.3,vol:.3*s.vol+.05,pan:s.pan,lp:s.lp||1200});},
-  spot(x,z){const s=spatial(x,z,30)||{vol:.3,pan:0};tone({type:"triangle",f0:240,f1:430,dur:.22,vol:.35*s.vol+.08,pan:s.pan,lp:s.lp||1800});},
+  hear(x,z,l){const s=spatial(x,z,25,l);if(!s)return;tone({type:"triangle",f0:170,f1:250,dur:.3,vol:.3*s.vol+.05,pan:s.pan,lp:s.lp||1200});},
+  spot(x,z,l){const s=spatial(x,z,30,l)||{vol:.3,pan:0};tone({type:"triangle",f0:240,f1:430,dur:.22,vol:.35*s.vol+.08,pan:s.pan,lp:s.lp||1800});},
   blip(level){tone({type:"sine",f0:500+level*1100,f1:520+level*1150,dur:.07,vol:.08+level*.12});},
   pickup(){for(let i=0;i<5;i++)noiseHit({type:"highpass",freq:3000,q:.7,dur:.03,vol:.16,delay:i*.035});noiseHit({type:"lowpass",freq:500,dur:.18,vol:.35,delay:.18});},
   load(){noiseHit({type:"lowpass",freq:260,dur:.25,vol:.7});tone({f0:660,dur:.15,vol:.12,delay:.12});tone({f0:990,dur:.3,vol:.1,delay:.24});},
@@ -877,6 +1157,7 @@ const SFX={
     if(opening){noiseHit({freq:2200,q:6,dur:.05,vol:.25*s.vol,pan:s.pan,lp:s.lp});tone({type:"sawtooth",f0:140,f1:95,dur:.45,vol:.035*s.vol,pan:s.pan,lp:700,delay:.05});}
     else{noiseHit({type:"lowpass",freq:260,dur:.18,vol:.65*s.vol,pan:s.pan});noiseHit({freq:1900,q:5,dur:.04,vol:.25*s.vol,pan:s.pan,delay:.04});}
   },
+  climb(){for(let i=0;i<4;i++)noiseHit({freq:1500+Math.random()*500,q:4,dur:.05,vol:.25,delay:i*.24});},
   drillSet(){noiseHit({type:"lowpass",freq:400,dur:.15,vol:.5});noiseHit({freq:2400,q:4,dur:.05,vol:.3,delay:.15});noiseHit({freq:2000,q:4,dur:.05,vol:.3,delay:.32});},
   zip(){for(let i=0;i<14;i++)noiseHit({freq:2600+i*90,q:3,dur:.025,vol:.12,delay:.4+i*.07});for(let i=0;i<4;i++)noiseHit({freq:700,q:.7,dur:.12,vol:.15,attack:.04,delay:i*.1});},
   drop(x,z){const s=spatial(x,z,20)||{vol:1,pan:0};noiseHit({type:"lowpass",freq:240,dur:.22,vol:.6*s.vol,pan:s.pan});},
@@ -1000,16 +1281,18 @@ function updateAudio(){
 
 /* ================= game state ================= */
 const MAG=12,MASK_TIME=1.0,RELOAD_TIME=1.4;
-const P={x:2,z:20.5,yaw:0,pitch:0,crouch:false,eye:1.65,bobT:0,carry:null,sprinting:false,kick:0};
+const P={x:2,z:20.5,yaw:0,pitch:0,crouch:false,eye:1.65,bobT:0,carry:null,sprinting:false,kick:0,level:0,y:0,climb:null};
+const DEV={on:false,ghost:false};
+try{DEV.on=localStorage.getItem("cg-dev")==="1";}catch(e){}
 const G={time:0,world:0,susp:0,unseen:0,alarm:false,alarmT:60,drill:0,drillWas:false,vaultOpen:false,doorAnim:0,secured:0,takedowns:0,everAlarm:false,lastSpotter:"guard",lastCause:"player",noise:0,shotNoise:0,blipT:0,bodies:[],secAlert:0,bagT:0,binned:0};
 const BAG_TIME=2.0,PAGER_DELAY=2.5,PAGER_WINDOW=12,MAX_PAGERS=3;
 let state="menu",locked=false,everLocked=false,fallback=false,pendingStart=false,pressedE=false;
 const keys={};
 const DRILL_TIME=20,ALARM_TIME=60;
-const DRILL_POS={x:0.45,z:-4.5},DRILL_NOISE=6;
 
 function resetGame(){
-  Object.assign(P,{x:2,z:20.5,yaw:0,pitch:0,crouch:false,eye:1.65,bobT:0,carry:null,sprinting:false,kick:0,
+  const sp=LV.def.spawn;
+  Object.assign(P,{x:sp.x,z:sp.z,yaw:sp.yaw||0,level:0,y:0,climb:null,pitch:0,crouch:false,eye:1.65,bobT:0,carry:null,sprinting:false,kick:0,
     masked:false,maskT:0,mag:MAG,reserve:MAG*3,reload:0,fireCD:0,aim:false,aimT:0,recoil:0,raise:0,wasRestricted:false});
   Object.assign(G,{time:0,susp:0,unseen:0,alarm:false,alarmT:ALARM_TIME,drill:0,drillWas:false,vaultOpen:false,doorAnim:0,secured:0,takedowns:0,kills:0,camsShot:0,shots:0,everAlarm:false,noise:0,shotNoise:0,blipT:0,bodies:[],secAlert:0,bagT:0,binned:0});
   cams.forEach(c=>{c.dead=false;c.cone.visible=true;c.spot.intensity=1.6;c.head.rotation.set(0.24,0,0);c.body.material=M.camBody;});
@@ -1019,9 +1302,11 @@ function resetGame(){
   gun.visible=false;camera.fov=72;camera.updateProjectionMatrix();
   $("maskEdge").hidden=true;
   drillOff(true);alarmOff();
-  vaultPivot.rotation.y=0;if(!colliders.includes(vaultCol))colliders.push(vaultCol);
-  drillGroup.visible=false;drillLight.intensity=0;
-  bags.forEach((b,i)=>{b.state="ground";b.mesh.visible=true;b.mesh.position.set(BAG_SPOTS[i][0],0.22,BAG_SPOTS[i][1]);b.mesh.rotation.set(0,i*0.7,0);});
+  VAULT.pivot.rotation.y=0;VAULT.wheel.rotation.z=0;if(!colliders.includes(VAULT.col))colliders.push(VAULT.col);
+  VAULT.drillGroup.visible=false;VAULT.drillLight.intensity=0;
+  bags.forEach((b,i)=>{b.state="ground";b.level=0;b.mesh.visible=true;b.mesh.position.set(BAG_SPOTS[i][0],0.22,BAG_SPOTS[i][1]);b.mesh.rotation.set(0,i*0.7,0);});
+  hatches.forEach(h=>{h.open=false;h.t=0;h.piv.rotation.z=0;});
+  DEV.ghost=false;
   showCarry();
   guards.forEach(g=>g.reset());
   $("alarmEdge").hidden=true;
@@ -1040,6 +1325,7 @@ addEventListener("keydown",e=>{
   if(e.code==="KeyQ"&&!e.repeat)dropCarry();
   if(e.code==="KeyG"&&!e.repeat&&!P.masked)SFX.mask();
   if(e.code==="KeyM"&&!e.repeat){setMuted(!A.muted);toast(A.muted?"Sound off":"Sound on","",1200);}
+  if(e.code==="KeyV"&&!e.repeat&&DEV.on){DEV.ghost=!DEV.ghost;toast(DEV.ghost?"Ghost on: guards and cameras can't see or hear you":"Ghost off","warn",1800);}
   if(e.code==="Escape"&&!locked)setState("paused");
 });
 addEventListener("keyup",e=>{keys[e.code]=false;});
@@ -1080,10 +1366,23 @@ function begin(){
   requestLock();
   setTimeout(()=>{if(pendingStart&&!locked)lockFailed();},1500);
 }
-$("startBtn").onclick=()=>{initAudio();resetGame();begin();};
+$("startBtn").onclick=()=>{initAudio();if(LV.id!==selectedMap)buildMap(selectedMap);resetGame();begin();};
 $("againBtn").onclick=()=>{initAudio();resetGame();begin();};
 $("resumeBtn").onclick=()=>{initAudio();$("pauseNote").textContent="The guards are frozen until you come back.";begin();};
 $("restartBtn").onclick=()=>{initAudio();resetGame();begin();};
+function toMenu(){if(document.pointerLockElement)document.exitPointerLock();stopVoices();drillOff(true);alarmOff();resetGame();setState("menu");}
+$("menuBtn").onclick=toMenu;$("pauseMenuBtn").onclick=toMenu;
+// job picker
+let selectedMap="harbor";
+try{const m=localStorage.getItem("cg-map");if(m&&MAPS[m])selectedMap=m;}catch(e){}
+function pickMap(id){
+  selectedMap=id;
+  document.querySelectorAll(".job").forEach(b=>b.setAttribute("aria-checked",String(b.dataset.map===id)));
+  if(LV.id!==id){buildMap(id);resetGame();}
+}
+document.querySelectorAll(".job").forEach(b=>b.addEventListener("click",()=>pickMap(b.dataset.map)));
+$("devToggle").checked=DEV.on;
+$("devToggle").addEventListener("change",e=>{DEV.on=e.target.checked;DEV.ghost=false;try{localStorage.setItem("cg-dev",DEV.on?"1":"0");}catch(err){}});
 setMuted(A.muted);
 
 function setState(s){
@@ -1116,7 +1415,20 @@ function setPrompt(html,progress){
 }
 
 /* ================= player ================= */
+function startClimb(tr){
+  P.climb={t:0,dur:1.1,fx:P.x,fz:P.z,fy:P.y,tx:tr.to.x,tz:tr.to.z,ty:tr.to.lvl*ROOF_Y,lvl:tr.to.lvl};
+  P.aim=false;SFX.climb();
+}
 function updatePlayer(dt){
+  if(P.climb){
+    // ladder / hatch: no control while climbing
+    const c=P.climb;c.t=Math.min(1,c.t+dt/c.dur);const e=c.t*c.t*(3-2*c.t);
+    P.x=c.fx+(c.tx-c.fx)*e;P.z=c.fz+(c.tz-c.fz)*e;P.y=c.fy+(c.ty-c.fy)*e;
+    if(c.t>=1){P.level=c.lvl;P.y=c.ty;P.climb=null;}
+    G.noise=0;P.sprinting=false;
+    camera.position.set(P.x,P.y+P.eye,P.z);camera.rotation.set(P.pitch,P.yaw,0);
+    return;
+  }
   const turnL=(keys.ArrowLeft?1:0)-(keys.ArrowRight?1:0),turnU=(keys.ArrowUp?1:0)-(keys.ArrowDown?1:0);
   P.yaw+=turnL*2.2*dt;P.pitch=clamp(P.pitch+turnU*1.6*dt,-1.45,1.45);
   const fx=-Math.sin(P.yaw),fz=-Math.cos(P.yaw),rx=Math.cos(P.yaw),rz=-Math.sin(P.yaw);
@@ -1132,13 +1444,13 @@ function updatePlayer(dt){
   if(len>0){
     mx/=len;mz/=len;
     const p={x:P.x+mx*speed*dt,z:P.z+mz*speed*dt};
-    resolve(p,0.35);
-    for(const g of guards){if(g.down)continue;const dx=p.x-g.x,dz=p.z-g.z,d=Math.hypot(dx,dz);if(d<0.65&&d>1e-6){p.x=g.x+dx/d*0.65;p.z=g.z+dz/d*0.65;}}
+    resolve(p,0.35,P.level);
+    for(const g of guards){if(g.down||g.level!==P.level)continue;const dx=p.x-g.x,dz=p.z-g.z,d=Math.hypot(dx,dz);if(d<0.65&&d>1e-6){p.x=g.x+dx/d*0.65;p.z=g.z+dz/d*0.65;}}
     P.x=p.x;P.z=p.z;
     const before=Math.floor(P.bobT/Math.PI);
     P.bobT+=dt*speed*2.1;
     if(Math.floor(P.bobT/Math.PI)!==before){
-      stepSound(P.x,P.z,P.sprinting?0.5:P.crouch?0.08:0.25,0,null);
+      stepSound(P.x,P.z,P.sprinting?0.5:P.crouch?0.08:0.25,0,null,P.level);
       if(P.carry)noiseHit({type:"lowpass",freq:700,dur:.12,vol:.12});
     }
   }
@@ -1148,23 +1460,23 @@ function updatePlayer(dt){
   const reduce=matchMedia("(prefers-reduced-motion: reduce)").matches;
   const bob=reduce||len===0?0:Math.sin(P.bobT)*0.035;
   P.kick=Math.max(0,P.kick-dt*4);
-  camera.position.set(P.x,P.eye+bob,P.z);
+  camera.position.set(P.x,P.y+P.eye+bob,P.z);
   camera.rotation.set(P.pitch-P.kick*0.12+P.recoil*0.012,P.yaw,0);
   const r=restricted(P.x,P.z);
-  if(r&&!P.wasRestricted&&!P.masked&&!G.alarm)toast("The bank is closed. Don't let anyone see you inside","warn",2400);
+  if(r&&!P.wasRestricted&&!P.masked&&!G.alarm)toast(P.level===1?"You're on the roof. Don't let anyone see you up here":"The bank is closed. Don't let anyone see you inside","warn",2400);
   P.wasRestricted=r;
 }
 function tryTakedown(){
   if(!P.masked){toast("Put on your mask first. Hold G","warn");return;}
   const fx=-Math.sin(P.yaw),fz=-Math.cos(P.yaw);
   let best=null,bd=1e9;
-  for(const g of guards){if(g.down)continue;const dx=g.x-P.x,dz=g.z-P.z,d=Math.hypot(dx,dz);
+  for(const g of guards){if(g.down||g.level!==P.level)continue;const dx=g.x-P.x,dz=g.z-P.z,d=Math.hypot(dx,dz);
     if(d<2.0&&(dx*fx+dz*fz)/d>0.45&&d<bd){best=g;bd=d;}}
   P.kick=1;
   if(!best){SFX.whiff();return;}
   const tx=(P.x-best.x)/bd,tz=(P.z-best.z)/bd;
   const facing=Math.sin(best.yaw)*tx+Math.cos(best.yaw)*tz;
-  if(facing<-0.15&&!blocked(P.x,P.z,best.x,best.z,0.9)){
+  if(facing<-0.15&&!blocked(P.x,P.z,best.x,best.z,0.9,P.level)){
     best.knockDown(false);G.takedowns++;
     SFX.takedown(best.x,best.z);
     toast("Guard knocked out","good");
@@ -1175,7 +1487,7 @@ function tryTakedown(){
 const CAM_DEAD=phong(0x3a3c3e);
 const _v2=new THREE.Vector2();
 function shoot(){
-  if(P.locked)return;
+  if(P.locked||P.climb)return;
   if(!P.masked){toast("Put on your mask first. Hold G","warn",1400);return;}
   if(P.raise<0.9||P.reload>0||P.fireCD>0)return;
   if(P.mag<=0){SFX.dry();P.fireCD=0.25;if(P.reserve>0)startReload();else toast("Out of ammo","bad");return;}
@@ -1211,7 +1523,7 @@ function shoot(){
     if(!c.dead){
       c.dead=true;c.seeDist=-1;c.bodyDist=-1;c.cone.visible=false;c.spot.intensity=0;c.led.visible=false;c.head.rotation.set(0.95,0,0.35);c.body.material=CAM_DEAD;G.camsShot++;
       SFX.camBreak(c.x,c.z);
-      if(!secGuard.down&&!G.alarm){
+      if(secGuard&&!secGuard.down&&!G.alarm){
         if(!(G.secAlert>0))G.secAlert=3;
         toast("The security guard saw the feed die! Take him out","bad",2600);
       }else toast("Camera down","good",1200);
@@ -1224,9 +1536,10 @@ function dropCarry(){
   if(!P.carry)return;
   const it=P.carry,fx=-Math.sin(P.yaw),fz=-Math.cos(P.yaw);
   let p={x:P.x+fx*0.9,z:P.z+fz*0.9};
-  if(blocked(P.x,P.z,p.x,p.z,0.3))p={x:P.x,z:P.z};
-  resolve(p,0.3);
-  it.mesh.position.set(p.x,it.kind==="body"?0.2:0.22,p.z);
+  if(blocked(P.x,P.z,p.x,p.z,0.3,P.level))p={x:P.x,z:P.z};
+  resolve(p,0.3,P.level);
+  it.level=P.level;
+  it.mesh.position.set(p.x,P.y+(it.kind==="body"?0.2:0.22),p.z);
   it.mesh.rotation.set(0,P.yaw+(it.kind==="body"?Math.PI/2:0.4),0);
   it.mesh.visible=true;it.state="ground";P.carry=null;showCarry();SFX.drop(p.x,p.z);
   if(it.kind==="body")toast("A body bag in the open is still suspicious","warn",2000);
@@ -1272,10 +1585,16 @@ function updateWeapon(dt){
 function updateCams(dt,simOnly){
   for(const c of cams){
     if(c.dead){c.seeDist=-1;c.bodyDist=-1;continue;}
+    if(!simOnly&&secGuard&&secGuard.down){
+      // nobody is watching the feeds any more: cameras go idle
+      c.seeDist=-1;c.bodyDist=-1;c.coneMat.color.setHex(0x4a5058);c.spot.color.setHex(0x4a5058);c.coneMat.opacity=0.05;c.spot.intensity=0.4;c.led.visible=false;
+      continue;
+    }
+    c.spot.intensity=1.6;
     c.yaw=c.center+c.amp*Math.sin(G.world*2*Math.PI/c.period+c.phase);
     c.g.rotation.y=c.yaw;
-    c.seeDist=simOnly?-1:canSee(c.x,c.z,c.yaw,c.half,c.range);
-    const fb=simOnly?null:findBody(c.x,c.z,c.yaw,c.half,c.range);
+    c.seeDist=simOnly?-1:canSee(c.x,c.z,c.yaw,c.half,c.range,c.level);
+    const fb=simOnly?null:findBody(c.x,c.z,c.yaw,c.half,c.range,null,c.level);
     c.bodyDist=fb?fb.d:-1;
     const seeing=c.seeDist>=0||c.bodyDist>=0;
     const col=G.alarm?0xff5040:seeing?0xffb048:0x9fc0ff;
@@ -1329,14 +1648,14 @@ function updateInteraction(dt){
 
   // vault door
   if(!G.vaultOpen){
-    const d=facing(0,-4.7,2.3);
-    const inRange=d>=0&&P.z>-4.8;
+    const d=P.level===0?facing(VAULT.x,VAULT.z+0.3,2.3):-1;
+    const inRange=d>=0&&P.z>VAULT.z+0.2;
     if(inRange&&G.drilling){prompt=`Drill running · ${Math.round(G.drill*100)}%`;prog=G.drill;}
     else if(inRange&&!P.masked){prompt="Put on your mask to set up the drill. Hold <kbd>G</kbd>";}
     else if(inRange){
       prompt="Press <kbd>E</kbd> to set up the drill";
       if(pressedE){
-        G.drilling=true;drillGroup.visible=true;SFX.drillSet();
+        G.drilling=true;VAULT.drillGroup.visible=true;SFX.drillSet();
         toast("Drill running. Guards nearby will hear it","warn",2400);
       }
     }
@@ -1348,7 +1667,7 @@ function updateInteraction(dt){
     for(const g of guards){
       if(!g.pager)continue;
       if(g.pager.state==="answering"){pg=g;break;}
-      if(g.pager.state==="ringing"){const d=facing(g.x,g.z,2.4);if(d>=0&&d<bd){pg=g;bd=d;}}
+      if(g.pager.state==="ringing"&&g.level===P.level){const d=facing(g.x,g.z,2.4);if(d>=0&&d<bd){pg=g;bd=d;}}
     }
     if(pg){
       const st=pg.pager;
@@ -1363,7 +1682,7 @@ function updateInteraction(dt){
   let bagTarget=null;
   if(!prompt&&P.masked){
     let bd=1e9;
-    for(const g of guards){if(!g.down||g.bagged||g.fall<1)continue;const d=facing(g.x,g.z,2.1);if(d>=0&&d<bd){bagTarget=g;bd=d;}}
+    for(const g of guards){if(!g.down||g.bagged||g.fall<1||g.level!==P.level)continue;const d=facing(g.x,g.z,2.1);if(d>=0&&d<bd){bagTarget=g;bd=d;}}
     if(bagTarget&&bagTarget.pager&&bagTarget.pager.state==="pending"){prompt="His pager is about to go off…";bagTarget=null;}
     if(bagTarget){
       if(P.carry){prompt="Drop what you're carrying first. Press <kbd>Q</kbd>";}
@@ -1374,7 +1693,7 @@ function updateInteraction(dt){
           G.bagT+=dt;prompt="Bagging the body…";
           if(G.bagT>=BAG_TIME){
             G.bagT=0;bagTarget.bagged=true;bagTarget.root.visible=false;
-            const it=bagTarget.item;it.state="carried";P.carry=it;showCarry();SFX.pickup();
+            const it=bagTarget.item;it.state="carried";it.level=bagTarget.level;P.carry=it;showCarry();SFX.pickup();
             toast("Body bagged. Dump it in a bin","warn",2200);
           }
         }
@@ -1388,7 +1707,7 @@ function updateInteraction(dt){
     // pick up loot or a body bag lying around
     let best=null,bd=1e9;
     const items=[...bags,...guards.map(g=>g.item)];
-    for(const it of items){if(it.state!=="ground")continue;const d=facing(it.mesh.position.x,it.mesh.position.z,2.0);if(d>=0&&d<bd){best=it;bd=d;}}
+    for(const it of items){if(it.state!=="ground"||(it.level||0)!==P.level)continue;const d=facing(it.mesh.position.x,it.mesh.position.z,2.0);if(d>=0&&d<bd){best=it;bd=d;}}
     if(best&&!prompt&&!P.masked)prompt="Put on your mask first. Hold <kbd>G</kbd>";
     else if(best&&!prompt){
       prompt=best.kind==="body"?"Press <kbd>E</kbd> to pick up the body bag":"Press <kbd>E</kbd> to pick up the loot";
@@ -1398,20 +1717,20 @@ function updateInteraction(dt){
       }
     }
   }else if(P.carry.kind==="loot"){
-    const d=Math.hypot(SECURE.x-P.x,SECURE.z-P.z);
+    const d=P.level===0?Math.hypot(SECURE.x-P.x,SECURE.z-P.z):99;
     if(d<2.6&&!prompt){
       prompt="Press <kbd>E</kbd> to load the bag into the van";
       if(pressedE){
         const b=P.carry,slot=VAN_SLOTS[G.secured];b.state="secured";b.mesh.visible=true;b.mesh.position.set(slot[0],0.82,slot[1]);b.mesh.rotation.set(0,G.secured*0.9,0);
         P.carry=null;showCarry();G.secured++;SFX.load();
-        if(G.secured>=3){endGame(true);return;}
-        toast(`Bag secured ${G.secured}/3`,"good");
+        if(G.secured>=bags.length){endGame(true);return;}
+        toast(`Bag secured ${G.secured}/${bags.length}`,"good");
       }
     }
   }else{
     // carrying a body: find a bin
     let bin=null,bd=1e9;
-    for(const b of bins){const reach=Math.max(b.w,b.d)/2+1.2;const d=facing(b.x,b.z,reach);if(d>=0&&d<bd){bin=b;bd=d;}}
+    for(const b of bins){if(P.level!==0)break;const reach=Math.max(b.w,b.d)/2+1.2;const d=facing(b.x,b.z,reach);if(d>=0&&d<bd){bin=b;bd=d;}}
     if(bin&&!prompt){
       prompt="Press <kbd>E</kbd> to dump the body in the bin";
       if(pressedE){
@@ -1419,29 +1738,39 @@ function updateInteraction(dt){
         bin.count++;bin.openT=1;G.binned++;SFX.binDump(bin.x,bin.z);
         toast("Body hidden","good",1400);
       }
-    }else if(!prompt&&Math.hypot(SECURE.x-P.x,SECURE.z-P.z)<2.6)prompt="Bodies go in a bin, not the van";
+    }else if(!prompt&&P.level===0&&Math.hypot(SECURE.x-P.x,SECURE.z-P.z)<2.6)prompt="Bodies go in a bin, not the van";
   }
   // doors
   if(!prompt){
     let door=null,bd=1e9;
-    for(const dr of doors){const d=facing(dr.x,dr.z,Math.max(1.9,dr.w/2+0.9));if(d>=0&&d<bd){door=dr;bd=d;}}
+    for(const dr of doors){if(P.level!==0)break;const d=facing(dr.x,dr.z,Math.max(1.9,dr.w/2+0.9));if(d>=0&&d<bd){door=dr;bd=d;}}
     if(door){
       prompt=`Press <kbd>E</kbd> to ${door.open?"close":"open"} the ${door.name}`;
       if(pressedE){if(door.open)closeDoor(door);else openDoor(door,P.x,P.z,false);}
     }
   }
+  // ladders and the roof hatch
+  if(!prompt&&!P.climb){
+    for(const tr of transitions){
+      if(tr.lvl!==P.level||Math.hypot(tr.x-P.x,tr.z-P.z)>1.3)continue;
+      if(tr.hatch&&!tr.hatch.open){prompt="Press <kbd>E</kbd> to open the roof hatch";if(pressedE)openHatch(tr.hatch);}
+      else{prompt=`Press <kbd>E</kbd> to ${tr.label}`;if(pressedE){if(P.carry&&P.carry.kind==="body")prompt="Too heavy to climb with. Press <kbd>Q</kbd> to drop it";else startClimb(tr);}}
+      break;
+    }
+  }
+  if(P.climb)prompt=null;
   if(!P.masked&&P.maskT>0){prompt="Putting on your mask…";prog=P.maskT/MASK_TIME;}
   else if(P.reload>0&&!prompt){prompt="Reloading…";prog=1-P.reload/RELOAD_TIME;}
   setPrompt(prompt,prog);
 }
 function updateDrill(dt){
-  if(!G.drilling){drillLight.intensity=0;return;}
+  if(!G.drilling){VAULT.drillLight.intensity=0;return;}
   G.drill=Math.min(1,G.drill+dt/DRILL_TIME);
-  drillBit.rotation.y+=dt*40;drillLight.intensity=0.8+Math.random()*0.8;
+  VAULT.drillBit.rotation.y+=dt*40;VAULT.drillLight.intensity=0.8+Math.random()*0.8;
   drillOn();
   if(G.drill>=1){
-    G.drilling=false;G.vaultOpen=true;drillLight.intensity=0;drillGroup.visible=false;
-    const i=colliders.indexOf(vaultCol);if(i>=0)colliders.splice(i,1);
+    G.drilling=false;G.vaultOpen=true;VAULT.drillLight.intensity=0;VAULT.drillGroup.visible=false;
+    const i=colliders.indexOf(VAULT.col);if(i>=0)colliders.splice(i,1);
     drillOff(true);SFX.vault();toast("Vault open","good");
   }
 }
@@ -1522,7 +1851,7 @@ function updateAlarm(dt){
 }
 const fmt=s=>{s=Math.max(0,Math.ceil(s));return String(Math.floor(s/60)).padStart(2,"0")+":"+String(s%60).padStart(2,"0");};
 const fmtUp=s=>{s=Math.floor(s);return String(Math.floor(s/60)).padStart(2,"0")+":"+String(s%60).padStart(2,"0");};
-function inside(){return P.x>-15&&P.x<15&&P.z>-12&&P.z<12;}
+function inside(){return P.level===0&&LV.def.isInside(P.x,P.z);}
 function updateHUD(){
   const watched=!G.alarm&&([...guards,...cams].some(o=>o.seeDist>=0)||G.bodyWatched);
   const radio=!G.alarm&&(G.secAlert>0||guards.some(g=>g.wounded>0&&!g.down));
@@ -1537,20 +1866,20 @@ function updateHUD(){
   let obj;
   const loose=G.bodies.length;
   if(ringing&&ringing.pager.state==="ringing")obj=`Answer ${ringing.name}'s pager! Hold E at his body and keep holding. ${Math.ceil(ringing.pager.t)} s left.`;
-  else if(P.carry&&P.carry.kind==="body")obj="Dump the body in a bin: the two dumpsters behind the bank or the linen cart in the office. Q drops it.";
+  else if(P.carry&&P.carry.kind==="body")obj=LV.def.text.bins;
   else if(loose&&!G.alarm)obj=`Hide ${loose>1?"the bodies":"the body"}. Hold E on a body to bag it, then dump it in a bin.`;
-  else if(!P.masked&&!G.vaultOpen)obj=restricted(P.x,P.z)?"You're inside a closed bank without a mask. Anyone who sees you will raise the alarm.":"Case the bank from the street. Watch the guards through the front windows. Hold G to put on your mask when you're ready.";
-  else if(!G.vaultOpen)obj=G.drilling?`Drill running: ${Math.round(G.drill*100)}%. Keep guards away from the vault.`:G.drill===0?"Get to the vault behind the tellers and set up the drill.":`Drill stopped at ${Math.round(G.drill*100)}%.`;
-  else if(P.carry)obj="Carry the bag to the van in the back alley (northwest corner).";
+  else if(!P.masked&&!G.vaultOpen)obj=restricted(P.x,P.z)?`You're ${P.level===1?"on the roof of":"inside"} ${LV.def.place} without a mask. Anyone who sees you will raise the alarm.`:LV.def.text.case;
+  else if(!G.vaultOpen)obj=G.drilling?`Drill running: ${Math.round(G.drill*100)}%. Keep guards away from the vault.`:G.drill===0?LV.def.text.vault:`Drill stopped at ${Math.round(G.drill*100)}%.`;
+  else if(P.carry)obj=LV.def.text.van;
   else obj="Grab a loot bag from the vault.";
   $("objText").textContent=obj;
-  $("bagsVal").textContent=`${G.secured}/3`;
+  $("bagsVal").textContent=`${G.secured}/${bags.length}`;
   $("stance").textContent=P.crouch?"CROUCHED · SILENT":P.sprinting?"SPRINTING · LOUD":"STANDING";
   const cc=$("carry");cc.hidden=!P.carry;
   if(P.carry){const t=P.carry.kind==="body"?"CARRYING BODY · Q DROP":"CARRYING LOOT · Q DROP";if(cc.textContent!==t)cc.textContent=t;}
   const mc=$("maskChip"),r=restricted(P.x,P.z);
   if(P.masked){mc.textContent="MASKED";mc.className="chip bad";}
-  else if(r){mc.textContent="UNMASKED · TRESPASSING";mc.className="chip warn";}
+  else if(r){mc.textContent=P.level===1?"UNMASKED · ON THE ROOF":"UNMASKED · TRESPASSING";mc.className="chip warn";}
   else{mc.textContent="UNMASKED · OUTSIDE";mc.className="chip ok";}
   $("obj").hidden=!$("subs").hidden; // subtitles take the bottom of the screen during a call
   const pc=$("pagerChip");pc.hidden=!P.masked;
@@ -1558,6 +1887,10 @@ function updateHUD(){
   const am=$("ammo");am.hidden=!P.masked;
   if(P.masked){const t=P.reload>0?"RELOADING":`PISTOL ${P.mag} / ${P.reserve}`;if(am.textContent!==t)am.textContent=t;am.className=P.mag===0&&P.reload<=0?"chip bad":"chip";}
   $("crosshair").hidden=!P.masked||P.aimT>0.6;
+  const dc=$("devChip");dc.hidden=!DEV.on;
+  if(DEV.on){const t=`DEV · GHOST ${DEV.ghost?"ON":"OFF"} · V`;if(dc.textContent!==t)dc.textContent=t;dc.className=DEV.ghost?"chip warn":"chip";}
+  const pc2=$("posChip");pc2.hidden=!DEV.on;
+  if(DEV.on)pc2.textContent=`${P.x.toFixed(1)}, ${P.z.toFixed(1)} · ${P.level?"ROOF":"GROUND"}`;
 }
 
 /* ================= end ================= */
@@ -1570,8 +1903,10 @@ function endGame(won,reason){
   $("endStamp").textContent=won?"JOB REPORT · PAID":"JOB REPORT · FAILED";
   $("endTitle").textContent=won?(stealth?"Clean job":"Loud, but paid"):"Busted";
   $("endTitle").className=won?"good":"bad";
-  $("endReason").textContent=won?(stealth?"All three bags are in the van and nobody ever knew you were there.":"All three bags made it out, but the whole street heard the alarm."):reason;
-  const rows=[["Time",fmtUp(G.time)],["Bags secured",`${G.secured}/3`],["Stealth",stealth?"Kept":"Broken"],["Guards knocked out",String(G.takedowns)],["Guards shot",String(G.kills)],["Bodies hidden",String(G.binned)],["Pagers answered",`${G.pagersUsed}/${MAX_PAGERS}`],["Cameras shot",String(G.camsShot)],["Shots fired",String(G.shots)]];
+  const nb=bags.length,nw=["","one","two","three","four","five","six"][nb]||String(nb);
+  $("endReason").textContent=won?(stealth?`All ${nw} bags are in the van and nobody at ${LV.def.place} ever knew you were there.`:`All ${nw} bags made it out, but the whole street heard the alarm.`):reason;
+  $("endStamp").textContent=(won?"JOB REPORT · PAID":"JOB REPORT · FAILED")+" · "+LV.def.job.toUpperCase();
+  const rows=[["Time",fmtUp(G.time)],["Bags secured",`${G.secured}/${bags.length}`],["Stealth",stealth?"Kept":"Broken"],["Guards knocked out",String(G.takedowns)],["Guards shot",String(G.kills)],["Bodies hidden",String(G.binned)],["Pagers answered",`${G.pagersUsed}/${MAX_PAGERS}`],["Cameras shot",String(G.camsShot)],["Shots fired",String(G.shots)]];
   $("endStats").innerHTML=rows.map(([a,b],i)=>`<dt>${a}</dt><dd class="${i===2?(stealth?"good":"bad"):""}">${b}</dd>`).join("");
 }
 
@@ -1604,14 +1939,13 @@ function stepMenu(dt){
   updateDoors(dt,false);
   updateCams(dt,true);
   for(const g of guards)g.update(dt,true);
-  const a=G.world*0.05;
-  camera.position.set(Math.sin(a)*6+4,5.5,27+Math.cos(a)*2);
-  camera.lookAt(0,1.5,4);
+  LV.def.fly(G.world*0.05);
 }
 function animate(dt){
-  if(G.vaultOpen&&G.doorAnim<1){G.doorAnim=Math.min(1,G.doorAnim+dt/1.6);const e=1-Math.pow(1-G.doorAnim,3);vaultPivot.rotation.y=e*1.75;}
-  ring.material.opacity=P.carry&&state==="playing"?0.45+0.25*Math.sin(G.world*5):0.22;
-  wheel.rotation.z=G.vaultOpen?G.doorAnim*3:0;
+  if(G.vaultOpen&&G.doorAnim<1){G.doorAnim=Math.min(1,G.doorAnim+dt/1.6);const e=1-Math.pow(1-G.doorAnim,3);VAULT.pivot.rotation.y=e*1.75;}
+  if(ring)ring.material.opacity=P.carry&&P.carry.kind==="loot"&&state==="playing"?0.45+0.25*Math.sin(G.world*5):0.22;
+  VAULT.wheel.rotation.z=G.vaultOpen?G.doorAnim*3:0;
+  for(const h of hatches){const tg=h.open?1:0;if(h.t!==tg){h.t=clamp(h.t+(h.open?dt:-dt)/0.6,0,1);h.piv.rotation.z=h.t*1.9;}}
   for(const b of bins){if(b.openT>0){b.openT=Math.max(0,b.openT-dt*1.3);b.piv.rotation.x=-1.4*Math.sin(Math.PI*(1-b.openT));}}
   for(const s of sparks){if(!s.visible)continue;s.life-=dt;s.material.opacity=clamp(s.life*8,0,1);if(s.life<=0)s.visible=false;}
 }
@@ -1627,6 +1961,8 @@ function frame(now){
   renderer.render(scene,camera);
   if(state==="playing"||state==="paused"){renderer.clearDepth();renderer.render(vmScene,vmCam);}
 }
+buildMap(selectedMap);
+document.querySelectorAll(".job").forEach(b=>b.setAttribute("aria-checked",String(b.dataset.map===selectedMap)));
 resetGame();
 setState("menu");
 requestAnimationFrame(frame);
