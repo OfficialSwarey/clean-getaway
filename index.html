@@ -70,6 +70,14 @@ html,body{height:100%;margin:0;overflow:hidden;background:var(--ink);color:var(-
 .pbar i{position:absolute;inset:0 auto 0 0;width:0;background:var(--sodium)}
 #subs{position:absolute;left:50%;bottom:calc(18px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);width:min(620px,calc(100vw - 32px));display:grid;gap:4px;padding:10px 16px 12px;background:rgba(6,9,13,.82);border:1px solid var(--line);text-align:left;transition:opacity .3s}
 #subs.fade{opacity:0}
+#keypad{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:240px;padding:16px;background:rgba(12,15,18,.95);border:1px solid var(--line);display:grid;gap:10px;justify-items:center}
+#kpScreen{font-family:var(--f-mono);font-size:30px;letter-spacing:.3em;color:#7dffb0;background:#06110b;border:1px solid #1d3a28;width:100%;text-align:center;padding:8px 0 8px .3em;box-sizing:border-box}
+#kpScreen.bad{color:var(--alarm);border-color:var(--alarm);background:#1a0807}
+#kpScreen.ok{color:var(--secure);border-color:var(--secure)}
+#kpKeys{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;width:100%}
+#kpKeys span{font-family:var(--f-mono);font-size:18px;text-align:center;padding:7px 0;border:1px solid var(--line);background:rgba(255,255,255,.04)}
+#kpKeys span.hit{background:var(--fg);color:var(--ink)}
+#kpHint{font-size:13px;color:var(--dim);text-align:center;line-height:1.35}
 #subWho{font-family:var(--f-mono);font-size:11px;letter-spacing:.16em}
 #subWho.dispatch{color:var(--sodium)}#subWho.you{color:var(--secure)}
 #subLine{font-size:19px;font-weight:600;line-height:1.35}
@@ -136,9 +144,12 @@ details.help .keys{margin-bottom:14px}
   <div id="detect"><div class="lbl" id="detectLbl">Detection</div><div class="bar"><i id="detectFill"></i></div></div>
   <div id="clock"><span class="lbl" id="clockLbl">Elapsed</span><span id="clockVal">00:00</span></div>
   <div id="obj"><div class="lbl">Objective</div><div id="objText">Get into the bank unseen.</div><div id="bagsRow">Bags secured <b id="bagsVal">0/3</b></div></div>
-  <div id="status"><span class="chip" id="devChip" hidden>DEV · GHOST OFF · V</span><span class="chip" id="posChip" hidden></span><span class="chip" id="ammo" hidden>PISTOL 12 / 36</span><span class="chip" id="pagerChip" hidden>PAGERS 0/3</span><span class="chip" id="tieChip" hidden>ZIP TIES 6</span><span class="chip" id="loopChip" hidden></span><span class="chip" id="jamChip" hidden>JAMMERS 2 · J</span><span class="chip ok" id="cardChip" hidden>KEYCARD</span><span class="chip" id="maskChip">UNMASKED · OUTSIDE</span><span class="chip" id="carry" hidden>CARRYING BAG · SLOWED</span><span class="chip" id="stance">STANDING</span><span class="chip" id="sound">SOUND ON · M</span></div>
+  <div id="status"><span class="chip" id="devChip" hidden>DEV · GHOST OFF · V</span><span class="chip" id="posChip" hidden></span><span class="chip" id="ammo" hidden>PISTOL 12 / 36</span><span class="chip" id="pagerChip" hidden>PAGERS 0/3</span><span class="chip" id="tieChip" hidden>ZIP TIES 6</span><span class="chip" id="loopChip" hidden></span><span class="chip" id="jamChip" hidden>JAMMERS 2 · J</span><span class="chip ok" id="cardChip" hidden>KEYCARD</span><span class="chip ok" id="codeChip" hidden></span><span class="chip" id="maskChip">UNMASKED · OUTSIDE</span><span class="chip" id="carry" hidden>CARRYING BAG · SLOWED</span><span class="chip" id="stance">STANDING</span><span class="chip" id="sound">SOUND ON · M</span></div>
   <div id="crosshair"></div>
   <div id="prompt" hidden><span id="promptText"></span><div class="pbar" id="pbar" hidden><i id="pfill"></i></div></div>
+  <div id="keypad" hidden><span class="lbl" id="kpTitle">SAFE KEYPAD</span><div id="kpScreen">_ _ _ _</div>
+    <div id="kpKeys"><span data-k="1">1</span><span data-k="2">2</span><span data-k="3">3</span><span data-k="4">4</span><span data-k="5">5</span><span data-k="6">6</span><span data-k="7">7</span><span data-k="8">8</span><span data-k="9">9</span><span data-k="B">⌫</span><span data-k="0">0</span><span data-k="OK">OK</span></div>
+    <span id="kpHint">Type the code with the number keys. Backspace erases. <kbd>E</kbd> or a step away closes it.</span></div>
   <div id="subs" hidden><span id="subWho"></span><span id="subLine"></span></div>
   <div id="toast"></div>
 </div>
@@ -177,7 +188,7 @@ details.help .keys{margin-bottom:14px}
         <span class="job-time club">NIGHT · 01:30 · OPEN</span>
         <span class="job-name">Last Call</span>
         <span class="job-place">Club Halo</span>
-        <span class="job-meta">Packed nightclub · walk in the front · VIP, the bar and the back rooms are off limits · the music hides your footsteps · owner's safe in a locked office · keycard for the security room · 6 guards · 20 clubbers and staff · 5 cameras · 4 bags</span>
+        <span class="job-meta">Packed nightclub · walk in the front · VIP, the bar and the back rooms are off limits · the music hides your footsteps · owner's safe with a code lock (the code is written down somewhere) · keycard for the security room · 6 guards · 20 clubbers and staff · 5 cameras · 4 bags</span>
       </button>
     </div>
     <label class="dev" for="devToggle"><input type="checkbox" id="devToggle"><span>Dev mode<small>Press V during a job to turn invisible to guards and cameras. Shows your position.</small></span></label>
@@ -193,6 +204,7 @@ details.help .keys{margin-bottom:14px}
         <dt>C</dt><dd>Crouch on/off (hide behind counters, cars, crates, window sills)</dd>
         <dt>HOLD G</dt><dd>Put on your mask</dd>
         <dt>E</dt><dd>Interact: doors, ladders, the drill, loot. Hold it to pick a lock, loop a camera (stand under it and look up), bag a body, answer a pager or zip-tie a civilian. Tap it to make a tied hostage follow you or stay</dd>
+        <dt>0–9</dt><dd>Type a code on a keypad (Backspace erases)</dd>
         <dt>Q</dt><dd>Drop what you're carrying</dd>
         <dt>J</dt><dd>Put down a jammer: for 15 seconds no radio, phone or pager can raise the alarm (2 per job)</dd>
         <dt>CLICK</dt><dd>Fire the silenced pistol</dd>
@@ -505,6 +517,50 @@ function makeVault(x,z,label){
   const drillLight=new THREE.PointLight(0xffa040,0,4,2);drillLight.position.set(x+0.45,1.3,z+0.7);lvAdd(drillLight);
   DRILL_POS={x:x+0.45,z:z+0.5};
   VAULT={x,z,pivot,wheel,col,drillGroup,drillBit,drillLight};
+}
+// a free-standing safe with a keypad (door faces +z, swings outwards); stands in for the vault on maps that have one
+const safeMat=phong(0x2e3b35,{shininess:60,specular:0x333333}),safeIn=phong(0x16191b);
+function makeSafe(x,z,label){
+  const W=1.8,D=0.9,Hh=2.0,t=0.08;
+  addBox(x-W/2,z-D,x+W/2,z-D+t,Hh,safeMat,{collide:false});
+  addBox(x-W/2,z-D,x-W/2+t,z,Hh,safeMat,{collide:false});addBox(x+W/2-t,z-D,x+W/2,z,Hh,safeMat,{collide:false});
+  addBox(x-W/2,z-D,x+W/2,z,t,safeIn,{collide:false});addBox(x-W/2,z-D,x+W/2,z,Hh,safeMat,{y0:Hh-t,collide:false});
+  for(const y of [0.75,1.4])addBox(x-W/2+t,z-D+t,x+W/2-t,z-0.03,y+0.05,safeIn,{y0:y,collide:false});
+  for(let i=0;i<5;i++)addBox(x-0.75+i*0.3,z-0.7,x-0.55+i*0.3,z-0.25,1.6,cashMat,{y0:1.45,collide:false});
+  colliders.push({minX:x-W/2,maxX:x+W/2,minZ:z-D,maxZ:z,h:Hh,lvl:0});
+  const pivot=new THREE.Group();pivot.position.set(x-W/2,0,z+0.065);lvAdd(pivot);
+  const door=new THREE.Mesh(new THREE.BoxGeometry(W,Hh,0.12),safeMat);door.position.set(W/2,Hh/2,0);door.castShadow=true;pivot.add(door);
+  for(const y of [0.35,1.65]){const h=new THREE.Mesh(new THREE.BoxGeometry(0.06,0.22,0.16),M.steel);h.position.set(0.02,y,0);pivot.add(h);}
+  const plate=new THREE.Mesh(new THREE.PlaneGeometry(0.62,0.15),new THREE.MeshBasicMaterial({map:signTex(label,256,64,"#2a2010","#c9a24a","bold 34px Arial")}));plate.position.set(W/2,1.78,0.061);pivot.add(plate);
+  const wheel=new THREE.Mesh(new THREE.TorusGeometry(0.17,0.03,8,24),M.steel);wheel.position.set(W*0.7,1.0,0.09);pivot.add(wheel);
+  for(let i=0;i<3;i++){const sp=new THREE.Mesh(new THREE.BoxGeometry(0.4,0.035,0.035),M.steel);sp.rotation.z=i*Math.PI/3;wheel.add(sp);}
+  const pad=new THREE.Mesh(new THREE.BoxGeometry(0.26,0.36,0.03),phong(0x111316,{shininess:50}));pad.position.set(W*0.3,1.15,0.075);pivot.add(pad);
+  const scr=new THREE.MeshBasicMaterial({color:0x3aff8a});const screen=new THREE.Mesh(new THREE.PlaneGeometry(0.19,0.06),scr);screen.position.set(W*0.3,1.27,0.092);pivot.add(screen);
+  const keys=new THREE.Mesh(new THREE.PlaneGeometry(0.19,0.22),new THREE.MeshBasicMaterial({map:tex(64,76,(g,w,h)=>{g.fillStyle="#1a1d20";g.fillRect(0,0,w,h);g.fillStyle="#9aa3a8";for(let r=0;r<4;r++)for(let c=0;c<3;c++)g.fillRect(6+c*19,5+r*18,15,13);})}));
+  keys.position.set(W*0.3,1.08,0.092);pivot.add(keys);
+  const col={minX:x-W/2,maxX:x+W/2,minZ:z,maxZ:z+0.14,h:Hh,lvl:0};colliders.push(col);
+  const openCol={minX:x-W/2-0.45,maxX:x-W/2+0.05,minZ:z,maxZ:z+W+0.05,h:Hh,lvl:0};
+  DRILL_POS={x,z:z+0.5};
+  VAULT={x,z,pivot,wheel,col,openCol,openDir:-1,safe:true,screen:scr,drillGroup:new THREE.Group(),drillBit:new THREE.Object3D(),drillLight:{intensity:0}};
+}
+// the safe code is on a sticky note somewhere on the map; new code and new spot every run
+let NOTE=null;
+function makeCodeNote(spots){
+  const c=document.createElement("canvas");c.width=c.height=128;
+  const t=new THREE.CanvasTexture(c);
+  const m=new THREE.Mesh(new THREE.PlaneGeometry(0.24,0.24),new THREE.MeshBasicMaterial({map:t}));m.userData.noHit=true;lvAdd(m);
+  const glint=new THREE.Sprite(new THREE.SpriteMaterial({map:GLINT,transparent:true,depthWrite:false,blending:THREE.AdditiveBlending,opacity:.6}));glint.scale.set(0.3,0.3,0.3);glint.userData.noHit=true;m.add(glint);glint.position.z=0.02;
+  NOTE={mesh:m,canvas:c,texture:t,glint,spots};
+}
+function placeCodeNote(){
+  if(!NOTE)return;
+  const g=NOTE.canvas.getContext("2d");
+  g.fillStyle="#f2d65a";g.fillRect(0,0,128,128);g.fillStyle="rgba(0,0,0,.08)";g.fillRect(0,0,128,14);
+  g.fillStyle="#2a2416";g.textAlign="center";g.font="bold 22px 'Segoe Print','Comic Sans MS',cursive";g.fillText("safe:",64,46);
+  g.font="bold 40px 'Segoe Print','Comic Sans MS',cursive";g.fillText(G.safeCode,64,96);
+  NOTE.texture.needsUpdate=true;
+  const sp=NOTE.spots[Math.random()*NOTE.spots.length|0];
+  NOTE.mesh.position.set(sp[0],sp[1],sp[2]);NOTE.mesh.rotation.set(0,sp[3],(Math.random()-0.5)*0.25);NOTE.spot=sp;
 }
 // getaway van; xr = x of the open rear doors, dir=+1 when the rear faces +x, -1 when it faces -x
 function makeVan(xr,zc,dir){
@@ -1318,7 +1374,7 @@ const drawClub=(g,w,h)=>{g.fillStyle="#1a171e";g.fillRect(0,0,w,h);noise(g,w,h,5
 const MAP_CLUB={
   id:"club",job:"Last Call",place:"Club Halo",time:"01:30",day:true,night:true,zipTies:12,
   spawn:{x:0,z:23,yaw:0},moon:40,
-  bagSpots:[[-5.6,-13.4],[-3.4,-14.6],[-0.6,-14.6],[1.6,-13.4]],
+  bagSpots:[[-2.42,-15.3,0.3,0],[-1.58,-15.3,0.3,0],[-2.42,-15.3,1.02,0],[-1.58,-15.3,1.02,0]],
   music:{x:-6,z:6},
   isInside:(x,z)=>x>-18&&x<18&&z>-16&&z<14,
   // staff only: everything past the staff doors, behind the bar, the VIP pen and the coat check
@@ -1327,14 +1383,13 @@ const MAP_CLUB={
   surface(x,z){
     if(!(x>-18&&x<18&&z>-16&&z<14))return "asphalt";
     if(z>-2)return "tile";
-    if(x>-8&&x<4&&z<-11)return "steel";
     if((x>-8&&x<10)&&z<-5)return "carpet";
     return "asphalt";
   },
   fly(a){camera.position.set(Math.sin(a)*8+4,7.5,31+Math.cos(a)*3);camera.lookAt(0,2,6);},
   text:{
-    case:"Walk in the front like everyone else. The dance floor and the bar are public; VIP, behind the bar and the back rooms are off limits. The safe is in the owner's locked office in the back. Hold G to put on your mask when you're ready.",
-    vault:"Get to the owner's safe in the back office and set up the drill.",
+    case:"Walk in the front like everyone else. The dance floor and the bar are public; VIP, behind the bar and the back rooms are off limits. The owner's safe is in his locked office in the back, and it has a code lock: someone wrote the code down somewhere in the club. Hold G to put on your mask when you're ready.",
+    vault:"Find the safe code: it's on a note somewhere in the club. Then open the safe in the owner's office.",
     van:"Carry the bag to the van in the east yard, outside the loading door.",
     bins:"Dump the body in a bin: the dumpster in the back alley, the one in the east yard, or the trash cart in the storeroom. Q drops it."
   },
@@ -1373,10 +1428,9 @@ const MAP_CLUB={
     wallX(-5,-17.8,-14,IW,M.wall); lintelX(-5,-14,-12,2.4,IW,M.wall); wallX(-5,-12,-3,IW,M.wall); lintelX(-5,-3,-1,2.4,IW,M.wall);
     wallX(-5,-1,6,IW,M.wall); lintelX(-5,6,8,2.4,IW,M.wall); wallX(-5,8,13,IW,M.wall); lintelX(-5,13,15,2.4,IW,M.wall); wallX(-5,15,17.8,IW,M.wall);
     wallZ(-8,-15.8,-5.2,IW,M.wall); wallZ(4,-15.8,-5.2,IW,M.wall); wallZ(10,-15.8,-5.2,IW,M.wall);
-    wallX(-11,-7.8,-3.5,IW,M.wall); lintelX(-11,-3.5,-0.5,2.8,IW,M.wall); wallX(-11,-0.5,3.8,IW,M.wall);
     // floors
     floor(-18,-2,18,14,fm.club); floor(-18,-5,18,-2,fm.conc); floor(-18,-16,-8,-5,fm.store);
-    floor(-8,-11,4,-5,fm.office); floor(-8,-16,4,-11,fm.safe); floor(4,-16,10,-5,fm.secur); floor(10,-16,18,-5,fm.kitchen);
+    floor(-8,-16,4,-5,fm.office); floor(4,-16,10,-5,fm.secur); floor(10,-16,18,-5,fm.kitchen);
     // doors
     makeDoor(-1.5,1.5,14,2.58,{mat:clubDoor,name:"front door",dayOpen:true});
     makeDoor(-1,1,-2,2.38,{mat:staffDoorMat,name:"staff door"});
@@ -1442,8 +1496,9 @@ const MAP_CLUB={
     // office: desk, couch; the safe room behind it
     addBox(0.5,-8.6,3,-7.6,0.8,M.desk); addBox(-7.6,-10.4,-6.8,-6.2,0.45,velvet); addBox(-7.8,-10.4,-7.55,-6.2,1.0,velvet,{collide:false});
     addBox(3.0,-6.0,3.6,-5.4,0.9,plantMat);
-    addBox(-7.6,-15.8,3.6,-15.4,2.6,depositMat); addBox(-7.6,-15.4,-7.2,-11.2,2.6,depositMat); addBox(3.2,-15.4,3.6,-11.2,2.6,depositMat);
-    makeVault(-2,-11,"HALO SAFE");
+    makeSafe(-2,-14.85,"HALO");
+    addBox(-7.6,-15.8,-5.6,-15.2,1.9,M.cabinet); addBox(1.2,-15.8,3.6,-15.3,1.2,M.cabinet);
+    makeCodeNote([[17.18,0.7,9.5,-Math.PI/2],[-5.2,1.6,13.78,Math.PI],[-14.62,0.92,6.6,-Math.PI/2],[-8.22,1.6,-13,-Math.PI/2],[16.5,1.6,-5.22,Math.PI],[4.22,1.6,-8,Math.PI/2],[-8,1.6,-2.22,Math.PI],[-17.77,1.5,11.4,Math.PI/2]]);
     // security room: desk, monitors, the operator's chair
     addBox(7.8,-13.2,9.4,-10.2,0.8,M.desk);
     const monTex=signTex("CAM 01  02  03  04  05",256,64,"#9fc4ff","#0d1a2c","bold 20px monospace");
@@ -1539,7 +1594,7 @@ function buildMap(id){
     LV.group.traverse(o=>{if(o.geometry)o.geometry.dispose();if(o.shadow&&o.shadow.map){o.shadow.map.dispose();o.shadow.map=null;}});
   }
   colliders.length=0;doors.length=0;bins.length=0;cams.length=0;guards.length=0;civs.length=0;bags.length=0;transitions.length=0;hatches.length=0;windows.length=0;
-  secGuard=null;VAULT=null;ring=null;civSeed=0;KEYCARD=null;jammerMeshes.length=0;
+  secGuard=null;VAULT=null;ring=null;civSeed=0;KEYCARD=null;NOTE=null;jammerMeshes.length=0;
   LV={group:new THREE.Group(),def,id:def.id,day:!!def.day,sunny:!!def.day&&!def.night,fx:null};scene.add(LV.group);
   setSky(LV.sunny);
   def.build();
@@ -1807,6 +1862,10 @@ const SFX={
   jamOn(){tone({type:"square",f0:300,f1:1400,dur:.35,vol:.08,lp:3000});noiseHit({type:"bandpass",freq:2800,q:.6,dur:.6,vol:.15,attack:.05});},
   jamTick(x,z,fast){const s=spatial(x,z,20)||{vol:.2,pan:0};tone({type:"square",f0:fast?1500:1100,dur:.05,vol:.06*s.vol+.015,pan:s.pan,lp:s.lp||4000});noiseHit({freq:3000,q:.8,dur:.12,vol:.05*s.vol+.01,pan:s.pan});},
   jamOff(){tone({type:"sawtooth",f0:900,f1:120,dur:.5,vol:.06,lp:1500});},
+  kpKey(d){tone({type:"sine",f0:900+(d||0)*45,dur:.07,vol:.09});},
+  kpOk(){[1046,1318,1568].forEach((f,i)=>tone({type:"sine",f0:f,dur:.12,vol:.1,delay:i*.09}));noiseHit({type:"lowpass",freq:700,dur:.12,vol:.3,delay:.32});},
+  kpBad(){tone({type:"square",f0:200,dur:.32,vol:.09,lp:1200});},
+  paper(){noiseHit({freq:2600,q:.7,dur:.12,vol:.12});noiseHit({freq:1800,q:.7,dur:.1,vol:.08,delay:.1});},
   pick(){noiseHit({freq:4200+Math.random()*1800,q:7,dur:.025,vol:.06});},
   pin(){tone({type:"triangle",f0:2700,f1:2300,dur:.05,vol:.08});noiseHit({freq:3200,q:3,dur:.03,vol:.12});},
   unlock(){noiseHit({type:"lowpass",freq:900,dur:.08,vol:.28});tone({type:"square",f0:520,f1:300,dur:.07,vol:.06,lp:1500,delay:.05});},
@@ -1997,7 +2056,9 @@ function resetGame(){
   drillOff(true);alarmOff();
   VAULT.pivot.rotation.y=0;VAULT.wheel.rotation.z=0;if(!colliders.includes(VAULT.col))colliders.push(VAULT.col);
   VAULT.drillGroup.visible=false;VAULT.drillLight.intensity=0;
-  bags.forEach((b,i)=>{b.state="ground";b.level=0;b.mesh.visible=true;b.mesh.position.set(BAG_SPOTS[i][0],0.22,BAG_SPOTS[i][1]);b.mesh.rotation.set(0,i*0.7,0);});
+  bags.forEach((b,i)=>{const sp=BAG_SPOTS[i];b.state=VAULT.safe?"locked":"ground";b.level=0;b.mesh.visible=true;b.mesh.position.set(sp[0],sp[2]!=null?sp[2]:0.22,sp[1]);b.mesh.rotation.set(0,sp[3]!=null?sp[3]:i*0.7,0);});
+  if(VAULT.safe){const i=colliders.indexOf(VAULT.openCol);if(i>=0)colliders.splice(i,1);VAULT.screen.color.setHex(0x3aff8a);}
+  G.safeCode=String(1000+Math.floor(Math.random()*9000));G.knowCode=false;G.safeFails=0;G.keypad=false;KP.entry="";$("keypad").hidden=true;placeCodeNote();
   hatches.forEach(h=>{h.open=false;h.t=0;h.piv.rotation.z=0;});
   DEV.ghost=false;
   showCarry();
@@ -2013,6 +2074,13 @@ addEventListener("keydown",e=>{
   if(["ArrowUp","ArrowDown","ArrowLeft","ArrowRight","Space"].includes(e.code))e.preventDefault();
   keys[e.code]=true;
   if(state!=="playing")return;
+  if(G.keypad){
+    if(/^(Digit|Numpad)[0-9]$/.test(e.code)){e.preventDefault();if(!e.repeat)keypadDigit(e.code.slice(-1));return;}
+    if(e.code==="Backspace"){e.preventDefault();keypadBack();return;}
+    if(e.code==="Enter"||e.code==="NumpadEnter"){e.preventDefault();keypadEnter();return;}
+    if(e.code==="KeyE"){if(!e.repeat)closeKeypad();return;}
+    if(["KeyW","KeyA","KeyS","KeyD","Space"].includes(e.code))closeKeypad();
+  }
   if(e.code==="KeyE"&&!e.repeat)pressedE=true;
   if(e.code==="KeyC"&&!e.repeat)P.crouch=!P.crouch;
   if(e.code==="Space"&&!e.repeat)tryJump();
@@ -2087,7 +2155,7 @@ function setState(s){
   $("pause").hidden=s!=="paused";
   $("end").hidden=s!=="ended";
   $("hud").hidden=!(s==="playing"||s==="paused");
-  if(s!=="playing"){for(const k in keys)keys[k]=false;P.aim=false;P.maskT=0;}
+  if(s!=="playing"){for(const k in keys)keys[k]=false;P.aim=false;P.maskT=0;if(G.keypad)closeKeypad();}
   if(A.ctx){
     if(s==="playing"&&A.ctx.state!=="running")A.ctx.resume().catch(()=>{});
     if(s==="playing")for(const g of guards)if(g.pager&&g.pager.state==="answering")g.pager.grace=1.2; // time to grab E again after a pause
@@ -2191,6 +2259,40 @@ function updatePlayer(dt){
   P.wasRestricted=r;
 }
 function musicCovers(){return !!(LV.def.musicLoud&&!G.alarm&&P.level===0&&LV.def.musicLoud(P.x,P.z));}
+const KP={entry:"",busy:false};
+function drawKeypad(cls,txt){
+  const sc=$("kpScreen");sc.className=cls||"";
+  sc.textContent=txt||(KP.entry+"____").slice(0,4).split("").join(" ");
+  const left=3-G.safeFails;$("kpTitle").textContent=`SAFE KEYPAD · ${left} ${left===1?"TRY":"TRIES"} LEFT`;
+}
+function hitKey(k){const el=document.querySelector(`#kpKeys span[data-k="${k}"]`);if(!el)return;el.classList.add("hit");setTimeout(()=>el.classList.remove("hit"),130);}
+function openKeypad(){G.keypad=true;KP.entry="";KP.busy=false;P.locked=true;P.aim=false;$("keypad").hidden=false;drawKeypad();SFX.kpKey(5);}
+function closeKeypad(){if(!G.keypad)return;G.keypad=false;KP.busy=false;P.locked=false;$("keypad").hidden=true;}
+function keypadDigit(d){
+  if(KP.busy||KP.entry.length>=4)return;
+  KP.entry+=d;SFX.kpKey(+d);hitKey(d);drawKeypad();
+  if(KP.entry.length===4){KP.busy=true;setTimeout(()=>{KP.busy=false;if(G.keypad&&KP.entry.length===4)keypadEnter();},260);}
+}
+function keypadBack(){if(KP.busy||!KP.entry)return;KP.entry=KP.entry.slice(0,-1);hitKey("B");SFX.kpKey(0);drawKeypad();}
+function keypadEnter(){
+  if(KP.busy)return;hitKey("OK");
+  if(KP.entry.length<4){SFX.denied();return;}
+  if(KP.entry===G.safeCode){
+    drawKeypad("ok","OPEN");SFX.kpOk();VAULT.screen.color.setHex(0x7dffb0);KP.busy=true;
+    setTimeout(()=>{closeKeypad();openSafe();},450);return;
+  }
+  G.safeFails++;SFX.kpBad();VAULT.screen.color.setHex(0xff3a30);setTimeout(()=>{if(!G.vaultOpen)VAULT.screen.color.setHex(0x3aff8a);},700);
+  KP.entry="";drawKeypad("bad","WRONG");KP.busy=true;
+  if(G.safeFails>=3){setTimeout(()=>{closeKeypad();},500);triggerAlarm("Three wrong codes. The safe tripped the alarm!");return;}
+  toast(G.safeFails===2?"Wrong code. One more and the safe trips the alarm":"Wrong code","bad",2000);
+  setTimeout(()=>{KP.busy=false;if(G.keypad)drawKeypad();},700);
+}
+function openSafe(){
+  if(G.vaultOpen)return;
+  G.vaultOpen=true;const i=colliders.indexOf(VAULT.col);if(i>=0)colliders.splice(i,1);colliders.push(VAULT.openCol);
+  bags.forEach(b=>{if(b.state==="locked")b.state="ground";});
+  SFX.vault();toast("Safe open. Grab the bags","good",2000);
+}
 function tryJump(){
   if(P.locked||P.climb||state!=="playing")return;
   if(P.jh>P.gnd+0.02||P.vy>0)return;
@@ -2490,8 +2592,21 @@ function updateInteraction(dt){
   const facing=(x,z,max)=>{const dx=x-P.x,dz=z-P.z,d=Math.hypot(dx,dz);return d<max&&(d<0.4||(dx*fx+dz*fz)/d>0.45)?d:-1;};
   let prompt=null,prog=null;
 
+  // the safe: keypad
+  if(!G.vaultOpen&&VAULT.safe){
+    const d=P.level===0?facing(VAULT.x,VAULT.z+0.3,2.2):-1;
+    const inRange=d>=0&&P.z>VAULT.z;
+    if(G.keypad){P.fiddle=0.3;if(!inRange)closeKeypad();}
+    else if(inRange){
+      if(P.carry)prompt="Drop what you're carrying to use the keypad. <kbd>Q</kbd>";
+      else{
+        prompt=G.knowCode?`Press <kbd>E</kbd> to use the keypad · the code is ${G.safeCode}`:"Press <kbd>E</kbd> to use the keypad · the code is written down somewhere";
+        if(pressedE)openKeypad();
+      }
+    }
+  }
   // vault door
-  if(!G.vaultOpen){
+  else if(!G.vaultOpen){
     const d=P.level===0?facing(VAULT.x,VAULT.z+0.3,2.3):-1;
     const inRange=d>=0&&P.z>VAULT.z+0.2;
     if(inRange&&G.drilling){prompt=`Drill running · ${Math.round(G.drill*100)}%`;prog=G.drill;}
@@ -2577,6 +2692,14 @@ function updateInteraction(dt){
   }
   if(!bagTarget||!keys.KeyE)G.bagT=0;
 
+  // the safe code on a sticky note
+  if(!prompt&&NOTE&&P.level===0){
+    const np=NOTE.mesh.position;
+    if(facing(np.x,np.z,2.6)>=0&&!blocked(P.x,P.z,np.x,np.z,1.5,0)){
+      prompt=G.knowCode?`A sticky note: "safe: ${G.safeCode}"`:"Press <kbd>E</kbd> to read the note";
+      if(pressedE&&!G.knowCode){G.knowCode=true;SFX.paper();toast(`A sticky note: "safe: ${G.safeCode}". That's the code`,"good",3000);}
+    }
+  }
   // the keycard: you can pick it up with or without the mask
   if(!prompt&&KEYCARD&&KEYCARD.mesh.visible&&P.level===0){
     const kp=KEYCARD.mesh.position;
@@ -2702,7 +2825,7 @@ function updateInteraction(dt){
       break;
     }
   }
-  if(P.climb)prompt=null;
+  if(P.climb||G.keypad)prompt=null;
   if(wasPicking&&!G.picking)G.pickScr=0;
   if(!P.masked&&P.maskT>0){prompt="Putting on your mask…";prog=P.maskT/MASK_TIME;}
   else if(P.reload>0&&!prompt){prompt="Reloading…";prog=1-P.reload/RELOAD_TIME;}
@@ -2823,9 +2946,10 @@ function updateHUD(){
   else if(P.carry&&P.carry.kind==="body")obj=LV.def.text.bins;
   else if(loose&&!G.alarm)obj=`Hide ${loose>1?"the bodies":"the body"}. Hold E on a body to bag it, then dump it in a bin.`;
   else if(!P.masked&&!G.vaultOpen)obj=restricted(P.x,P.z)?(LV.day&&P.level===0?`You're in a staff area of ${LV.def.place}. Staff and guards who see you back here will get suspicious.`:`You're ${P.level===1?"on the roof of":"inside"} ${LV.def.place} without a mask. Anyone who sees you will raise the alarm.`):LV.def.text.case;
+  else if(!G.vaultOpen&&VAULT.safe)obj=G.knowCode?`Open the safe in the owner's office. The code is ${G.safeCode}.`:LV.def.text.vault;
   else if(!G.vaultOpen)obj=G.drilling?`Drill running: ${Math.round(G.drill*100)}%. Keep guards away from the vault.`:G.drill===0?LV.def.text.vault:`Drill stopped at ${Math.round(G.drill*100)}%.`;
   else if(P.carry)obj=LV.def.text.van;
-  else obj="Grab a loot bag from the vault.";
+  else obj=VAULT.safe?"Grab a loot bag from the safe.":"Grab a loot bag from the vault.";
   $("objText").textContent=obj;
   $("bagsVal").textContent=`${G.secured}/${bags.length}`;
   $("stance").textContent=(P.jh>P.gnd+0.05?"JUMPING":P.crouch?"CROUCHED · SILENT":P.sprinting?"SPRINTING · LOUD":P.gnd>0.1?"STANDING ON SOMETHING":"STANDING")+(musicCovers()&&!P.crouch?" · MUSIC COVERS YOU":"");
@@ -2838,6 +2962,7 @@ function updateHUD(){
   const jc=$("jamChip");jc.hidden=!P.masked&&!jam;
   if(!jc.hidden){const t=jam?`JAMMER ON · ${Math.ceil(G.jamT)} s`:`JAMMERS ${P.jammers} · J`;if(jc.textContent!==t)jc.textContent=t;jc.className=jam?"chip warn":P.jammers?"chip":"chip bad";}
   $("cardChip").hidden=!P.hasCard;
+  {const cc=$("codeChip");cc.hidden=!G.knowCode||G.vaultOpen;if(!cc.hidden){const t=`SAFE CODE ${G.safeCode}`;if(cc.textContent!==t)cc.textContent=t;}}
   {const lc=$("loopChip"),lp=cams.filter(c=>c.loopT>0&&!c.dead);lc.hidden=!lp.length||G.alarm;
    if(!lc.hidden){const m=Math.min(...lp.map(c=>c.loopT)),t=`CAM LOOP${lp.length>1?" ×"+lp.length:""} · ${Math.ceil(m)} s`;if(lc.textContent!==t)lc.textContent=t;lc.className=m<6?"chip warn":"chip ok";}}
   const tc=$("tieChip");tc.hidden=!(P.masked&&civs.length);
@@ -2910,7 +3035,8 @@ function stepMenu(dt){
   LV.def.fly(G.world*0.05);
 }
 function animate(dt){
-  if(G.vaultOpen&&G.doorAnim<1){G.doorAnim=Math.min(1,G.doorAnim+dt/1.6);const e=1-Math.pow(1-G.doorAnim,3);VAULT.pivot.rotation.y=e*1.75;}
+  if(NOTE&&NOTE.glint)NOTE.glint.material.opacity=0.35+0.3*Math.sin(G.world*3);
+  if(G.vaultOpen&&G.doorAnim<1){G.doorAnim=Math.min(1,G.doorAnim+dt/1.6);const e=1-Math.pow(1-G.doorAnim,3);VAULT.pivot.rotation.y=e*1.75*(VAULT.openDir||1);}
   if(ring)ring.material.opacity=P.carry&&P.carry.kind==="loot"&&state==="playing"?0.45+0.25*Math.sin(G.world*5):0.22;
   VAULT.wheel.rotation.z=G.vaultOpen?G.doorAnim*3:0;
   for(const h of hatches){const tg=h.open?1:0;if(h.t!==tg){h.t=clamp(h.t+(h.open?dt:-dt)/0.6,0,1);h.piv.rotation.z=h.t*1.9;}}
