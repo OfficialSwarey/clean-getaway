@@ -230,7 +230,7 @@ details.help .keys{margin-bottom:14px}
         <dt>WASD</dt><dd>Move</dd>
         <dt>MOUSE</dt><dd>Look around</dd>
         <dt>SHIFT</dt><dd>Sprint (you get spotted faster)</dd>
-        <dt>SPACE</dt><dd>Jump (onto desks and benches, through open or smashed windows)</dd>
+        <dt>SPACE</dt><dd>Jump. Jump while moving into something low (a desk, a counter, a crate, a window sill) and you pull yourself up onto it: that is how you get through open or smashed windows</dd>
         <dt>C</dt><dd>Crouch on/off (hide behind counters, cars, crates, window sills)</dd>
         <dt>HOLD G</dt><dd>Put on your mask</dd>
         <dt>E</dt><dd>Interact: doors, the drill, loot. At a ladder: grab it, then W/S to climb and SPACE to let go. Hold it to pick a lock, loop a camera (stand under it and look up), bag a body, answer a pager or zip-tie a civilian. Tap it to make a tied hostage follow you or stay</dd>
@@ -241,7 +241,7 @@ details.help .keys{margin-bottom:14px}
         <dt>CLICK</dt><dd>Fire the silenced pistol</dd>
         <dt>R-CLICK</dt><dd>Aim down the sights (click again to lower)</dd>
         <dt>R</dt><dd>Reload</dd>
-        <dt>F</dt><dd>Take down a guard from behind. On day jobs: shout at civilians to get on the floor</dd>
+        <dt>F</dt><dd>Take down a guard from behind, or smash the window in front of you. On day jobs: shout at civilians to get on the floor</dd>
         <dt>M</dt><dd>Sound on/off</dd>
         <dt>ESC</dt><dd>Pause</dd>
       </dl>
@@ -398,9 +398,9 @@ const winGlass=new THREE.MeshPhongMaterial({color:0x9fb8c8,transparent:true,opac
 function windowX(z,a,b,h){
   addBox(a,z-0.2,b,z+0.2,WIN_LO,M.outer);
   addBox(a,z-0.2,b,z+0.2,h,M.outer,{y0:WIN_HI,collide:false});
-  const g=new THREE.Mesh(new THREE.PlaneGeometry(b-a,WIN_HI-WIN_LO),winGlass);g.position.set((a+b)/2,(WIN_LO+WIN_HI)/2,z);g.userData.noHit=true;lvAdd(g);
+  const g=new THREE.Mesh(new THREE.PlaneGeometry(b-a,WIN_HI-WIN_LO),winGlass);g.position.set((a+b)/2,(WIN_LO+WIN_HI)/2,z);lvAdd(g);
   addBox((a+b)/2-0.04,z-0.05,(a+b)/2+0.04,z+0.05,WIN_HI,M.trim,{y0:WIN_LO,collide:false});
-  colliders.push({minX:a,maxX:b,minZ:z-0.05,maxZ:z+0.05,h:WIN_HI,see:true,lvl:0});
+  colliders.push({minX:a,maxX:b,minZ:z-0.05,maxZ:z+0.05,h:WIN_HI,see:true,lvl:0});fixedWindow(g,colliders[colliders.length-1]);
 }
 // windows you can pick open (quiet) or smash with a bullet (loud), then jump through: low sill
 const OWIN_LO=0.7,OWIN_HI=2.3,windows=[];
@@ -426,6 +426,12 @@ function makeWindowAt(cx,cz,w,alongZ,h,mat,name,lvl){
 }
 const windowOX=(z,a,b,h,mat,name,lvl)=>makeWindowAt((a+b)/2,z,b-a,false,h,mat,name,lvl);
 const windowOZ=(x,a,b,h,mat,name,lvl)=>makeWindowAt(x,(a+b)/2,b-a,true,h,mat,name,lvl);
+// plain glass windows: they don't open, but a bullet (or an elbow) breaks them
+function fixedWindow(g,col){
+  const alongZ=(col.maxZ-col.minZ)>(col.maxX-col.minX);
+  const wo={x:(col.minX+col.maxX)/2,z:(col.minZ+col.maxZ)/2,w:alongZ?col.maxZ-col.minZ:col.maxX-col.minX,alongZ,grp:g,baseY:g.position.y,state:"closed",pickT:0,openT:0,shards:[],name:"window",level:col.lvl||0,col,fixed:true};
+  g.userData.win=wo;windows.push(wo);return wo;
+}
 function resetWindow(w){
   w.state="closed";w.pickT=0;w.openT=0;w.grp.visible=true;w.grp.position.y=w.baseY;
   if(!colliders.includes(w.col))colliders.push(w.col);
@@ -1757,13 +1763,13 @@ const MAP_MANOR={
     const segX=(l,z,a,b,gaps,h,m)=>{let x=a;for(const [g0,g1,top] of gaps){if(g0>x)wX(l,z,x,g0,h,m);addBox(g0,z-0.2,g1,z+0.2,h,m,{lvl:l,y0:top,collide:false});x=g1;}if(b>x)wX(l,z,x,b,h,m);};
     const segZ=(l,x,a,b,gaps,h,m)=>{let z=a;for(const [g0,g1,top] of gaps){if(g0>z)wZ(l,x,z,g0,h,m);addBox(x-0.2,g0,x+0.2,g1,h,m,{lvl:l,y0:top,collide:false});z=g1;}if(b>z)wZ(l,x,z,b,h,m);};
     const winX=(l,z,a,b,h,m)=>{addBox(a,z-0.2,b,z+0.2,1.0,m,{lvl:l});addBox(a,z-0.2,b,z+0.2,h,m,{lvl:l,y0:2.6,collide:false});
-      const g=new THREE.Mesh(new THREE.PlaneGeometry(b-a,1.6),winGlass);g.position.set((a+b)/2,l*ROOF_Y+1.8,z);g.userData.noHit=true;lvAdd(g);
+      const g=new THREE.Mesh(new THREE.PlaneGeometry(b-a,1.6),winGlass);g.position.set((a+b)/2,l*ROOF_Y+1.8,z);lvAdd(g);
       addBox((a+b)/2-0.04,z-0.05,(a+b)/2+0.04,z+0.05,2.6,M.trim,{lvl:l,y0:1.0,collide:false});
-      colliders.push({minX:a,maxX:b,minZ:z-0.05,maxZ:z+0.05,h:2.6,see:true,lvl:l});};
+      colliders.push({minX:a,maxX:b,minZ:z-0.05,maxZ:z+0.05,h:2.6,see:true,lvl:l});fixedWindow(g,colliders[colliders.length-1]);};
     const winZ=(l,x,a,b,h,m)=>{addBox(x-0.2,a,x+0.2,b,1.0,m,{lvl:l});addBox(x-0.2,a,x+0.2,b,h,m,{lvl:l,y0:2.6,collide:false});
-      const g=new THREE.Mesh(new THREE.PlaneGeometry(b-a,1.6),winGlass);g.position.set(x,l*ROOF_Y+1.8,(a+b)/2);g.rotation.y=Math.PI/2;g.userData.noHit=true;lvAdd(g);
+      const g=new THREE.Mesh(new THREE.PlaneGeometry(b-a,1.6),winGlass);g.position.set(x,l*ROOF_Y+1.8,(a+b)/2);g.rotation.y=Math.PI/2;lvAdd(g);
       addBox(x-0.05,(a+b)/2-0.04,x+0.05,(a+b)/2+0.04,2.6,M.trim,{lvl:l,y0:1.0,collide:false});
-      colliders.push({minX:x-0.05,maxX:x+0.05,minZ:a,maxZ:b,h:2.6,see:true,lvl:l});};
+      colliders.push({minX:x-0.05,maxX:x+0.05,minZ:a,maxZ:b,h:2.6,see:true,lvl:l});fixedWindow(g,colliders[colliders.length-1]);};
     const holesAt=l=>STAIRS.filter(s=>s.hi===l).map(s=>[s.minX,s.minZ,s.maxX,s.maxZ]);
     const fl=(l,r,mat)=>{for(const q of rectMinus(r,holesAt(l)))floor(q[0],q[1],q[2],q[3],mat,l*ROOF_Y+0.03);};
     const slab=(l,r,m,extraHoles)=>{for(const q of rectMinus(r,holesAt(l).concat(extraHoles||[])))addBox(q[0],q[1],q[2],q[3],l*ROOF_Y,m||M.ceil,{y0:l*ROOF_Y-0.38,collide:false,lvl:0});};
@@ -2263,8 +2269,8 @@ const MAP_CASINO={
     const segX=(l,z,a,b,gaps,h,m)=>{let x=a;for(const [g0,g1,top] of gaps){if(g0>x)wX(l,z,x,g0,h,m);addBox(g0,z-0.2,g1,z+0.2,h,m,{lvl:l,y0:top,collide:false});x=g1;}if(b>x)wX(l,z,x,b,h,m);};
     const segZ=(l,x,a,b,gaps,h,m)=>{let z=a;for(const [g0,g1,top] of gaps){if(g0>z)wZ(l,x,z,g0,h,m);addBox(x-0.2,g0,x+0.2,g1,h,m,{lvl:l,y0:top,collide:false});z=g1;}if(b>z)wZ(l,x,z,b,h,m);};
     const winX=(l,z,a,b,h,m)=>{addBox(a,z-0.2,b,z+0.2,1.0,m,{lvl:l});addBox(a,z-0.2,b,z+0.2,h,m,{lvl:l,y0:2.8,collide:false});
-      const g=new THREE.Mesh(new THREE.PlaneGeometry(b-a,1.8),winGlass);g.position.set((a+b)/2,l*ROOF_Y+1.9,z);g.userData.noHit=true;lvAdd(g);
-      colliders.push({minX:a,maxX:b,minZ:z-0.05,maxZ:z+0.05,h:2.8,see:true,lvl:l});};
+      const g=new THREE.Mesh(new THREE.PlaneGeometry(b-a,1.8),winGlass);g.position.set((a+b)/2,l*ROOF_Y+1.9,z);lvAdd(g);
+      colliders.push({minX:a,maxX:b,minZ:z-0.05,maxZ:z+0.05,h:2.8,see:true,lvl:l});fixedWindow(g,colliders[colliders.length-1]);};
     const holesAt=l=>STAIRS.filter(s=>s.hi===l).map(s=>[s.minX,s.minZ,s.maxX,s.maxZ]);
     const fl=(l,r,mat,extra)=>{for(const q of rectMinus(r,holesAt(l).concat(extra||[])))floor(q[0],q[1],q[2],q[3],mat,l*ROOF_Y+0.03);};
     const slab=(l,r,m,extra)=>{for(const q of rectMinus(r,holesAt(l).concat(extra||[])))addBox(q[0],q[1],q[2],q[3],l*ROOF_Y,m||M.ceil,{y0:l*ROOF_Y-0.38,collide:false});};
@@ -2608,7 +2614,7 @@ const MAP_PORT={
     {x:-42.6,z:-13.2,y:0.3,ry:0,lvl:1,box:"hsafe"}
   ],
   cash:[[6.7,0.81,-18.5],[-42.2,4.81,-9.4],[-40,4.04,-4.2],[24,0.96,-13.4],[33,0.81,-9.4,"jewel"],
-        [12,4.81,35.6],[11.2,8.61,27.9,"jewel"],[12.0,8.81,36.0],[16.5,13.01,36.3]],
+        [12,4.81,35.6],[14,9.01,31,"jewel"],[16.5,9.01,36.3]],
   isInside:(x,z)=>inR(x,z,PORT_OFF)||inR(x,z,PORT_HOLD),
   restricted(x,z,lvl){return lvl!==0||z>-20||inR(x,z,PORT_CULV);},
   trespassMsg(){return P.level===0&&!inR(P.x,P.z,PORT_HOLD)?"You're inside the terminal fence. Don't let anyone see you":"You're on board the Kestrel. Don't let anyone see you";},
@@ -2616,7 +2622,7 @@ const MAP_PORT={
     if(lvl===0)return z<=20.2||inR(x,z,PORT_HOLD);
     if(lvl===1)return inR(x,z,PORT_OFF)||(inR(x,z,PORT_DECK)&&!(G.p&&G.p.hatchOpen&&inR(x,z,PORT_HATCH)));
     if(lvl===2)return inR(x,z,PORT_SUP);
-    if(lvl===3)return inR(x,z,PORT_SUP)||inR(x,z,PORT_CAB);
+    if(lvl===3)return inR(x,z,PORT_CAB);
     return false;
   },
   forceCrouch(x,z,lvl){return lvl===0&&inR(x,z,PORT_CULV);},
@@ -2655,13 +2661,13 @@ const MAP_PORT={
     const segX=(l,z,a,b,gaps,h,m)=>{let x=a;for(const [g0,g1,top] of gaps){if(g0>x)wX(l,z,x,g0,h,m);addBox(g0,z-0.2,g1,z+0.2,h,m,{lvl:l,y0:top,collide:false});x=g1;}if(b>x)wX(l,z,x,b,h,m);};
     const segZ=(l,x,a,b,gaps,h,m)=>{let z=a;for(const [g0,g1,top] of gaps){if(g0>z)wZ(l,x,z,g0,h,m);addBox(x-0.2,g0,x+0.2,g1,h,m,{lvl:l,y0:top,collide:false});z=g1;}if(b>z)wZ(l,x,z,b,h,m);};
     const winX=(l,z,a,b,h,m)=>{addBox(a,z-0.2,b,z+0.2,1.0,m,{lvl:l});addBox(a,z-0.2,b,z+0.2,h,m,{lvl:l,y0:2.4,collide:false});
-      const g=new THREE.Mesh(new THREE.PlaneGeometry(b-a,1.4),winGlass);g.position.set((a+b)/2,l*ROOF_Y+1.7,z);g.userData.noHit=true;lvAdd(g);colliders.push({minX:a,maxX:b,minZ:z-0.05,maxZ:z+0.05,h:2.4,see:true,lvl:l});};
+      const g=new THREE.Mesh(new THREE.PlaneGeometry(b-a,1.4),winGlass);g.position.set((a+b)/2,l*ROOF_Y+1.7,z);lvAdd(g);colliders.push({minX:a,maxX:b,minZ:z-0.05,maxZ:z+0.05,h:2.4,see:true,lvl:l});fixedWindow(g,colliders[colliders.length-1]);};
     const winZ=(l,x,a,b,h,m)=>{addBox(x-0.2,a,x+0.2,b,1.0,m,{lvl:l});addBox(x-0.2,a,x+0.2,b,h,m,{lvl:l,y0:2.4,collide:false});
-      const g=new THREE.Mesh(new THREE.PlaneGeometry(b-a,1.4),winGlass);g.position.set(x,l*ROOF_Y+1.7,(a+b)/2);g.rotation.y=Math.PI/2;g.userData.noHit=true;lvAdd(g);colliders.push({minX:x-0.05,maxX:x+0.05,minZ:a,maxZ:b,h:2.4,see:true,lvl:l});};
+      const g=new THREE.Mesh(new THREE.PlaneGeometry(b-a,1.4),winGlass);g.position.set(x,l*ROOF_Y+1.7,(a+b)/2);g.rotation.y=Math.PI/2;lvAdd(g);colliders.push({minX:x-0.05,maxX:x+0.05,minZ:a,maxZ:b,h:2.4,see:true,lvl:l});fixedWindow(g,colliders[colliders.length-1]);};
     const holesAt=l=>STAIRS.filter(s=>s.hi===l).map(s=>[s.minX,s.minZ,s.maxX,s.maxZ]);
     const fl=(l,r,mat,extra)=>{for(const q of rectMinus(r,holesAt(l).concat(extra||[])))floor(q[0],q[1],q[2],q[3],mat,l*ROOF_Y+0.03);};
     const slab=(l,r,m,extra)=>{for(const q of rectMinus(r,holesAt(l).concat(extra||[])))addBox(q[0],q[1],q[2],q[3],l*ROOF_Y,m||M.ceil,{y0:l*ROOF_Y-0.38,collide:false});};
-    const rail=(l,x1,z1,x2,z2,m)=>{colliders.push({minX:Math.min(x1,x2)-0.05,maxX:Math.max(x1,x2)+0.05,minZ:Math.min(z1,z2)-0.05,maxZ:Math.max(z1,z2)+0.05,h:1.1,lvl:l});
+    const rail=(l,x1,z1,x2,z2,m)=>{colliders.push({minX:Math.min(x1,x2)-0.05,maxX:Math.max(x1,x2)+0.05,minZ:Math.min(z1,z2)-0.05,maxZ:Math.max(z1,z2)+0.05,h:1.1,see:true,lvl:l});
       addBox(Math.min(x1,x2)-0.04,Math.min(z1,z2)-0.04,Math.max(x1,x2)+0.04,Math.max(z1,z2)+0.04,1.1,m||yellow,{lvl:l,y0:1.02,collide:false});
       const n=Math.max(1,Math.round(Math.hypot(x2-x1,z2-z1)/1.5));for(let i=0;i<=n;i++){const px=x1+(x2-x1)*i/n,pz=z1+(z2-z1)*i/n;addBox(px-0.03,pz-0.03,px+0.03,pz+0.03,1.02,m||yellow,{lvl:l,collide:false});}};
     // a shipping container: hollow, doors at one end; returns the parts
@@ -2681,7 +2687,6 @@ const MAP_PORT={
     makeStairs({minX:4,maxX:6,minZ:18.5,maxZ:24.5,axis:"z",up:1,lo:0,mat:steel,railMat:yellow,noEndRail:true});            // gangway
     makeStairs({minX:-36.6,maxX:-34.4,minZ:-13,maxZ:-6.5,axis:"z",up:-1,lo:0,mat:M.cabinet,railMat:M.trim,open:["minX"]});      // harbor office stairs
     makeStairs({minX:16.2,maxX:17.8,minZ:26,maxZ:32,axis:"z",up:1,lo:1,mat:steel,railMat:M.trim,open:["maxX"]});             // ship: deck -> cabins
-    makeStairs({minX:16.2,maxX:17.8,minZ:26,maxZ:32,axis:"z",up:1,lo:2,mat:steel,railMat:M.trim,open:["maxX"]});             // cabins -> bridge
     makeStairs({minX:10.4,maxX:12,minZ:26,maxZ:32,axis:"z",up:1,lo:0,mat:steel,railMat:M.trim,open:["minX"]});               // deck -> hold (crew stairs)
 
     // ---------- ground, water, walls, fence ----------
@@ -2843,28 +2848,22 @@ const MAP_PORT={
     // superstructure: three decks over the stern
     for(const l of [1,2,3]){
       if(l===1){wX(1,25,10,18,OH,white);segZ(1,10,25,37,[[34,36,2.4]],OH,white);winZ(1,18,27,30,OH,white);wZ(1,18,25,27,OH,white);wZ(1,18,30,37,OH,white);wX(1,37,10,18,OH,white);}
-      if(l===2){wX(2,25,10,18,OH,white);winZ(2,10,26,30,OH,white);wZ(2,10,25,26,OH,white);wZ(2,10,30,37,OH,white);wZ(2,18,25,37,OH,white);winX(2,37,10,14,OH,white);wX(2,37,14,18,OH,white);}
-      if(l===3){winX(3,25,10,18,OH,white);winZ(3,10,25,37,OH,white);winZ(3,18,25,32,OH,white);wZ(3,18,32,37,OH,white);winX(3,37,10,18,OH,white);}
+      if(l===2){winX(2,25,10,18,OH,white);winZ(2,10,25,37,OH,white);winZ(2,18,25,32,OH,white);wZ(2,18,32,37,OH,white);winX(2,37,10,18,OH,white);}
     }
     makeDoorZ(10,34,36,2.38,{lvl:1,mat:staffDoorMat,name:"superstructure door"});
-    slab(2,PORT_SUP);slab(3,PORT_SUP);addBox(9.8,24.8,18.2,37.2,4*ROOF_Y,white,{y0:4*ROOF_Y-0.35,collide:false});
-    fl(1,PORT_SUP,fm.tile);fl(2,PORT_SUP,fm.carpet);fl(3,PORT_SUP,fm.tile);
+    slab(2,PORT_SUP);addBox(9.8,24.8,18.2,37.2,3*ROOF_Y,white,{y0:3*ROOF_Y-0.35,collide:false});
+    fl(1,PORT_SUP,fm.tile);fl(2,PORT_SUP,fm.tile);
     // deck 1: mess, the locked crew stairs down to the hold
     addBox(11.4,34.6,13.4,36.2,0.8,M.desk,{lvl:1});
     addBox(12.0,32.25,12.3,32.55,IH,white,{lvl:1});addBox(10.2,32.2,12.3,32.6,IH,white,{lvl:1,y0:2.4,collide:false});
     const crewDoor=makeDoor(10.4,12,32.4,2.38,{lvl:1,mat:M.steel,name:"hold stairs door"});makeReader(crewDoor,12.15,ROOF_Y+1.25,32.62,0);
     pointLight(13,ROOF_Y+3.0,34,0xfff0d8,0.55,10,true);
-    // deck 2: cabins
-    segX(2,31,10,13.5,[],IH,white);segZ(2,13.5,25,37,[[28,30,2.4],[33,35,2.4]],IH,white);
-    makeDoorZ(13.5,28,30,2.38,{lvl:2,mat:phong(0x4a3424),name:"captain's cabin"});makeDoorZ(13.5,33,35,2.38,{lvl:2,mat:phong(0x4a3424),name:"crew cabin"});
-    addBox(10.4,25.4,12.4,27.4,0.6,phong(0x3a4a5a),{lvl:2});addBox(10.4,27.6,11.6,28.4,0.6,M.desk,{lvl:2});addBox(10.4,35.4,12.4,36.6,0.8,M.desk,{lvl:2});
-    pointLight(15,2*ROOF_Y+3.0,31,0xfff0d8,0.5,10,true);
-    // deck 3: the bridge, hatch controls, the searchlight up top
-    addBox(10.4,36.0,17.6,36.6,1.0,M.cabinet,{lvl:3});addBox(12,25.2,15,25.8,1.0,M.cabinet,{lvl:3});
-    const hydr=new THREE.Mesh(new THREE.BoxGeometry(0.8,0.3,0.06),[M.cabinet,M.cabinet,M.cabinet,M.cabinet,new THREE.MeshBasicMaterial({map:signTex("HATCH 2 · HYDRAULICS",256,64,"#ffd27a","#140e04","bold 24px monospace")}),M.cabinet]);hydr.position.set(13.5,3*ROOF_Y+1.25,25.85);lvAdd(hydr);
-    addBox(13.2,30.6,14.8,31.4,1.0,M.cabinet,{lvl:3});
-    pointLight(14,3*ROOF_Y+3.0,31,0x9fc4ff,0.35,11,true);
-    addBox(13.6,30.6,14.4,31.4,4*ROOF_Y+0.6,M.pole,{y0:4*ROOF_Y,collide:false});
+    // the bridge: hatch controls at the back, the searchlight up top
+    addBox(10.4,36.0,17.6,36.6,1.0,M.cabinet,{lvl:2});addBox(12,25.2,15,25.8,1.0,M.cabinet,{lvl:2});
+    const hydr=new THREE.Mesh(new THREE.BoxGeometry(0.8,0.3,0.06),[M.cabinet,M.cabinet,M.cabinet,M.cabinet,new THREE.MeshBasicMaterial({map:signTex("HATCH 2 · HYDRAULICS",256,64,"#ffd27a","#140e04","bold 24px monospace")}),M.cabinet]);hydr.position.set(13.5,2*ROOF_Y+1.25,25.85);lvAdd(hydr);
+    addBox(13.2,30.6,14.8,31.4,1.0,M.cabinet,{lvl:2});
+    pointLight(14,2*ROOF_Y+3.0,31,0x9fc4ff,0.4,11,true);
+    addBox(13.6,30.6,14.4,31.4,3*ROOF_Y+0.6,M.pole,{y0:3*ROOF_Y,collide:false});
     pointLight(-12,8.5,31,0xf0f4ff,0.7,22);
 
     // ---------- the getaway: a speedboat at the east end ----------
@@ -2880,14 +2879,14 @@ const MAP_PORT={
     function dark2(){return phong(0x1a1c1e);}
 
     // ---------- keycard (hold stairs) ----------
-    makeKeycard([[-40.6,0.81,-12.9],[8.3,0.81,-18.5],[12.6,4.81,35.0],[11.4,8.61,26.4],[26.4,0.96,-13.3],[-39.2,0.79,-3.0]]);
+    makeKeycard([[-40.6,0.81,-12.9],[8.3,0.81,-18.5],[12.6,4.81,35.0],[11.0,9.01,36.3],[26.4,0.96,-13.3],[-39.2,0.79,-3.0]]);
     // ---------- cameras ----------
     makeCam(-29.6,3.4,-14.4,-2.4+Math.PI,0.6,10,0,26,0.45,0);
     makeCam(9.4,3.2,-15.6,0.4,0.5,9,1.2,22,0.45,0,{shadow:false});
     makeCam(37.6,4.6,-1,-1.3,0.5,11,0.4,26,0.45,0,{shadow:false});
     makeCam(-2.1,4.6,19.6,-1.6,0.6,10,2.0,24,0.45,0,{shadow:false});
     makeCam(6.6,ROOF_Y+3.0,24.6,-0.9,0.4,9,0.8,18,0.45,1,{shadow:false});
-    const search=makeCam(14,4*ROOF_Y+0.8,30.2,-Math.PI/2,1.0,14,0.5,34,0.32,1,{shadow:false});search.spot.intensity=2.6;
+    const search=makeCam(14,3*ROOF_Y+0.8,30.2,-Math.PI/2,1.0,14,0.5,34,0.32,1,{shadow:false});search.spot.intensity=2.6;
     // ---------- security ----------
     new Guard([[7.5,-17.4,Math.PI,0]],0,{name:"Varga",flashShadow:false});
     new Guard([[-28,-16,null,2],[-10,-16],[-10,14,null,2],[-28,14]],1.0,{name:"Moss"});
@@ -2896,13 +2895,13 @@ const MAP_PORT={
     new Guard([[-33,-12.5,null,2],[-33,-3,null,2]],1.0,{name:"Sten",flashShadow:false});
     new Guard([[-41.5,-11,-Math.PI/2,0]],0,{security:true,seated:true,name:"Ibsen",flashShadow:false});
     new Guard([[-30,25.2,null,3],[8,25.2,null,2],[8,36.8],[-30,36.8,null,3]],1.1,{name:"Riggs",level:1,flashShadow:false});
-    new Guard([[14.8,26,null,3],[14.8,36,null,3]],1.0,{name:"Bauer",level:2,flashShadow:false});
+    new Guard([[14.8,26.4,null,3],[14.8,33.6,null,3]],1.0,{name:"Bauer",level:1,flashShadow:false});
     new Guard([[-30,25.3,null,2],[14,25.3,null,2]],1.0,{name:"Lund",flashShadow:false});
     // ---------- the night shift ----------
     new Civilian([[-41.6,-7.1,Math.PI/2,0]],0,{asleep:true,worker:true,label:"The crane driver",bedY:0.6});
     new Civilian([[13,0.2,null,4],[34.5,0.2,null,4]],1.5,{worker:true,label:"A dock worker"});
     new Civilian([[-28,0,null,5],[-11,0,null,5]],2,{worker:true,label:"A dock worker"});
-    new Civilian([[14,35.0,0,0]],0,{worker:true,label:"The first mate",level:3});
+    new Civilian([[14,35.0,0,0]],0,{worker:true,label:"The first mate",level:2});
     new Civilian([[14.8,35.5,-Math.PI/2,0]],0,{worker:true,label:"The cook",level:1});
     new Civilian([[-40.5,-8.3,Math.PI,0]],0,{worker:true,label:"The night clerk",level:1});
     Object.assign(self,{X:{rows,hatch,cr,cutters,culvG,culvCol,hs,leverM,cageDoor}});
@@ -3003,7 +3002,7 @@ const MAP_PORT={
     }
     if(lv===0&&!cd.locked&&!cd.cut){cd.cut=true;bags.forEach(b=>{if(b.state==="locked"&&b.box==="cage")b.state="ground";});}
     // hatch hydraulics on the bridge
-    if(lv===3&&!p.hatchOpen&&facing(13.5,25.6,1.8)>=0){
+    if(lv===2&&!p.hatchOpen&&facing(13.5,25.6,1.8)>=0){
       const r=hold("hatch",3,"Opening hatch 2…");
       if(r==="done"){p.hatchOpen=true;const i=colliders.indexOf(X.hatch.cols[0]);if(i>=0)colliders.splice(i,1);G.bang={x:-7,z:31,r:20,lvl:1};tone({type:"sawtooth",f0:60,f1:80,dur:3.5,vol:.08,lp:300,attack:.4});toast("The hydraulics groan. Hatch 2 is opening. Anyone on deck heard that","warn",3000);return null;}
       return r||{p:"Hold <kbd>E</kbd> to open the cargo hatch over hold 2"};
@@ -3048,7 +3047,7 @@ const MAP_PORT={
     if(p.lift)return "The crane is lifting. Every guard on the quay can hear it.";
     const need=[];
     if(!p.manifest)need.push("find out which container: the manifest is on the computer upstairs in the harbor master's office (west side)");
-    if(!p.hatchOpen)need.push("open hatch 2 from the ship's bridge (top of the white superstructure, up the gangway)");
+    if(!p.hatchOpen)need.push("open hatch 2 from the ship's bridge (top of the white tower at the stern, up the gangway)");
     if(!p.craneKey)need.push("get the crane's ignition key (key cabinet, harbor master's office)");
     if(p.manifest&&p.hatchOpen&&p.craneKey&&!X_lifted(this,p.row))need.push(`climb the dock crane and lift the container blocking row ${p.row+1}`);
     if(need.length)return "To reach the container: "+need.join("; ")+".";
@@ -3150,7 +3149,7 @@ let sparkI=0;
 function spark(pt,big){const s=sparks[sparkI++%sparks.length];s.position.copy(pt);s.life=big?0.35:0.12;s.scale.setScalar(big?2.2:1);s.visible=true;}
 
 /* ================= collision & sight ================= */
-const STAND_MAX=1.25; // you can stand on anything up to this height (desks, benches, sills, crates)
+const STAND_MAX=1.25,MANTLE_MAX=1.21; // you can stand on anything up to this height (desks, benches, sills, crates)
 function resolve(p,r,lvl,feet){
   lvl=lvl||0;feet=feet||0;
   for(let it=0;it<3;it++)for(const c of colliders){
@@ -3828,6 +3827,12 @@ function updatePlayer(dt){
   if(len>0){
     mx/=len;mz/=len;
     const p={x:P.x+mx*speed*dt,z:P.z+mz*speed*dt};
+    if((P.jh>P.gnd+0.05||P.vy>0)&&!P.onStair){
+      for(const c of colliders){
+        if((c.lvl||0)!==P.level||c.see||c.h>MANTLE_MAX||c.h<=P.jh+0.02||c.h-P.jh>0.6)continue;
+        if(p.x+0.37>c.minX&&p.x-0.37<c.maxX&&p.z+0.37>c.minZ&&p.z-0.37<c.maxZ){P.jh=c.h+0.01;P.vy=Math.max(P.vy,0.5);noiseHit({type:"lowpass",freq:500,dur:.08,vol:.12});break;}
+      }
+    }
     resolve(p,0.35,P.level,P.jh);
     // never walk onto a different level's stair from the side or into a hole: only through the ends (rails handle the sides)
     for(const g of npcs()){if(P.jh>1.0)break;if(g.down||g.level!==P.level)continue;const r=g.kind==="civ"?0.55:0.65;const dx=p.x-g.x,dz=p.z-g.z,d=Math.hypot(dx,dz);if(d<r&&d>1e-6){p.x=g.x+dx/d*r;p.z=g.z+dz/d*r;}}
@@ -3958,8 +3963,16 @@ function shoutTarget(){
   }
   return best;
 }
+function windowAhead(){
+  const fx=-Math.sin(P.yaw),fz=-Math.cos(P.yaw);let best=null,bd=1.7;
+  for(const w of windows){if(w.state!=="closed"||w.level!==P.level)continue;
+    const dx=w.alongZ?w.x-P.x:clamp(P.x,w.x-w.w/2,w.x+w.w/2)-P.x,dz=w.alongZ?clamp(P.z,w.z-w.w/2,w.z+w.w/2)-P.z:w.z-P.z,d=Math.hypot(dx,dz);
+    if(d<bd&&d>0.01&&(dx*fx+dz*fz)/d>0.5){bd=d;best=w;}}
+  return best;
+}
 function pressF(){
   if(P.locked||P.climb)return;
+  {const w=windowAhead();if(w&&!takedownTarget()){P.kick=1;breakWindow(w);return;}}
   if(!civs.length||takedownTarget()){tryTakedown();return;}
   if(!P.masked){toast("Put on your mask first. Hold G","warn");return;}
   if(P.shoutCD>0)return;
@@ -4431,7 +4444,8 @@ function updateInteraction(dt){
   if(!prompt){
     let win=null,bd=1e9;
     for(const w of windows){if(w.level!==P.level)continue;const d=facing(w.x,w.z,1.8);if(d>=0&&d<bd){win=w;bd=d;}}
-    if(win&&win.state==="closed"){
+    if(win&&win.state==="closed"&&win.fixed){if(bd<1.6)prompt=P.masked?"Shoot the glass or press <kbd>F</kbd> to smash the window":"Press <kbd>F</kbd> to smash the window (loud)";}
+    else if(win&&win.state==="closed"){
       if(P.carry)prompt="Drop what you're carrying to pick the window. <kbd>Q</kbd>";
       else{
         prompt=`Hold <kbd>E</kbd> to pick the window latch${P.masked?" · or shoot the glass (loud)":""}`;
