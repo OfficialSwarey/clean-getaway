@@ -7353,7 +7353,10 @@ function setSrc(s){
   const h=$("kpHint");if(h)h.innerHTML=s==="touch"?"Tap the keys. <b>OK</b> to try the code, ⌫ to erase. Tap outside to close.":s==="pad"?"D-pad to pick a key, <b>A</b> to press it, <b>B</b> to close.":"Type the code with the number keys. Backspace erases. <kbd>E</kbd> or a step away closes it.";
 }
 addEventListener("keydown",()=>setSrc("kbm"),true);
-addEventListener("mousedown",e=>{if(e.pointerType!=="touch"&&!e.sourceCapabilities?.firesTouchEvents)setSrc("kbm");},true);
+// Use pointer events, not mousedown: a tap on an iPhone also fires a fake mousedown afterwards that looks like a real mouse.
+// pointerType tells them apart ("mouse" only for a real mouse or trackpad).
+addEventListener("pointerdown",e=>{if(e.pointerType==="mouse")setSrc("kbm");else if(e.pointerType)setSrc("touch");},true);
+addEventListener("touchstart",()=>setSrc("touch"),{capture:true,passive:true});
 
 /* ---------- touch ---------- */
 const TP=new Map(); // pointerId -> {kind:"stick"|"look"|"btn",...}

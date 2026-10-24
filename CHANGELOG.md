@@ -5,6 +5,9 @@ feature round bumps MINOR, a bug-fix-only update bumps PATCH, and 1.0.0 is
 the first "finished" release. Up to 0.30.0, MINOR is the version number the
 claude.ai artifact had. Releases are tagged `v0.30.0` and so on.
 
+## 0.30.1
+- iPhone: the touch controls now show up. A tap on an iPhone also sends a fake mouse click, which switched the game to mouse and keyboard; the game now goes by pointer type instead.
+
 ## 0.30.0 — phones and controllers
 - Touch controls on phones and tablets: floating joystick, drag to look, context buttons, tappable keypads, a floor picker in elevators, pause button, landscape prompt.
 - Controller support in game and in the menus (d-pad focus, A/B, LB/RB tabs), keypads with a d-pad cursor.
