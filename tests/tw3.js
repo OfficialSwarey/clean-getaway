@@ -1,0 +1,20 @@
+const {chromium}=require('playwright-core');
+(async()=>{
+  const b=await chromium.launch({executablePath:'/opt/pw-browsers/chromium',args:['--use-gl=swiftshader','--enable-unsafe-swiftshader']});
+  const p=await b.newPage({viewport:{width:640,height:360}});
+  const errs=[];p.on('pageerror',e=>errs.push('PAGEERR '+e.message));
+  await p.goto('file://'+__dirname+'/test.html');await p.waitForTimeout(800);
+  await p.evaluate(()=>{__qh.setState("menu");__qh.pickMap("tower");__qh.resetGame();__qh.setState("playing");});
+  const H=require('fs').readFileSync(__dirname+'/twH.js','utf8');
+  const run=src=>p.evaluate(new Function(H+src));
+  const out={};
+  await run(`away();`);
+  out.kp=await run(`q.P.hasCard=true;go(-13,-6.4,2,Math.PI);const c=pr();q.pressE();step(1);return {term:c,keypad:q.G.keypad,code:q.G.safeCode};`);
+  await p.evaluate(()=>{const c=__qh.G.safeCode;for(const d of c){window.dispatchEvent(new KeyboardEvent("keydown",{code:"Digit"+d}));window.dispatchEvent(new KeyboardEvent("keyup",{code:"Digit"+d}));}});
+  out.kp2=await run(`return {keypad:q.G.keypad,entry:q.KP.entry,busy:q.KP.busy};`);
+  const T0=Date.now();await p.evaluate(()=>new Promise(r=>setTimeout(r,1500)));out.waited=Date.now()-T0;
+  out.kp3=await run(`return {fails:q.G.safeFails,entry:q.KP.entry,busy:q.KP.busy,scr:document.getElementById("kpScreen").textContent,vopen:q.G.vaultOpen,keypad:q.G.keypad,ov:q.G.t.override,toast:document.getElementById("toast").textContent,state:q.state};`);
+  out.errs=errs;
+  console.log(JSON.stringify(out,null,1));
+  await b.close();
+})();

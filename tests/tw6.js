@@ -1,0 +1,21 @@
+const {chromium}=require('playwright-core');
+(async()=>{
+  const b=await chromium.launch({executablePath:'/opt/pw-browsers/chromium',args:['--use-gl=swiftshader','--enable-unsafe-swiftshader']});
+  const p=await b.newPage({viewport:{width:640,height:360}});
+  const errs=[];p.on('pageerror',e=>errs.push('PAGEERR '+e.message));
+  await p.goto('file://'+__dirname+'/test.html');await p.waitForTimeout(800);
+  await p.evaluate(()=>{__qh.setState("menu");__qh.pickMap("tower");__qh.resetGame();__qh.setState("playing");});
+  const H=require('fs').readFileSync(__dirname+'/twH.js','utf8');
+  const run=src=>p.evaluate(new Function(H+src));
+  const out={};
+  await run(`away();`);
+  out.doors=await run(`go(0,13.2,0,0);const a=pr();go(3.9,-13.2,0,Math.PI);const b=pr();q.keys.KeyE=true;step(30*7);q.keys.KeyE=false;step(30);const d=q.doors.find(d=>d.name==="service door");return {lobby:a,service:b,unlocked:!d.locked};`);
+  out.win=await run(`q.P.masked=true;go(-8,-10.6,3,0);const a=pr();q.pressF();step(10);const w=q.windows.find(w=>w.fixed&&w.level===3&&Math.abs(w.z+12)<0.2&&Math.abs(w.x+8)<4.1);
+    q.keys.KeyW=true;step(6);q.tryJump();step(60);q.keys.KeyW=false;step(30);return {prompt:a,state:w&&w.state,at:at()};`);
+  out.safe=await run(`go(14.4,-9.4,3,0);const a=pr();q.keys.KeyE=true;step(30*10);q.keys.KeyE=false;step(2);const b=q.bags.find(b=>b.box==="msafe");go(14.4,-9.6,3,0,-0.7);const c=pr();return {prompt:a,open:q.LV.def.X.mgrSafe.open,bag:b.state,pick:c};`);
+  out.count=await run(`go(12.5,-7.4,4,0,-0.5);const a=pr();return {prompt:a};`);
+  out.vaneTied=await run(`const v=q.civs.find(c=>c.label==="Victor Vane");Object.assign(v,{state:"tied",follow:false});go(v.x,v.z+1.2,5,0);const a=pr();q.keys.KeyE=true;step(30*5);q.keys.KeyE=false;return {prompt:a,voice:q.G.t.voice};`);
+  out.errs=errs;
+  console.log(JSON.stringify(out,null,1));
+  await b.close();
+})();

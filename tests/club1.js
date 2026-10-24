@@ -1,0 +1,23 @@
+const {chromium}=require('playwright-core');
+(async()=>{
+  const b=await chromium.launch({executablePath:'/opt/pw-browsers/chromium',args:['--use-gl=swiftshader','--enable-unsafe-swiftshader','--autoplay-policy=no-user-gesture-required']});
+  const p=await b.newPage({viewport:{width:960,height:540}});
+  const errs=[];p.on('pageerror',e=>errs.push('PAGEERR '+e.message+'\n'+(e.stack||'').split('\n').slice(0,3).join('\n')));
+  p.on('console',m=>{if(m.type()==='error')errs.push('CONSOLE '+m.text());});
+  await p.goto('file://'+__dirname+'/test.html');await p.waitForTimeout(1000);
+  await p.click('.job[data-map="club"]');await p.waitForTimeout(800);
+  await p.screenshot({path:'50-club-menu.png'});
+  await p.click('#startBtn');await p.waitForTimeout(1200);
+  const shot=async(f,n)=>{await p.evaluate(f);await p.waitForTimeout(400);await p.screenshot({path:n});};
+  await shot(()=>{const q=__qh;q.DEV.ghost=true;for(let i=0;i<4;i++)q.stepGame(1/30);},'51-club-street.png');
+  await shot(()=>{const q=__qh;q.P.x=0;q.P.z=12.5;q.P.yaw=0.5;q.P.pitch=-0.05;for(let i=0;i<4;i++)q.stepGame(1/30);},'52-club-entrance.png');
+  await shot(()=>{const q=__qh;q.P.x=8;q.P.z=8;q.P.yaw=1.4;q.P.pitch=0.0;for(let i=0;i<10;i++)q.stepGame(1/30);},'53-club-dance.png');
+  await shot(()=>{const q=__qh;q.P.x=-6;q.P.z=1;q.P.yaw=-2.2;q.P.pitch=0.0;for(let i=0;i<10;i++)q.stepGame(1/30);},'54-club-bar.png');
+  await shot(()=>{const q=__qh;q.P.x=-6;q.P.z=8;q.P.yaw=1.0;q.P.pitch=0.0;for(let i=0;i<10;i++)q.stepGame(1/30);},'55-club-dj-vip.png');
+  await shot(()=>{const q=__qh;q.P.x=-2;q.P.z=-6;q.P.yaw=0;q.P.pitch=-0.1;for(let i=0;i<4;i++)q.stepGame(1/30);},'56-club-office.png');
+  await shot(()=>{const q=__qh;q.P.x=0;q.P.z=-3.5;q.P.yaw=-Math.PI/2;q.P.pitch=0;for(let i=0;i<4;i++)q.stepGame(1/30);},'57-club-corridor.png');
+  await shot(()=>{const q=__qh;q.P.x=22;q.P.z=-9;q.P.yaw=0.3;q.P.pitch=-0.05;for(let i=0;i<4;i++)q.stepGame(1/30);},'58-club-yard.png');
+  const info=await p.evaluate(()=>{const q=__qh;let pl=0;q.scene.traverse(o=>{if(o.isPointLight&&o.visible)pl++;});return {guards:q.guards.length,civs:q.civs.length,cams:q.cams.length,doors:q.doors.length,windows:q.windows.length,bags:q.bags.length,pointLights:pl,sec:!!q.secGuard,music:!!q.A.music};});
+  console.log(JSON.stringify(info));
+  console.log(errs.join('\n')||'no errors');await b.close();
+})();

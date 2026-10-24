@@ -1,0 +1,20 @@
+const {chromium}=require('playwright-core');
+(async()=>{
+  const b=await chromium.launch({executablePath:'/opt/pw-browsers/chromium',args:['--use-gl=swiftshader','--enable-unsafe-swiftshader']});
+  const p=await b.newPage({viewport:{width:640,height:360}});
+  const errs=[];p.on('pageerror',e=>errs.push('PAGEERR '+e.message));
+  await p.goto('file://'+__dirname+'/test.html');await p.waitForTimeout(800);
+  const H=require('fs').readFileSync(__dirname+'/twH.js','utf8');
+  const run=src=>p.evaluate(new Function(H+src));
+  const fresh=`q.setState("menu");q.pickMap("jewel");q.resetGame();q.setState("playing");away();q.civs.forEach(c=>{c.x=200;c.z=200;c.route=[[200,200]];});`;
+  const out={};
+  out.ladderRoof=await run(fresh+`go(-6,-9.2,0,Math.PI);const a=pr();q.pressE();step(2);q.keys.KeyW=true;step(90);q.keys.KeyW=false;step(60);const b=at();
+    go(1.7,-3.6,1,0);const c=pr();q.keys.KeyE=true;step(150);q.keys.KeyE=false;step(30);const sky=q.G.j.sky;
+    go(1.7,-3.25,1,Math.PI);const d=pr();q.pressE();step(60);const e=at();q.keys.KeyS=true;step(90);q.keys.KeyS=false;step(5);const f=at();
+    return {a,roof:b,sky:c,open:sky,rope:d,onRope:e,bottom:f};`);
+    out.window=await run(fresh+`go(1.6,-9.0,0,Math.PI);const a=pr();q.keys.KeyE=true;step(30*5);q.keys.KeyE=false;step(30);q.P.yaw=Math.PI;q.keys.KeyW=true;step(4);q.tryJump();step(40);q.keys.KeyW=false;step(5);return {a,at:at()};`);
+  out.delay=await run(fresh+`go(6.8,-9.0,0,Math.PI);const a=pr();q.keys.KeyE=true;step(30*7);q.keys.KeyE=false;step(2);q.pressE();step(10);const d=q.G.j.delay;step(30*31);return {a,delay:+d.toFixed(1),alarm:q.G.alarm,toast:toastT()};`);
+          out.errs=errs;
+  console.log(JSON.stringify(out,null,1));
+  await b.close();
+})();

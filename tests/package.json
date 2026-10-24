@@ -1,0 +1,13 @@
+{
+  "name": "clean-getaway-tests",
+  "private": true,
+  "description": "Headless regression tests for Clean Getaway (Playwright + a local copy of three.js r128).",
+  "scripts": {
+    "build": "python3 ../tools/make_test.py",
+    "test": "npm run build && ./qa/runall.sh"
+  },
+  "devDependencies": {
+    "playwright-core": "^1.47.0",
+    "three": "0.128.0"
+  }
+}

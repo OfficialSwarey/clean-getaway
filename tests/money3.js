@@ -1,0 +1,20 @@
+const {chromium}=require('playwright-core');
+(async()=>{
+  const b=await chromium.launch({executablePath:'/opt/pw-browsers/chromium',args:['--use-gl=swiftshader','--enable-unsafe-swiftshader']});
+  const p=await b.newPage({viewport:{width:960,height:600}});
+  const errs=[];p.on('pageerror',e=>errs.push('PAGEERR '+e.message));
+  await p.goto('file://'+__dirname+'/test.html');await p.waitForTimeout(800);
+  await p.evaluate(()=>{try{localStorage.clear();}catch(e){}});
+  const run=(map,setup)=>p.evaluate(([map,setup])=>{const q=__qh;q.setState("menu");q.pickMap(map);q.resetGame();q.setState("playing");q.DEV.ghost=true;
+    q.G.vanTake=40000;q.G.pocket=2000;new Function("q",setup)(q);q.P.x=q.SECURE.x+0.5;q.P.z=q.SECURE.z;q.stepGame(1/30);q.keys.KeyE=true;for(let i=0;i<55;i++)q.stepGame(1/30);q.keys.KeyE=false;
+    return {score:document.getElementById("endTakeVal").textContent,lbl:document.getElementById("endTakeLbl").textContent,breakdown:document.getElementById("endBreak").innerText.replace(/\n/g," | "),best:document.getElementById("endBest").textContent};},[map,setup]);
+  const r={};
+  r.clubClean=await run("club","");
+  await p.screenshot({path:'74-score.png'});
+  r.clubKilled=await run("club","q.G.civKills=2;");
+  r.clubLoud=await run("club","q.G.everAlarm=true;");
+  r.harborClean=await run("harbor","");
+  r.harborLoud=await run("harbor","q.G.everAlarm=true;");
+  r.menu=await p.evaluate(()=>{__qh.setState("menu");return [...document.querySelectorAll(".job-best")].map(e=>e.parentNode.dataset.map+": "+e.textContent);});
+  console.log(JSON.stringify(r,null,1));console.log(errs.join('\n')||'no errors');await b.close();
+})();

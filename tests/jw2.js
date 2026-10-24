@@ -1,0 +1,32 @@
+const {chromium}=require('playwright-core');
+(async()=>{
+  const b=await chromium.launch({executablePath:'/opt/pw-browsers/chromium',args:['--use-gl=swiftshader','--enable-unsafe-swiftshader']});
+  const p=await b.newPage({viewport:{width:640,height:360}});
+  const errs=[];p.on('pageerror',e=>errs.push('PAGEERR '+e.message));
+  await p.goto('file://'+__dirname+'/test.html');await p.waitForTimeout(800);
+  await p.evaluate(()=>{__qh.setState("menu");__qh.pickMap("jewel");__qh.resetGame();__qh.setState("playing");});
+  const H=require('fs').readFileSync(__dirname+'/twH.js','utf8');
+  const run=src=>p.evaluate(new Function(H+src));
+  const out={};
+  await run(`away();q.civs.forEach(c=>{c.x=200;c.z=200;c.route=[[200,200]];});`);
+  out.hatch=await run(`go(-15,10.8,0,Math.PI);const a=pr();q.keys.KeyE=true;step(150);q.keys.KeyE=false;step(5);const h=q.G.j.hatch;
+    go(-15,11.2,0,0);const b=pr();q.pressE();step(80);const c=at();return {a,h,b,afterClimb:c,ladder:!!q.P.ladder};`);
+  out.down=await run(`q.keys.KeyS=true;step(80);q.keys.KeyS=false;step(5);return {at:at(),ladder:!!q.P.ladder};`);
+  out.drill=await run(`go(-11,0,-1,-Math.PI/2);const a=pr();q.keys.KeyE=true;step(30*26);q.keys.KeyE=false;step(2);walk(-Math.PI/2,40);return {a,drilled:q.G.j.drilled,at:at()};`);
+  out.tools=await run(`go(-6.4,-6.2,-1,0,-0.6);const a=pr();q.pressE();step(1);go(-2.9,-6.2,-1,0,-0.6);const b=pr();q.pressE();step(1);return {a,b,uv:q.G.j.uv,cut:q.G.j.cutter};`);
+  out.stairs=await run(`go(-1,0,-1,0);walk(0,70);const a=at();walk(Math.PI/2,12);const b=at();return {top:a,b};`);
+  out.office=await run(`go(-1,-7.2,0,Math.PI/2);q.pressE();step(30);walk(Math.PI/2,30);const a=at();go(-5,-6.2,0,0);const c=pr();q.pressE();step(1);const sub=document.getElementById("subLine").textContent;
+    go(-3.0,-5.5,0,-Math.PI/2);const k=pr();q.keys.KeyE=true;step(50);q.keys.KeyE=false;step(1);return {inOffice:a,cal:c,sub,key:k,hasKey:q.G.j.key,susp:q.G.susp,alarm:q.G.alarm};`);
+  out.panel=await run(`go(8.8,-4,0,-Math.PI/2);const a=pr();q.keys.KeyE=true;step(50);q.keys.KeyE=false;step(1);const b=pr();q.pressE();step(1);return {a,b,keypad:q.G.keypad,toast:toastT(),code:q.G.safeCode};`);
+  await p.evaluate(()=>{const c=__qh.G.safeCode;for(const d of c){window.dispatchEvent(new KeyboardEvent("keydown",{code:"Digit"+d}));window.dispatchEvent(new KeyboardEvent("keyup",{code:"Digit"+d}));}});
+  await p.waitForFunction(()=>!__qh.G.j.armed,null,{timeout:30000}).catch(()=>{});
+  out.disarm=await run(`return {armed:q.G.j.armed,keypad:q.G.keypad};`);
+  out.cases=await run(`q.P.masked=true;go(-7,1.3,0,0);const a=pr();q.keys.KeyE=true;step(100);q.keys.KeyE=false;step(1);const b=pr();q.pressE();step(1);return {a,b,open:q.LV.def.X.cases[0].open,pocket:q.G.pocket,alarm:q.G.alarm};`);
+  out.strong=await run(`go(2.8,-3.3,-1,-Math.PI/2);const a=pr();q.pressE();step(40);walk(-Math.PI/2,30);const b=at();return {a,b,open:q.LV.def.X.srDoor.open,alarm:q.G.alarm};`);
+  out.dial=await run(`go(7.5,-5.6,-1,0);const a=pr();const r=[];for(let k=0;k<3;k++){const d=q.G.j.dial;q.keys.KeyE=true;let n=0;while(!d.clicked&&n<200){step(1);n++;}const mid=pr();step(3);q.keys.KeyE=false;step(2);r.push(mid);}
+    return {a,r,n:q.G.j.dial.n,open:q.G.vaultOpen};`);
+  out.neck=await run(`step(60);go(7.5,-5.9,-1,0,-0.4);const a=pr();q.pressE();step(1);return {a,has:q.G.hasDiamond};`);
+  out.errs=errs;
+  console.log(JSON.stringify(out,null,1));
+  await b.close();
+})();

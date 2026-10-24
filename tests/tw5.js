@@ -1,0 +1,26 @@
+const {chromium}=require('playwright-core');
+(async()=>{
+  const b=await chromium.launch({executablePath:'/opt/pw-browsers/chromium',args:['--use-gl=swiftshader','--enable-unsafe-swiftshader']});
+  const p=await b.newPage({viewport:{width:640,height:360}});
+  const errs=[];p.on('pageerror',e=>errs.push('PAGEERR '+e.message));
+  await p.goto('file://'+__dirname+'/test.html');await p.waitForTimeout(800);
+  await p.evaluate(()=>{__qh.setState("menu");__qh.pickMap("tower");__qh.resetGame();__qh.setState("playing");});
+  const H=require('fs').readFileSync(__dirname+'/twH.js','utf8');
+  const run=src=>p.evaluate(new Function(H+src));
+  const out={};
+  await run(`away();`);
+  out.fire=await run(`q.DEV.ghost=true;go(6.0,0.8,0,Math.PI/2);q.DEV.ghost=false;const a=pr();q.keys.KeyE=true;step(40);q.keys.KeyE=false;step(2);
+    const f=q.G.t.fire.on,doors=q.doors.filter(d=>d.exec).map(d=>d.locked),el=q.G.t.el.fire;
+    go(30,-20,0,0);step(30*30);const gone=q.civs.filter(c=>c.gone).length,civ=q.civs.map(c=>c.label.slice(0,8)+":"+(c.gone?"gone":c.x.toFixed(1)+","+c.z.toFixed(1)+","+c.state+","+c.level));
+    step(30*20);return {prompt:a,on:f,doors,el,gone,civ,after50:q.G.t.fire.on,alarm:q.G.alarm,elLvl:q.G.t.el.lvl,toast:toastT()};`);
+  out.chute=await run(`q.P.masked=true;const b=q.bags.find(b=>b.level===2);const bp=b.mesh.position;go(bp.x-1.2,bp.z,2,-Math.PI/2,-0.6);const a=pr();q.pressE();step(1);const carry=!!q.P.carry;
+    go(-0.6,-6.0,2,Math.PI);const c=pr();q.pressE();step(2);const pos=[+b.mesh.position.x.toFixed(1),+b.mesh.position.z.toFixed(1)];
+    go(b.mesh.position.x,-17.0,0,Math.PI,-0.5);walk(Math.PI,20);const d=pr();q.pressE();step(1);const carry2=!!q.P.carry;
+    return {pick:a,carry,chute:c,pos,skip:d,carry2,at:at()};`);
+  out.heli=await run(`q.G.alarm=false;go(-14.8,10.2,6,0);const a=pr();q.keys.KeyE=true;step(90);q.keys.KeyE=false;step(2);const s=q.G.t.heli.state;step(30*42);
+    const s2=q.G.t.heli.state;go(-12.2,3.6,6,0);const b=pr();q.pressE();step(1);q.keys.KeyE=false;step(3);const c=pr();q.keys.KeyE=true;step(60);q.keys.KeyE=false;
+    return {prompt:a,s,s2,load:b,leave:c,state:q.state,score:document.getElementById("endTakeVal").textContent,heli:[q.LV.def.X.heli.position.x,q.LV.def.X.heli.position.y]};`);
+  out.errs=errs;
+  console.log(JSON.stringify(out,null,1));
+  await b.close();
+})();

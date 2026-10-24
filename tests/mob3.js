@@ -1,0 +1,13 @@
+const {chromium}=require('playwright-core');
+(async()=>{const b=await chromium.launch({executablePath:'/opt/pw-browsers/chromium',args:['--use-gl=swiftshader','--enable-unsafe-swiftshader']});
+const ctx=await b.newContext({viewport:{width:844,height:390},deviceScaleFactor:1,isMobile:true,hasTouch:true});
+const p=await ctx.newPage();const errs=[];p.on('pageerror',e=>errs.push('PAGEERR '+e.message));
+await p.goto('file://'+__dirname+'/test.html');await p.waitForTimeout(1200);
+const H=require('fs').readFileSync(__dirname+'/twH.js','utf8');const run=src=>p.evaluate(new Function(H+src));
+await run(`q.pickMap("tower");q.resetGame();q.setState("playing");away();go(-2.15,-0.5,0,Math.PI/2);step(10);`);
+await p.waitForTimeout(800);
+const vis=await p.evaluate(()=>({np:!document.getElementById("tNum").hidden,btns:document.querySelectorAll("#tNum button").length,prompt:document.getElementById("promptText").textContent}));
+await p.screenshot({path:'../mob-elev.png',timeout:180000});
+if(vis.np)await p.tap('#tNum button[data-n="2"]');await p.waitForTimeout(800);
+const r=await run(`return {el:JSON.stringify(q.G.t.el)};`);
+console.log(JSON.stringify({vis,r}),errs.join("\n")||"no errors");await b.close();})();
