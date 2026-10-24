@@ -1972,7 +1972,8 @@ const MAP_MANOR={
     floor(-6,12,6,14.5,fm.stone,ROOF_Y+0.03);
     // gallery: paintings and the replica under glass
     const art=(seed)=>tex(128,96,(g,w,h)=>{let r=seed;const rnd=()=>(r=(r*9301+49297)%233280)/233280;g.fillStyle=`hsl(${rnd()*360},30%,${20+rnd()*20}%)`;g.fillRect(0,0,w,h);for(let i=0;i<7;i++){g.fillStyle=`hsla(${rnd()*360},${40+rnd()*40}%,${30+rnd()*40}%,.8)`;g.beginPath();g.ellipse(rnd()*w,rnd()*h,10+rnd()*30,8+rnd()*24,rnd()*3,0,7);g.fill();}g.strokeStyle="#c9a24a";g.lineWidth=8;g.strokeRect(0,0,w,h);});
-    for(let i=0;i<4;i++){plaque(art(i*17+3),2.0,1.5,-17.5+i*3.6,ROOF_Y+2.0,0.22);plaque(art(i*29+11),2.0,1.5,-17.5+i*3.6,ROOF_Y+2.0,11.78,Math.PI);}
+    [-17.4,-9.7,-6.7].forEach((x,i)=>plaque(art(i*29+11),2.0,1.5,x,ROOF_Y+2.0,11.78,Math.PI));   // north wall: clear of the window (x -15 to -11)
+    [-17.5,-14.5,-7.6].forEach((x,i)=>plaque(art(i*17+3),2.0,1.5,x,ROOF_Y+2.0,0.22));   // south wall: kept clear of the gallery door (x -12 to -10)
     addBox(-13,5.6,-12,6.4,1.0,marbleM,{lvl:1});
     const dome=new THREE.Mesh(new THREE.CylinderGeometry(0.28,0.28,0.5,16,1,true),new THREE.MeshPhongMaterial({color:0xcfe3ee,transparent:true,opacity:.18,side:THREE.DoubleSide,depthWrite:false}));dome.position.set(-12.5,ROOF_Y+1.25,6);dome.userData.noHit=true;lvAdd(dome);
     const gemM=new THREE.MeshPhongMaterial({color:0xbfefff,emissive:0x2a7aa8,shininess:140,specular:0xffffff,flatShading:true});
@@ -2438,6 +2439,7 @@ const MAP_CASINO={
     addBox(0.2,-14.4,2.2,-13.4,0.8,M.desk);
     // stairwell: the locked door down to the vault
     addBox(9.0,-7.15,9.3,-6.85,IH,cream);addBox(9.0,-7.2,11.8,-6.8,IH,cream,{y0:2.4,collide:false});
+    addBox(9.0,-15.8,9.42,-7.15,IH,cream);   // the stairwell is walled off from the staff corridor: the door is the only way down
     const secDoor=makeDoor(9.4,11.8,-7,2.38,{mat:M.steel,name:"vault stairs door"});makeReader(secDoor,9.15,1.25,-6.83,0);
     // kitchen
     addBox(12.4,-15.8,23.6,-15.0,0.95,M.counter);addBox(15,-11,19,-9.5,0.95,M.counter);
@@ -3883,15 +3885,15 @@ const MAP_TOWER={
     for(const [x,z] of [[-14,3],[-14,9],[-10,9]])box(4,x-0.6,z-0.6,x+0.6,z+0.6,1.0,M.crate);
 
     // ---------- L5 · Vane's penthouse office ----------
-    wZ(5,6,-11.8,-3.4,WH,walnut);wZ(5,6,-1.2,0,WH,walnut);addBox(5.8,-3.4,6.2,-1.2,WH,walnut,{lvl:5,y0:2.5,collide:false});wX(5,0,6,15.8,WH,walnut);
-    makeDoorZ(6,-3.4,-1.2,2.5,{lvl:5,mat:walnut,name:"Vane's office door"});
+    wZ(5,7.5,-11.8,-3.4,WH,walnut);wZ(5,7.5,-1.2,0,WH,walnut);addBox(7.3,-3.4,7.7,-1.2,WH,walnut,{lvl:5,y0:2.5,collide:false});wX(5,0,7.5,15.8,WH,walnut);
+    makeDoorZ(7.5,-3.4,-1.2,2.5,{lvl:5,mat:walnut,name:"Vane's office door"});
     desk(5,11,-7.4,14.2,-6.4,walnut);monitor(5,12.6,-6.8,Math.PI,twScreens);chair(5,12.6,-8.1);
-    box(5,7,-11.6,10,-11.0,1.0,walnut);box(5,7,-11.6,10,-11.0,1.05,M.counterTop,{y0:1.0,collide:false});
-    for(let i=0;i<5;i++){const b=new THREE.Mesh(new THREE.CylinderGeometry(0.05,0.05,0.32,8),phong([0x6a2a10,0x2a5a2a,0xc9a24a,0x6a1020,0x1a3a5a][i],{shininess:90}));b.position.set(7.4+i*0.35,5*Y+1.21,-11.3);lvAdd(b);}
-    sofa(5,6.3,-7.4,7.3,-3.8);
+    box(5,8.2,-11.6,11.2,-11.0,1.0,walnut);box(5,8.2,-11.6,11.2,-11.0,1.05,M.counterTop,{y0:1.0,collide:false});
+    for(let i=0;i<5;i++){const b=new THREE.Mesh(new THREE.CylinderGeometry(0.05,0.05,0.32,8),phong([0x6a2a10,0x2a5a2a,0xc9a24a,0x6a1020,0x1a3a5a][i],{shininess:90}));b.position.set(8.6+i*0.35,5*Y+1.21,-11.3);lvAdd(b);}
+    sofa(5,7.7,-7.4,8.5,-3.8);
     const vaneSafe=smallSafe(14.4,-10.6,5,"V.V.");
-    art(5,8.4,-11.58,0,2,1.6,1.1);art(5,15.58,-8,-Math.PI/2,3,1.6,1.1);art(5,6.22,-7,Math.PI/2,4,1.4,1.0);
-    plaque(signTex("VICTOR VANE · CHIEF EXECUTIVE",512,64,"#e2c27a","#1a1d22","bold 28px Georgia"),2.2,0.28,5.78,5*Y+2.75,-2.3,-Math.PI/2);
+    art(5,9.7,-11.58,0,2,1.6,1.1);art(5,15.58,-8,-Math.PI/2,3,1.6,1.1);art(5,7.72,-7,Math.PI/2,4,1.4,1.0);
+    plaque(signTex("VICTOR VANE · CHIEF EXECUTIVE",512,64,"#e2c27a","#1a1d22","bold 28px Georgia"),2.2,0.28,7.28,5*Y+2.75,-2.3,-Math.PI/2);
     // reception, assistant, lounge, boardroom, gallery
     desk(5,7.2,1.4,9.8,2.2,walnut);monitor(5,8.5,1.8,0);
     wX(5,4,-15.8,-7,WH,wall);segZ(5,-7,4,11.8,[[5.4,7,2.4]],WH,wall);makeDoorZ(-7,5.4,7,2.38,{lvl:5,mat:walnut,name:"boardroom door"});
@@ -3984,7 +3986,7 @@ const MAP_TOWER={
     new Guard([[-9.8,-0.9,Math.PI/2,0]],0,{name:"Price",level:3,flashShadow:false});
     new Guard([[7.3,-7.2,null,2],[7.3,9.6,null,2],[-4,9.6,null,3],[7.3,9.6]],1.0,{name:"Krieger",level:4,flashShadow:false});
     new Guard([[-14.6,-2.6,null,4],[-5.8,-2.6,null,4]],1.0,{name:"Moreau",level:4,flashShadow:false});
-    new Guard([[5.4,-6.5,null,2],[5.4,8.8,null,2],[-6.2,8.8],[-6.2,-7.4,null,2],[5.4,-7.4]],1.0,{name:"Bishop",level:5,flashShadow:false});
+    new Guard([[6.2,-6.5,null,2],[6.2,8.8,null,2],[-6.2,8.8],[-6.2,-7.4,null,2],[6.2,-7.4]],1.0,{name:"Bishop",level:5,flashShadow:false});
     new Guard([[-13.6,-9.6,null,2],[13.6,-9.6,null,2],[13.6,10.6,null,2],[-13.6,10.6,null,2]],1.0,{name:"Cole",level:6});
     // ---------- the night shift (each knows the way to the stairs when the fire alarm goes) ----------
     const N=l=>[5.45,l%2?-3.6:4.6];
