@@ -151,7 +151,8 @@ button{font:inherit;cursor:pointer}
 .job-stats .st{white-space:nowrap}
 .job-stats{margin-top:auto;font-family:var(--f-mono);font-size:11px;letter-spacing:.04em;color:var(--dim);line-height:1.5}
 .job .job-best{font-family:var(--f-mono);font-size:10px;letter-spacing:.1em;color:var(--secure)}
-.job-detail{position:sticky;top:0;display:grid;gap:12px;align-content:start;padding:18px;border:1px solid var(--line);background:rgba(255,255,255,.03)}
+.job-detail{position:sticky;top:0;display:grid;gap:12px;align-content:start;padding:18px;border:1px solid var(--line);background:rgba(255,255,255,.03);min-width:0}
+#coopToggle{display:none}
 .job-detail h2{font-size:clamp(32px,4vw,44px)}
 .job-detail p{font-size:15px}
 .jd-stats{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:1fr 1fr;gap:6px}
@@ -221,11 +222,12 @@ body.pad #kpHint b,body.touch #kpHint b{color:var(--sodium)}
 /* ---------- co-op lobby ---------- */
 .coop{display:grid;gap:8px;padding-top:12px;border-top:1px solid var(--line)}
 .coop-row{display:flex;gap:8px;align-items:stretch}
-.coop-row input{flex:1;min-width:0;font-family:var(--f-mono);font-size:16px;letter-spacing:.2em;text-transform:uppercase;background:rgba(0,0,0,.25);color:var(--fg);border:1px solid var(--line);padding:6px 10px}
+.coop-row input{flex:1;min-width:0;width:0;font-family:var(--f-mono);font-size:16px;letter-spacing:.2em;text-transform:uppercase;background:rgba(0,0,0,.25);color:var(--fg);border:1px solid var(--line);padding:6px 10px}
 .coop-row input:focus-visible{outline:2px solid var(--fg);outline-offset:1px}
 .coop-code{font-family:var(--f-mono);font-size:13px;color:var(--dim)}.coop-code b{font-size:22px;letter-spacing:.2em;color:var(--sodium);margin:0 4px}
 .coop-status{font-size:14px;color:var(--secure)}
 body.coop-guest .job{pointer-events:none}body.coop-guest .job:not([aria-checked="true"]){opacity:.45}
+
 /* ---------- career: the safehouse ---------- */
 .menu-top{display:flex;flex-wrap:wrap;gap:12px;align-items:center;justify-content:space-between}
 .modes,.cr-tabs{display:flex;gap:0;border:1px solid var(--line)}
@@ -271,6 +273,39 @@ body.coop-guest .job{pointer-events:none}body.coop-guest .job:not([aria-checked=
 @media (max-width:640px){#obj{max-width:calc(100vw - 150px)}#objText{font-size:15px}}
 @media (max-height:640px){#objText{font-size:14px;line-height:1.25}#objTip{font-size:12px}#obj{max-width:min(380px,calc(100vw - 190px))}}
 @media (prefers-reduced-motion:reduce){#alarmEdge{animation:none;opacity:.45}#toast{transition:none}}
+/* ---------- phones and small windows: compact jobs, and the chosen job with its Start button pinned to the bottom ---------- */
+@media (max-width:860px),(max-height:520px){
+  #menu{padding-block:8px}
+  .card.menu{padding:14px 16px 0;gap:12px}
+  .card.menu .menu-head{gap:8px}
+  .card.menu .menu-head h1{font-size:30px}
+  .offer{padding:10px 12px;gap:6px}.offer h3{font-size:20px}.twists span{font-size:12px}.twists b{font-size:13px}.offer .btn{font-size:17px;padding:7px 12px}
+  #menuIntro{display:none}
+  .menu-body{grid-template-columns:1fr;gap:0}
+  .jobs{grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:8px;padding-bottom:14px}
+  .job-group{padding:4px 0}
+  .job{min-height:0;padding:9px 11px;gap:3px}
+  .job-name{font-size:20px}.job-place{font-size:13px}.job .job-tags .tag{font-size:9px}
+  .job-stats{font-size:10px;margin-top:2px}
+  .job-detail{position:sticky;top:auto;bottom:0;z-index:2;margin:0 -16px;padding:10px 16px calc(10px + env(safe-area-inset-bottom,0px));gap:4px 10px;
+    grid-template-columns:minmax(0,1fr) auto auto;align-items:center;background:rgba(8,11,16,.97);border:0;border-top:1px solid var(--line);backdrop-filter:blur(8px)}
+  .job-detail>*{grid-column:1/-1}
+  #jdTags,#jdDesc,#jdStats,#jdBest,.job-detail .dev{display:none}
+  #jdName{grid-column:1;grid-row:1;font-size:22px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  #jdPlace{grid-column:1;grid-row:2;font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  #coopToggle{display:block;grid-column:2;grid-row:1/3;align-self:center}
+  #startBtn{grid-column:3;grid-row:1/3;font-size:18px;padding:10px 16px;white-space:nowrap}
+  .job-detail .coop{display:none;border-top:0;padding-top:6px}
+  .job-detail.coop-open .coop{display:grid}
+  #coopToggle[aria-expanded="true"]{border-color:var(--sodium);color:var(--sodium)}
+  #careerPanel{grid-template-columns:minmax(0,1fr) auto;gap:10px}#careerPanel>*{grid-column:1/-1}
+  #careerPanel>.cr-top{grid-column:1;grid-template-columns:auto minmax(80px,1fr) auto auto;padding:6px 12px;gap:4px 12px;align-items:center}.cr-stat b{font-size:19px}.cr-xp .lbl{font-size:9px}
+  #careerPanel>.cr-tabs{grid-column:2;align-self:stretch}.cr-tabs button{padding:6px 10px}
+  details.help{padding-bottom:14px}
+}
+@media (max-width:480px){#jdName{font-size:19px}#startBtn{font-size:16px;padding:9px 12px}#coopToggle{padding:7px 10px}}
+@media (max-height:520px){.card.menu .menu-head h1{display:none}}
+body.touch .dev{display:none}
 </style>
 </head>
 <body>
@@ -429,6 +464,7 @@ body.coop-guest .job{pointer-events:none}body.coop-guest .job:not([aria-checked=
         <ul class="jd-stats" id="jdStats"></ul>
         <div class="job-best" id="jdBest"></div>
         <button class="btn" id="startBtn">Start the job</button>
+        <button type="button" class="btn ghost small" id="coopToggle" aria-expanded="false">Co-op</button>
         <label class="dev" for="devToggle"><input type="checkbox" id="devToggle"><span>Dev mode<small>Press V during a job for noclip: fly through walls, unseen by guards and cameras. SPACE up, CTRL or C down, SHIFT faster.</small></span></label>
       </aside>
     </div>
@@ -515,7 +551,7 @@ body.coop-guest .job{pointer-events:none}body.coop-guest .job:not([aria-checked=
 // Co-op: the same code runs for every player by swapping who P is. CTX.cur is the player whose turn it is (null = you);
 // HUD writes during another player's turn go to that player's copy of the HUD, which is sent to them.
 const CTX={cur:null,kind:null,pl:null};
-const GAME_VERSION="0.31.1";
+const GAME_VERSION="0.31.2";
 const NET={on:false,host:false,guest:false,send:null,close:null,code:"",busy:false,waiting:false,started:false,acc:0,remote:null,ending:false};
 const $=id=>(CTX.cur&&CTX.cur.dom&&CTX.cur.dom[id])||document.getElementById(id);
 // a timer started during another player's turn runs as that player
@@ -8079,6 +8115,7 @@ function coopUI(msg){
   sb.disabled=!!NET.guest||!ok;
   sb.textContent=NET.guest?"The host starts the job":NET.host?(ok?"Start the co-op job":"Solo only for now"):"Start the job";
   const mt=document.querySelector(".modes");if(mt)mt.hidden=!!NET.on;
+  {const t=$("coopToggle");if(t)t.textContent=NET.on?"Co-op ✓":NET.waiting?"Co-op …":"Co-op";}
 }
 function coopStartRun(){
   const seed=(Math.random()*4294967296)>>>0;
@@ -8099,6 +8136,7 @@ function initCoopUI(){
   $("coopJoinBtn").onclick=()=>{initAudio();netJoin($("coopCode").value);};
   $("coopCode").addEventListener("keydown",e=>{e.stopPropagation();if(e.key==="Enter")$("coopJoinBtn").click();});
   $("coopLeaveBtn").onclick=()=>{if(NET.send)try{NET.send({t:"bye"});}catch(e){}netLeave();};
+  $("coopToggle").onclick=()=>{const a=aside.classList.toggle("coop-open");$("coopToggle").setAttribute("aria-expanded",String(a));};
   // in co-op the host starts every run (a new random seed for both), and the guest can only leave
   const wrapBtn=(id,fn)=>{const b=$(id),o=b.onclick;b.onclick=e=>{if(fn())return;if(o)o.call(b,e);};};
   const hostRun=()=>{if(!NET.host)return false;if(!COOP_MAPS.has(selectedMap))return true;initAudio();coopStartRun();begin();return true;};

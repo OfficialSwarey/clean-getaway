@@ -5,6 +5,12 @@ feature round bumps MINOR, a bug-fix-only update bumps PATCH, and 1.0.0 is
 the first "finished" release. Up to 0.30.0, MINOR is the version number the
 claude.ai artifact had. Releases are tagged `v0.30.0` and so on.
 
+## 0.31.2 — job menu
+- Phones and small windows: compact job tiles, and the chosen job with its Start button stays pinned to the bottom of the screen, so you can start without scrolling. Co-op opens from a button next to Start.
+- Career on phones: the level and cash bar shares a row with the Jobs / Shop / Skills tabs, and the contract cards are tighter, so "Take the job" is on the first screen.
+- Computer: the job panel no longer spills out past the edge of the menu.
+- Dev mode is hidden on touch screens (noclip needs a keyboard).
+
 ## 0.31.1
 - Elevator and gondola: walk around while they move. They're now moving floors you stand on instead of a fixed ride that held you still.
 - Phones: the floor numbers sit just above the crosshair, clear of the buttons, and long prompts wrap before they reach the buttons.
