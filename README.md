@@ -40,4 +40,4 @@ Keyboard and mouse, a controller (standard Xbox/PlayStation layout) and touch sc
 - `tests/` — headless regression tests (Playwright). `cd tests && npm install && npm test`.
 - `tools/make_test.py` — builds `tests/test.html` from `index.html`.
 - `tools/artifact_page.py` — writes the version of the page used for the claude.ai artifact.
-- `CHANGELOG.md` — what changed in each version. Versions are tagged (`v30`, …).
+- `CHANGELOG.md` — what changed in each version. Versions are tagged `v0.MINOR.PATCH` (`v0.30.0`, …).
