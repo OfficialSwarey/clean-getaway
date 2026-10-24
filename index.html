@@ -49,7 +49,7 @@ html,body{height:100%;margin:0;overflow:hidden;background:var(--ink);color:var(-
 #hud.alarm #clockVal,#hud.alarm #clockLbl{color:var(--alarm)}
 
 #obj{position:absolute;left:max(18px,env(safe-area-inset-left,0px));bottom:calc(18px + env(safe-area-inset-bottom,0px));max-width:min(380px,44vw);display:grid;gap:6px;padding:12px 14px;background:var(--panel);border-left:3px solid var(--sodium)}
-#objText{font-size:17px;font-weight:600;line-height:1.3}
+#objText{font-size:17px;font-weight:600;line-height:1.3;white-space:pre-line}
 #bagsRow{font-family:var(--f-mono);font-size:13px;color:var(--dim)}
 #objTip{font-size:13px;line-height:1.35;color:var(--sodium);opacity:.85}
 #objTip.urgent{font-size:15px;font-weight:700;color:var(--alarm);opacity:1}
@@ -137,6 +137,7 @@ button{font:inherit;cursor:pointer}
 .tag.night{color:var(--sodium)}.tag.day{color:#8fd0ff}.tag.open{color:var(--secure)}.tag.len{color:var(--dim)}
 .job-name{font-family:var(--f-display);font-size:26px;line-height:1}
 .job-place{font-size:14px;color:#c7d0d3}
+.job-stats .st{white-space:nowrap}
 .job-stats{margin-top:auto;font-family:var(--f-mono);font-size:11px;letter-spacing:.04em;color:var(--dim);line-height:1.5}
 .job .job-best{font-family:var(--f-mono);font-size:10px;letter-spacing:.1em;color:var(--secure)}
 .job-detail{position:sticky;top:0;display:grid;gap:12px;align-content:start;padding:18px;border:1px solid var(--line);background:rgba(255,255,255,.03)}
@@ -194,14 +195,14 @@ details.help .keys{margin-bottom:14px}
           <span class="job-tags"><span class="tag night">NIGHT · 02:40</span></span>
           <span class="job-name">Quiet Hours</span>
           <span class="job-place">Harbor Savings &amp; Loan</span>
-          <span class="job-stats">4 guards · 2 cameras · 3 bags</span>
+          <span class="job-stats"><span class="st">4 guards</span> · <span class="st">2 cameras</span> · <span class="st">3 bags</span></span>
           <span class="job-desc" hidden>A small bank with two ways in: the front doors and the back door. Drill the vault behind the tellers and carry the bags to the van.</span>
         </button>
         <button class="job" type="button" role="radio" aria-checked="false" data-map="harborDay" data-len="Short">
           <span class="job-tags"><span class="tag day">DAY · 11:20</span><span class="tag open">OPEN</span></span>
           <span class="job-name">Business Hours</span>
           <span class="job-place">Harbor Savings &amp; Loan</span>
-          <span class="job-stats">4 guards · 8 civilians · 2 cameras · 3 bags</span>
+          <span class="job-stats"><span class="st">4 guards</span> · <span class="st">8 civilians</span> · <span class="st">2 cameras</span> · <span class="st">3 bags</span></span>
           <span class="job-desc" hidden>The same bank, open for business. Walk in with the customers. Everything behind the teller counter is staff only.</span>
         </button>
         <div class="job-group" role="presentation">Medium jobs</div>
@@ -209,35 +210,35 @@ details.help .keys{margin-bottom:14px}
           <span class="job-tags"><span class="tag night">NIGHT · 03:15</span></span>
           <span class="job-name">Night Deposit</span>
           <span class="job-place">Meridian Trust</span>
-          <span class="job-stats">6 guards · 5 cameras · 4 bags</span>
+          <span class="job-stats"><span class="st">6 guards</span> · <span class="st">5 cameras</span> · <span class="st">4 bags</span></span>
           <span class="job-desc" hidden>A large bank with three ways in: the front, the loading door and a roof hatch. A keycard opens the security room.</span>
         </button>
         <button class="job" type="button" role="radio" aria-checked="false" data-map="meridianDay" data-len="Medium">
           <span class="job-tags"><span class="tag day">DAY · 12:45</span><span class="tag open">OPEN</span></span>
           <span class="job-name">Lunch Rush</span>
           <span class="job-place">Meridian Trust</span>
-          <span class="job-stats">6 guards · 11 civilians · 5 cameras · 4 bags</span>
+          <span class="job-stats"><span class="st">6 guards</span> · <span class="st">11 civilians</span> · <span class="st">5 cameras</span> · <span class="st">4 bags</span></span>
           <span class="job-desc" hidden>Meridian Trust in the lunch rush. Walk in with everyone else, or use the loading door or the roof. A keycard opens the security room.</span>
         </button>
         <button class="job" type="button" role="radio" aria-checked="false" data-map="club" data-len="Medium">
           <span class="job-tags"><span class="tag night">NIGHT · 01:30</span><span class="tag open">OPEN</span></span>
           <span class="job-name">Last Call</span>
           <span class="job-place">Club Halo</span>
-          <span class="job-stats">6 guards · 20 civilians · 5 cameras · 4 bags</span>
+          <span class="job-stats"><span class="st">6 guards</span> · <span class="st">20 civilians</span> · <span class="st">5 cameras</span> · <span class="st">4 bags</span></span>
           <span class="job-desc" hidden>A packed nightclub where the music hides your footsteps. The VIP area, the bar and the back rooms are off limits. The owner&#x27;s safe has a code lock, and the code is written down somewhere.</span>
         </button>
         <button class="job" type="button" role="radio" aria-checked="false" data-map="jewel" data-len="Medium">
           <span class="job-tags"><span class="tag night">NIGHT · 03:10</span></span>
           <span class="job-name">Brilliant Cut</span>
           <span class="job-place">Lindqvist &amp; Daughters</span>
-          <span class="job-stats">4 guards · 1 civilian · 3 cameras · 4 bags</span>
+          <span class="job-stats"><span class="st">4 guards</span> · <span class="st">1 civilian</span> · <span class="st">3 cameras</span> · <span class="st">4 bags</span></span>
           <span class="job-desc" hidden>A small jeweller&#x27;s with a basement. Get in through the café cellar, the skylight or a window, work out the alarm code from a calendar and a UV torch, and crack the safe by ear. You can&#x27;t leave without the North Star.</span>
         </button>
         <button class="job" type="button" role="radio" aria-checked="false" data-map="jewelDay" data-len="Medium">
           <span class="job-tags"><span class="tag day">DAY · 14:30</span><span class="tag open">OPEN</span></span>
           <span class="job-name">Window Shopping</span>
           <span class="job-place">Lindqvist &amp; Daughters</span>
-          <span class="job-stats">3 guards · 7 civilians · 3 cameras · 4 bags</span>
+          <span class="job-stats"><span class="st">3 guards</span> · <span class="st">7 civilians</span> · <span class="st">3 cameras</span> · <span class="st">4 bags</span></span>
           <span class="job-desc" hidden>The same jeweller&#x27;s, open for business. Walk in with the customers. The back rooms and the basement are staff only, and the cases and the strongroom stay on the alarm. You can&#x27;t leave without the North Star.</span>
         </button>
         <div class="job-group" role="presentation">Long jobs</div>
@@ -245,28 +246,28 @@ details.help .keys{margin-bottom:14px}
           <span class="job-tags"><span class="tag night">NIGHT · 03:50</span></span>
           <span class="job-name">The Winter Heart</span>
           <span class="job-place">Blackwood Manor</span>
-          <span class="job-stats">9 guards · 3 civilians · 6 cameras · 8 bags</span>
+          <span class="job-stats"><span class="st">9 guards</span> · <span class="st">3 civilians</span> · <span class="st">6 cameras</span> · <span class="st">8 bags</span></span>
           <span class="job-desc" hidden>A country mansion on four floors. Find the hidden vault, get past the lasers, put together a split code and take the sleeping owner&#x27;s signet ring. You can&#x27;t leave without the diamond.</span>
         </button>
         <button class="job" type="button" role="radio" aria-checked="false" data-map="casino" data-len="Long">
           <span class="job-tags"><span class="tag night">NIGHT · 23:40</span><span class="tag open">OPEN</span></span>
           <span class="job-name">House Edge</span>
           <span class="job-place">The Golden Lotus casino</span>
-          <span class="job-stats">11 guards · 23 civilians · 6 cameras · 10 bags</span>
+          <span class="job-stats"><span class="st">11 guards</span> · <span class="st">23 civilians</span> · <span class="st">6 cameras</span> · <span class="st">10 bags</span></span>
           <span class="job-desc" hidden>A busy casino on four levels. Borrow a staff uniform, pickpocket the manager&#x27;s override key, crawl through a vent into surveillance and hold the time-locked vault for 75 seconds.</span>
         </button>
         <button class="job" type="button" role="radio" aria-checked="false" data-map="port" data-len="Long">
           <span class="job-tags"><span class="tag night">NIGHT · 01:10</span></span>
           <span class="job-name">Dead Reckoning</span>
           <span class="job-place">Port Halvard · MV Kestrel</span>
-          <span class="job-stats">9 guards · 6 civilians · 6 cameras · 7 bags</span>
+          <span class="job-stats"><span class="st">9 guards</span> · <span class="st">6 civilians</span> · <span class="st">6 cameras</span> · <span class="st">7 bags</span></span>
           <span class="job-desc" hidden>A container port and a cargo ship. Crawl under the fence, read the manifest, open the hold from the bridge and run the dock crane to free the right container. Escape by speedboat.</span>
         </button>
         <button class="job" type="button" role="radio" aria-checked="false" data-map="tower" data-len="Long">
           <span class="job-tags"><span class="tag night">NIGHT · 02:20</span></span>
           <span class="job-name">Glass Ceiling</span>
           <span class="job-place">Halcyon Tower</span>
-          <span class="job-stats">13 guards · 8 civilians · 9 cameras · 8 bags</span>
+          <span class="job-stats"><span class="st">13 guards</span> · <span class="st">8 civilians</span> · <span class="st">9 cameras</span> · <span class="st">8 bags</span></span>
           <span class="job-desc" hidden>An office tower from lobby to roof. Ride the elevator or the window cleaners&#x27; gondola, record the CEO&#x27;s voice, override the time lock from the server room, and leave by van or helicopter.</span>
         </button>
       </div>
@@ -1746,6 +1747,7 @@ const drawParquet=(g,w,h)=>{g.fillStyle="#4a3424";g.fillRect(0,0,w,h);for(let y=
 const drawMarble=(g,w,h)=>{g.fillStyle="#cfc9bd";g.fillRect(0,0,w,h);for(let i=0;i<2;i++)for(let j=0;j<2;j++){g.fillStyle=(i+j)%2?"#d9d3c8":"#2b2a2a";g.fillRect(i*w/2+2,j*h/2+2,w/2-4,h/2-4);}noise(g,w,h,3000,.06);};
 const drawGrass=(g,w,h)=>{g.fillStyle="#1f2d1b";g.fillRect(0,0,w,h);for(let i=0;i<9000;i++){g.fillStyle=`rgba(${40+Math.random()*30|0},${70+Math.random()*40|0},${30+Math.random()*20|0},.6)`;g.fillRect(Math.random()*w,Math.random()*h,1,2+Math.random()*3);}};
 const drawRug=(g,w,h)=>{g.fillStyle="#5a1d22";g.fillRect(0,0,w,h);g.strokeStyle="#c9a24a";g.lineWidth=6;g.strokeRect(10,10,w-20,h-20);noise(g,w,h,4000,.1);};
+const needList=(head,need)=>need.length===1?head+" "+need[0]+".":head+"\n"+need.map(n=>"• "+n[0].toUpperCase()+n.slice(1)).join("\n");
 const ORD=["","top","second","third","bottom"];
 function rectMinus(r,holes){
   let out=[r];
@@ -2237,7 +2239,7 @@ const MAP_MANOR={
     if(!m.codeOk){const kn=(m.knowA?G.safeCode.slice(0,3):"···")+(m.knowB?G.safeCode.slice(3):"···");
       const where=[];if(!m.knowA)where.push("the first half is in the butler's room in the attic");if(!m.knowB)where.push("the second half is in the master bedroom");
       need.push(`the code ${kn}${where.length?" ("+where.join("; ")+")":""}`);}
-    return "Open the vault: "+need.join(", and ")+"."+(m.powerOff&&!G.laserOff?" The power won't stay off forever.":"");
+    return needList("Open the vault:",need)+(m.powerOff&&!G.laserOff?"\nThe power won't stay off forever.":"");
   }
 };
 
@@ -2343,7 +2345,7 @@ const MAP_CASINO={
     makeStairs({minX:9.4,maxX:11.8,minZ:-14,maxZ:-7.5,axis:"z",up:1,lo:1,mat:M.cabinet,railMat:M.trim,open:["maxX"]});      // service stairs up to the roof
 
     // ---------- street, dock yard ----------
-    floor(-40,-26,40,36,fm.ground,0);
+    for(const q of rectMinus([-40,-26,40,36],holesAt(0)))floor(q[0],q[1],q[2],q[3],fm.ground,0);
     addBox(-30,17.6,30,18.4,0.12,phong(0x4a4c4c),{collide:false,cast:false});
     for(let x=-28;x<30;x+=5){const d=new THREE.Mesh(new THREE.PlaneGeometry(2.4,0.18),M.line);d.rotation.x=-Math.PI/2;d.position.set(x,0.02,28);lvAdd(d);}
     wZ(0,-40,-26,36,2.6,M.brick);wZ(0,40,-26,36,2.6,M.brick);wX(0,-26,-40,40,2.6,M.brick);wX(0,36,-40,40,2.6,M.brick);
@@ -2652,7 +2654,7 @@ const MAP_CASINO={
     if(!c.key)need.push("the manager's override key: he walks the mezzanine; pickpocket him from behind");
     if(!c.sensorsOff)need.push("the vault motion sensors switched off in surveillance (first floor; a duct runs there from the staff lounge)");
     if(!need.length)return "Go down the service stairs to the vault and start the time lock. Then hold out for 75 seconds.";
-    return "For the vault you need: "+need.join("; ")+".";
+    return needList("For the vault you need:",need);
   }
 };
 
@@ -3108,7 +3110,7 @@ const MAP_PORT={
     if(!p.hatchOpen)need.push("open hatch 2 from the ship's bridge (top of the white tower at the stern, up the gangway)");
     if(!p.craneKey)need.push("get the crane's ignition key (key cabinet, harbor master's office)");
     if(p.manifest&&p.hatchOpen&&p.craneKey&&!X_lifted(this,p.row))need.push(`climb the dock crane and lift the container blocking row ${p.row+1}`);
-    if(need.length)return "To reach the container: "+need.join("; ")+".";
+    if(need.length)return needList("To reach the container:",need);
     return `Get into hold 2 (down the ladder by the open hatch, or the crew stairs: keycard) and open row ${p.row+1}: e-seal ${G.safeCode}.`;
   }
 };
@@ -3200,8 +3202,8 @@ const MAP_JEWEL={
     makeStairs({minX:-1.8,maxX:-0.2,minZ:-6.8,maxZ:-1.2,axis:"z",up:-1,lo:-1,mat:phong(0x6a6d70),railMat:M.trim});
 
     // ---------- street, pavement, neighbours ----------
-    for(const q of rectMinus([-30,-24,30,26],[[-20,-8,13,8]]))floor(q[0],q[1],q[2],q[3],fm.ground,0);
-    floor(-30,8,30,12,fm.walk,0.035);floor(-20,-16,13,-8,fm.cob,0.035);floor(10,-8,13,8,fm.cob,0.035);
+    for(const q of rectMinus([-30,-24,30,26],[[-20,-8,13,8],JW_HATCH]))floor(q[0],q[1],q[2],q[3],fm.ground,0);
+    for(const q of rectMinus([-30,8,30,12],[JW_HATCH]))floor(q[0],q[1],q[2],q[3],fm.walk,0.035);floor(-20,-16,13,-8,fm.cob,0.035);floor(10,-8,13,8,fm.cob,0.035);
     for(let x=-28;x<30;x+=6)addBox(x,15.9,x+3,16.1,0.02,phong(0xd9d2b0),{collide:false});
     const day=LV.day;
     const nb=phong(day?0x6a5a4c:0x2a2420),nbWin=new THREE.MeshBasicMaterial({map:tex(128,128,(g,w,h)=>{g.fillStyle=day?"#8a7a68":"#17130f";g.fillRect(0,0,w,h);for(let y=8;y<h;y+=32)for(let x=8;x<w;x+=24){const r=Math.random();g.fillStyle=day?(r<.5?"#9fb6c8":"#7f96aa"):r<.15?"#d8b56a":r<.2?"#7a8fb0":"#0b0d10";g.fillRect(x,y,12,20);}})});
@@ -3301,7 +3303,18 @@ const MAP_JEWEL={
     // ---------- basement: workshop (W), storage (S), strongroom (E) ----------
     wZ(-1,-10,-8,-1,Y,brickM);wZ(-1,-10,1,8,Y,brickM);wX(-1,-8,-10,10,Y,brickM);wX(-1,8,-10,10,Y,brickM);wZ(-1,10,-8,8,Y,brickM);
     const drillCol={minX:-10.2,maxX:-9.8,minZ:-1,maxZ:1,h:Y,lvl:-1};colliders.push(drillCol);
-    const plug=new THREE.Mesh(new THREE.BoxGeometry(0.4,WH,2),brickM);plug.position.set(-10,-Y+WH/2,0);plug.userData.dyn=1;lvAdd(plug);
+    // the old party wall: you drill a rough hole through it, so the brick above and either side stays
+    addBox(-10.2,-1,-9.8,-0.72,Y,brickM,{lvl:-1});addBox(-10.2,0.72,-9.8,1,Y,brickM,{lvl:-1});addBox(-10.2,-0.72,-9.8,0.72,Y,brickM,{lvl:-1,y0:1.86,collide:false});
+    const plug=new THREE.Mesh(new THREE.BoxGeometry(0.4,1.86,1.44),brickM);plug.position.set(-10,-Y+0.93,0);plug.userData.dyn=1;lvAdd(plug);
+    const rubble=new THREE.Group();rubble.userData.dyn=1;rubble.visible=false;lvAdd(rubble);
+    {const rb=phong(0x7a3b2c),rd=phong(0x5e2d22);let sd=7;const rnd=()=>(sd=(sd*9301+49297)%233280)/233280;
+      // ragged edges: brick stubs left sticking into the hole
+      for(const [z,y,w,h] of [[-0.66,0.25,0.14,0.3],[-0.64,0.9,0.18,0.24],[-0.68,1.45,0.1,0.3],[0.65,0.4,0.16,0.26],[0.67,1.1,0.12,0.34],[0.63,1.62,0.2,0.22],[-0.35,1.78,0.3,0.16],[0.2,1.76,0.26,0.2],[0.48,1.8,0.18,0.12]]){
+        const m=new THREE.Mesh(new THREE.BoxGeometry(0.36,h,w),rnd()<0.5?rb:rd);m.position.set(-10,-Y+y,z);rubble.add(m);}
+      // broken brick and dust on the floor, both sides
+      for(let i=0;i<22;i++){const side=i%2?1:-1,m=new THREE.Mesh(new THREE.BoxGeometry(0.12+rnd()*0.14,0.06+rnd()*0.06,0.08+rnd()*0.12),rnd()<0.5?rb:rd);
+        m.position.set(-10+side*(0.3+rnd()*1.1),-Y+0.05,(rnd()-0.5)*1.8);m.rotation.set(rnd()*0.4,rnd()*3,rnd()*0.4);rubble.add(m);}
+      const dust=new THREE.Mesh(new THREE.CircleGeometry(1.1,20),new THREE.MeshBasicMaterial({color:0x8a7f72,transparent:true,opacity:0.16,depthWrite:false}));dust.rotation.x=-Math.PI/2;dust.position.set(-10,-Y+0.035,0);rubble.add(dust);}
     fl(-1,JW_BASE,fm.conc);
     desk(-1,-9.6,-7.6,-4.4,-6.8,steel);desk(-1,-3.6,-7.6,-2.0,-6.8,steel);
     for(const x of [-8.6,-7.2,-5.8]){const lm=new THREE.Mesh(new THREE.CylinderGeometry(0.08,0.12,0.4,8),dark);lm.position.set(x,-Y+0.98,-7.4);lvAdd(lm);}
@@ -3337,11 +3350,24 @@ const MAP_JEWEL={
     for(const [x,z] of [[-18.6,-6.6],[-17.4,-6.6],[-18.6,-5.4],[-13,-7]]){const b=new THREE.Mesh(new THREE.CylinderGeometry(0.45,0.45,1.0,12),wood);b.position.set(x,-Y+0.5,z);lvAdd(b);colliders.push({minX:x-0.45,maxX:x+0.45,minZ:z-0.45,maxZ:z+0.45,h:1.0,lvl:-1});}
     for(const z of [-2,3])box(-1,-19.6,z-0.4,-17,z+0.4,1.8,M.cabinet);
     box(-1,-16,4,-14.6,5.4,0.8,M.crate);
-    pointLight(-15,-Y+3.0,0,0xffd9a0,0.35,9);
-    makeLadder(-15,10.3,-Y,0.4,Math.PI);
+    // café stock under the hatch: something to see when you look down the shaft
+    box(-1,-16.5,6.9,-15.4,8.0,0.9,M.crate);box(-1,-16.3,7.1,-15.6,7.8,1.55,M.crate,{y0:0.9});box(-1,-14.2,7.4,-13.3,8.3,0.6,M.crate);
+    {const sack=phong(0x8a7a5c);for(const [x,z] of [[-14.9,6.4],[-14.3,6.6]]){const m=new THREE.Mesh(new THREE.BoxGeometry(0.6,0.35,0.9),sack);m.position.set(x,-Y+0.18,z);m.rotation.y=x*1.3;lvAdd(m);}}
+    pointLight(-15,-Y+3.0,0,0xffd9a0,0.5,10);
+    makeLadder(-15,10.3,-Y,-0.03,Math.PI);
+    // grab handles above the opening, raised once the hatch is open (they'd poke through the closed lid)
+    const hatchRails=new THREE.Group();hatchRails.userData.dyn=1;lvAdd(hatchRails);
+    for(const s of [-0.25,0.25]){const r=new THREE.Mesh(new THREE.BoxGeometry(0.05,0.5,0.06),M.steel);r.position.set(-15+s,0.2,10.3);hatchRails.add(r);}
+    {const r=new THREE.Mesh(new THREE.BoxGeometry(0.55,0.04,0.05),M.steel);r.position.set(-15,0.43,10.3);hatchRails.add(r);}
     LADDERS.push({name:"cellar ladder",x:-15,z:9.95,yaw:Math.PI,lo:-1,top:0.35,path:[[-15,9.95,0.6],[-15,11.0,0.6]],exit:{x:-15,z:11.2,lvl:0},enabled:()=>G.j&&G.j.hatch});
     // the hatch: two steel flaps in the pavement, padlocked
     const hatchPiv=new THREE.Group();hatchPiv.position.set(-15.6,0.05,9.8);lvAdd(hatchPiv);
+    {const [a,b,c,d]=JW_HATCH,t=0.06,sm=phong(0x585e66,{shininess:40}),o={lvl:0,y0:-0.44,collide:false};  // steel lining of the shaft, down through the pavement slab
+      addBox(a,b,c,b+t,0.05,sm,o);addBox(a,d-t,c,d,0.05,sm,o);addBox(a,b+t,a+t,d-t,0.05,sm,o);addBox(c-t,b+t,c,d-t,0.05,sm,o);}
+    // a caged work lamp at the foot of the ladder, so the open hatch shows the way down
+    pointLight(-14.4,-Y+2.6,9.7,0xffd9a0,0.8,7.5);
+    {const lamp=new THREE.Mesh(new THREE.BoxGeometry(0.16,0.16,0.1),new THREE.MeshBasicMaterial({color:0xffe2b0}));lamp.position.set(-14.2,-Y+2.6,10.44);lvAdd(lamp);
+     const cage=new THREE.Mesh(new THREE.BoxGeometry(0.22,0.22,0.05),M.steel);cage.position.set(-14.2,-Y+2.6,10.48);lvAdd(cage);}
     {const l=new THREE.Mesh(new THREE.BoxGeometry(1.2,0.05,1.2),new THREE.MeshPhongMaterial({map:drawPlateTex(),shininess:40}));l.position.set(0.6,0,0);hatchPiv.add(l);hatchPiv.traverse(o=>o.userData.dyn=1);}
     function drawPlateTex(){return tex(64,64,drawPlate);}
     // ---------- courtyard: bins, the roof ladder, the passage gate ----------
@@ -3371,7 +3397,7 @@ const MAP_JEWEL={
       new Civilian([[-7.6,-6.3,Math.PI,0]],0,{seated:true,worker:true,label:"The jeweller",level:-1});
       new Civilian([[-26,10.2,null,4],[24,10.2,null,4]],1,{label:"A pedestrian"});
     }
-    Object.assign(self,{X:{cases,swin,skyPiv,rope,hatchPiv,keyM,uv,cutter,plug,drillCol,necklace,nGlint,panelScr,pirs,srDoor,dial}});
+    Object.assign(self,{X:{cases,swin,skyPiv,rope,hatchPiv,hatchRails,keyM,uv,cutter,plug,rubble,drillCol,necklace,nGlint,panelScr,pirs,srDoor,dial}});
   },
   reset(){
     const X=this.X;if(!X)return;
@@ -3382,8 +3408,8 @@ const MAP_JEWEL={
     X.cases.forEach(c=>{c.open=false;c.cutT=0;c.glass.visible=true;});
     // the jewels in the cases can't be taken until the glass is off
     CASH.forEach(c=>{if(inR(c.x,c.z,JW_FLOOR)&&c.jewel&&c.level===0)c.taken=true;});
-    X.skyPiv.rotation.z=0;X.rope.visible=false;X.hatchPiv.rotation.z=0;X.keyM.visible=true;X.uv.visible=true;X.cutter.visible=true;
-    X.plug.visible=true;if(!colliders.includes(X.drillCol))colliders.push(X.drillCol);
+    X.skyPiv.rotation.z=0;X.rope.visible=false;X.hatchPiv.rotation.z=0;X.hatchRails.visible=false;X.keyM.visible=true;X.uv.visible=true;X.cutter.visible=true;
+    X.plug.visible=true;X.rubble.visible=false;if(!colliders.includes(X.drillCol))colliders.push(X.drillCol);
     X.necklace.visible=true;X.nGlint.visible=true;X.panelScr.color.setHex(0xff3a30);X.pirs.forEach(p=>p.lm.color.setHex(0xff3a30));
     X.srDoor.locked=true;
     VAULT.keypadTitle="ALARM PANEL";VAULT.failMsg="Three wrong codes. The alarm company is sending the police!";
@@ -3393,7 +3419,7 @@ const MAP_JEWEL={
     const X=this.X,j=G.j;if(!X||!j)return;
     // skylight, hatch animations
     if(j.sky&&j.skyT<1){j.skyT=Math.min(1,j.skyT+dt/0.8);X.skyPiv.rotation.z=j.skyT*1.9;}
-    if(j.hatch&&j.hatchT<1){j.hatchT=Math.min(1,j.hatchT+dt/0.8);X.hatchPiv.rotation.z=j.hatchT*1.9;}
+    if(j.hatch&&j.hatchT<1){j.hatchT=Math.min(1,j.hatchT+dt/0.8);X.hatchPiv.rotation.z=j.hatchT*1.9;X.hatchRails.visible=j.hatchT>0.6;}
     X.necklace.rotation.z+=dt*0.6;X.nGlint.material.opacity=0.45+0.3*Math.sin(G.world*3);
     if(state!=="playing")return;
     if(G.alarm){j.delay=0;return;}
@@ -3437,7 +3463,7 @@ const MAP_JEWEL={
     // drilling through the cellar wall
     if(lv===-1&&!j.drilled&&P.x<-10&&Math.abs(P.z)<1.4&&facing(-10,0,1.8)>=0){
       if(keys.KeyE){j.drill+=dt;P.fiddle=0.3;j.dsnd=(j.dsnd||0)-dt;if(j.dsnd<=0){j.dsnd=0.25;noiseHit({type:"bandpass",freq:240,dur:.25,vol:.06});G.bang={x:-10,z:0,r:5,lvl:-1};}
-        if(j.drill>=25){j.drilled=true;X.plug.visible=false;const i=colliders.indexOf(X.drillCol);if(i>=0)colliders.splice(i,1);SFX.unlock();toast("You're through the wall. That's the jeweller's basement","good",2400);return null;}
+        if(j.drill>=25){j.drilled=true;X.plug.visible=false;X.rubble.visible=true;const i=colliders.indexOf(X.drillCol);if(i>=0)colliders.splice(i,1);SFX.unlock();toast("You're through the wall. That's the jeweller's basement","good",2400);return null;}
         return {p:`Drilling through the brick… ${Math.round(j.drill/25*100)}%`,prog:j.drill/25};}
       return {p:`Hold <kbd>E</kbd> to drill through the old wall (25 s, quiet)${j.drill>0?" · "+Math.round(j.drill/25*100)+"%":""}`,prog:j.drill>0?j.drill/25:null};
     }
@@ -3541,7 +3567,7 @@ const MAP_JEWEL={
     if(j.armed)need.push(`disarm the alarm at the panel in the back hallway: the code is a birthday${j.cal?" on the office calendar":" (the calendar in the back office, where the watchman sits)"}${j.uvRead?", and the worn keys are "+[...G.safeCode].sort().join(" "):"; a UV torch in the workshop shows which keys are worn"}`);
     if(!j.key)need.push("the strongroom key: on the hook in the back office, behind the watchman");
     need.push("crack the safe in the strongroom (basement): hold E to turn the dial, let go right after each click");
-    return "To get the North Star: "+need.join("; ")+".";
+    return needList("To get the North Star:",need);
   }
 };
 
@@ -4251,12 +4277,12 @@ const MAP_TOWER={
     if(G.vaultOpen)return "The vault is open. Get the bags out: down the garbage chute, to the van in the alley, or call the helicopter from the roof.";
     if(!P.masked&&!restricted(P.x,P.z)&&!t.exec&&!t.voice&&!t.override)return this.text.case;
     const need=[];
-    if(!t.override)need.push(`the time-lock override: the vault-systems terminal in the server room (floor 2, keycard) with the IT password${G.knowCode?" "+G.safeCode:" (Priya keeps it on a sticky note in IT, floor 1)"}`);
+    if(!t.override)need.push(`the time-lock override: log in at the terminal in the server room (floor 2, keycard)${G.knowCode?". Password "+G.safeCode:". Priya in IT (floor 1) keeps the password on a sticky note"}`);
     if(!t.voice&&(X_vane()||{}).dead)return "Vane is dead. Without his voice the vault stays shut. Take what else you can: the safes on floors 3 and 5, the count room on 4, the desk head's office on 2.";
-    if(!t.voice)need.push(`Victor Vane's voice: he's in his office on floor 5. Get close while he's on the phone (${t.rec.toFixed(1)}/8 s), or tie him up and make him say it`);
-    if(!t.exec)need.push("a way up to floors 3 to 5: Hale's executive card (night supervisor, floor 2; lift it from behind), a fire alarm (unlocks the stairwell doors), or the window cleaners' gondola");
+    if(!t.voice)need.push(`Victor Vane's voice (office, floor 5). Record him on the phone (${t.rec.toFixed(1)}/8 s) or tie him up and make him say it`);
+    if(!t.exec)need.push("a way up to floors 3–5: lift Hale's executive card from behind (floor 2), pull a fire alarm to unlock the stairwell, or ride the window cleaners' gondola");
     if(!need.length)return "Go to the vault on floor 4 and play Vane's voice to the lock by the vault door.";
-    return "For the vault (floor 4) you need: "+need.join("; ")+".";
+    return needList("For the vault (floor 4) you need:",need);
   }
 };
 
@@ -6155,7 +6181,7 @@ function endGame(won,reason){
   $("endReason").textContent=!won?reason+(G.vanTake+G.pocket>0?` You leave ${money(G.vanTake+G.pocket)} behind.`:""):
     take===0?"You drove off with nothing. At least nobody got hurt. Probably.":
     all?(stealth?`All ${nw} bags are in the ${LV.def.getaway||"van"} and nobody at ${LV.def.place} ever knew you were there.`:`All ${nw} bags made it out, but the whole street heard the alarm.`):
-    (G.secured?`You drove off with ${G.secured} of ${nb} bags${G.pocket?" and your pockets full of cash":""}.`:"You skipped the bags and drove off with your pockets full of cash.")+(stealth?" Nobody saw a thing.":"");
+    (()=>{const xs=[G.diamondVal&&LV.def.needDiamond,G.pocket&&"your pockets full of cash"].filter(Boolean).join(" and ");return G.secured?`You drove off with ${G.secured} of ${nb} bags${xs?" and "+xs:""}.`:`You skipped the bags and drove off with ${xs}.`;})()+(stealth?" Nobody saw a thing.":"");
   // bonuses on top of the take: never raising the alarm, and (where there are civilians) nobody innocent killed
   const bStealth=won&&take>0&&stealth?Math.round(take*STEALTH_BONUS):0;
   const hasCivs=civs.length>0,bCivs=won&&take>0&&hasCivs&&!G.civKills?Math.round(take*CIV_BONUS):0;
