@@ -83,7 +83,8 @@ html,body{height:100%;margin:0;overflow:hidden;background:var(--ink);color:var(-
 #subWho{font-family:var(--f-mono);font-size:11px;letter-spacing:.16em}
 #subWho.dispatch{color:var(--sodium)}#subWho.you{color:var(--secure)}
 #subLine{font-size:19px;font-weight:600;line-height:1.35}
-#toast{position:absolute;left:50%;top:22%;transform:translateX(-50%);font-family:var(--f-display);font-size:clamp(22px,3vw,34px);letter-spacing:.04em;text-shadow:0 2px 12px rgba(0,0,0,.8);opacity:0;transition:opacity .25s;text-align:center;white-space:nowrap}
+#toast{position:absolute;left:50%;top:22%;transform:translateX(-50%);font-family:var(--f-display);font-size:clamp(22px,3vw,34px);letter-spacing:.04em;text-shadow:0 2px 12px rgba(0,0,0,.8);opacity:0;transition:opacity .25s;text-align:center;width:max-content;max-width:min(900px,88vw);text-wrap:balance}
+#toast.long{font-size:clamp(17px,2.1vw,25px);line-height:1.3}
 #toast.show{opacity:1}
 #toast.warn{color:var(--sodium)}#toast.bad{color:var(--alarm)}#toast.good{color:var(--secure)}
 
@@ -134,7 +135,7 @@ button{font:inherit;cursor:pointer}
 .job[aria-checked="true"]{border-color:var(--sodium);background:rgba(244,171,61,.08);box-shadow:inset 3px 0 0 var(--sodium)}
 .job-tags{display:flex;flex-wrap:wrap;gap:6px}
 .tag{font-family:var(--f-mono);font-size:10px;letter-spacing:.14em;padding:2px 6px;border:1px solid currentColor;line-height:1.4}
-.tag.night{color:var(--sodium)}.tag.day{color:#8fd0ff}.tag.open{color:var(--secure)}.tag.len{color:var(--dim)}
+.tag.night{color:var(--sodium)}.tag.day{color:#8fd0ff}.tag.open{color:var(--secure)}.tag.len{color:var(--dim)}.tag.storm{color:#bcd4ec}
 .job-name{font-family:var(--f-display);font-size:26px;line-height:1}
 .job-place{font-size:14px;color:#c7d0d3}
 .job-stats .st{white-space:nowrap}
@@ -270,6 +271,13 @@ details.help .keys{margin-bottom:14px}
           <span class="job-place">Halcyon Tower</span>
           <span class="job-stats"><span class="st">13 guards</span> · <span class="st">8 civilians</span> · <span class="st">9 cameras</span> · <span class="st">8 bags</span></span>
           <span class="job-desc" hidden>An office tower from lobby to roof. Ride the elevator or the window cleaners&#x27; gondola, record the CEO&#x27;s voice, override the time lock from the server room, and leave by van or helicopter.</span>
+        </button>
+        <button class="job" type="button" role="radio" aria-checked="false" data-map="whiteout" data-len="Long">
+          <span class="job-tags"><span class="tag night">NIGHT · 03:20</span><span class="tag storm">STORM</span></span>
+          <span class="job-name">Whiteout</span>
+          <span class="job-place">Halden Peak Observatory</span>
+          <span class="job-stats"><span class="st">6 guards</span> · <span class="st">5 civilians</span> · <span class="st">6 cameras</span> · <span class="st">5 bags</span></span>
+          <span class="job-desc" hidden>A mountaintop observatory in a snowstorm. Your footprints stay in the fresh snow and the guards follow them; gusts blind everyone outside. Read tonight&#x27;s target in the observing log, find its catalogue number, beat the laser lanes, and ride the cable car down with the meteorite.</span>
         </button>
       </div>
       <aside class="job-detail" aria-live="polite">
@@ -825,7 +833,7 @@ class Guard{
     if(radioing&&!G.alarm){
       // wounded guard, a guard who spotted you, or the operator who saw something on camera: reaches for the radio.
       // A running jammer holds every countdown (placing one also resets them to the start).
-      this.speedNow=0;this.seeDist=-1;this.bodyDist=-1;const jam=G.jamT>0;
+      this.speedNow=0;this.seeDist=-1;this.bodyDist=-1;const jam=jamming();
       if(this.wounded>0){
         if(!jam)this.wounded-=dt;this.turn(Math.atan2(P.x-this.x,P.z-this.z),3,dt);
         if(this.wounded<=0)triggerAlarm("A wounded guard radioed it in. Alarm!");
@@ -1024,7 +1032,7 @@ class Civilian extends Guard{
     const sd=canSee(this.x,this.z,this.yaw,half,range,this.level);
     const fb=findBody(this.x,this.z,this.yaw,half,range,this,this.level);
     if(st==="calling"){
-      if(G.jamT<=0)this.callT-=dt;
+      if(!jamming())this.callT-=dt;
       if(this.flee>0){
         this.flee-=dt;
         const dx=this.x-P.x,dz=this.z-P.z,d=Math.hypot(dx,dz)||1;
@@ -1955,7 +1963,8 @@ const MAP_MANOR={
     addBox(-2.65,-7.25,-2.15,-6.75,0.45,M.cabinet,{collide:false});addBox(-2.74,-7.25,-2.66,-6.75,1.15,M.cabinet,{y0:0.45,collide:false});
     houseLight(-3,3.0,-7,0x9fb8e8,0.5,8);
     // pantry and kitchen
-    addBox(0.4,-11.8,5.6,-11.2,1.8,M.cabinet);makeBin(1.2,-4,1.2,0.8,1.0,cartMat,cartLid,"LINEN");
+    addBox(0.4,-11.8,1.7,-11.2,1.8,M.cabinet);addBox(4.3,-11.8,5.6,-11.2,1.8,M.cabinet);   // pantry shelves either side of the service door
+    makeBin(1.2,-4,1.2,0.8,1.0,cartMat,cartLid,"LINEN");
     addBox(6.4,-11.8,16,-11.0,0.95,M.counter);addBox(10,-7,14,-5.5,0.95,M.counter);
     houseLight(12,3.0,-7,0xf0f4ff,0.7,11);
 
@@ -4306,7 +4315,620 @@ const MAP_TOWER={
   }
 };
 
-const MAPS={harbor:MAP_HARBOR,meridian:MAP_MERIDIAN,harborDay:MAP_HARBOR_DAY,meridianDay:MAP_MERIDIAN_DAY,club:MAP_CLUB,manor:MAP_MANOR,casino:MAP_CASINO,port:MAP_PORT,tower:MAP_TOWER,jewel:MAP_JEWEL,jewelDay:MAP_JEWEL_DAY};
+/* ================= MAP 12 · Whiteout · Halden Peak Observatory ================= */
+// A mountaintop observatory in a snowstorm. The cable car station (W), the observatory (centre: lobby, the meteorite hall,
+// security, the collection store; upstairs the control room, the director's office and the dome), the staff dormitory (NW),
+// the snowcat garage (NE) and the radio mast hut (SE).
+// New here: fresh snow keeps your footprints and guards follow them; gusts blind everyone outdoors and fill the prints in;
+// timed laser lanes guard the meteorite; and the radio relay can be pulled (no radios, phones or pagers until someone fixes it).
+const WO_OB=[-8,-10,16,8],WO_ST=[-38,-7,-28,7],WO_STP=[-42,-7,-28,7],WO_DM=[-34,-30,-18,-16],WO_GA=[22,-28,36,-16],WO_MH=[26,14,32,20];
+const WO_LOBBY=[-8,-2,2,8],WO_HALL=[2,-2,16,8],WO_STORE=[7,-10,16,-4],WO_SEC=[-8,-10,-3,-4],WO_DOME=[6,-10,16,8],WO_BAL=[9,-11.6,13,-10],WO_OFF=[-8,2,-2,8];
+const WO_STAIR={minX:-2.4,maxX:-0.8,minZ:-9.0,maxZ:-3.4};
+const WO_PATHS=[[-28,-1.6,-11.5,1.6],[-14.5,-1.6,-11.5,16],[-14.5,8,20,15.5],[17,-16,20,15.5],[-30,-16,20,-13],[-27.5,-16,-25.5,-1.6],[20,-16,36,-13],[20,12,27,18],[-42,-7,-28,7]];
+const WO_BUILDINGS=[WO_OB,WO_ST,WO_DM,WO_GA,WO_MH];
+const WO_LANES=[4.2,5.6,7.0,8.4];
+const WO_TARGETS=[["the Orion Nebula","1976"],["the Eagle Nebula","6611"],["the Whirlpool Galaxy","5194"],["the Ring Nebula","6720"],
+  ["the Crab Nebula","1952"],["Bode's Galaxy","3031"],["the Hercules Cluster","6205"],["the North America Nebula","7000"]];
+// the outdoor path network the guards walk on
+const WO_NODES=[[-26.5,0],[-13,0],[-13,12],[18.5,12],[18.5,-14.5],[-26.5,-14.5],[24.6,16.8],[29,-14.5],[17.4,-3.3]];
+const WO_EDGES=[[0,1],[1,2],[2,3],[3,4],[4,5],[5,0],[3,6],[4,7],[3,8],[8,4]];
+const woOutdoor=(x,z,lvl)=>lvl===0&&!WO_BUILDINGS.some(r=>inR(x,z,r));
+const woOnPath=(x,z)=>WO_PATHS.some(r=>inR(x,z,r));
+function woRoute(fx,fz,tx,tz){
+  // shortest walk along the path network from near (fx,fz) to near (tx,tz)
+  const near=(x,z)=>{let b=0,bd=1e9;WO_NODES.forEach((n,i)=>{const d=Math.hypot(n[0]-x,n[1]-z);if(d<bd){bd=d;b=i;}});return b;};
+  const a=near(fx,fz),b=near(tx,tz),dist=WO_NODES.map(()=>1e9),prev=WO_NODES.map(()=>-1),done=new Set();dist[a]=0;
+  while(done.size<WO_NODES.length){let u=-1,ud=1e9;dist.forEach((d,i)=>{if(!done.has(i)&&d<ud){ud=d;u=i;}});if(u<0)break;done.add(u);
+    for(const [p,q] of WO_EDGES){const v=p===u?q:q===u?p:-1;if(v<0)continue;const nd=dist[u]+Math.hypot(WO_NODES[u][0]-WO_NODES[v][0],WO_NODES[u][1]-WO_NODES[v][1]);if(nd<dist[v]){dist[v]=nd;prev[v]=u;}}}
+  const out=[];for(let v=b;v>=0;v=prev[v])out.unshift([WO_NODES[v][0],WO_NODES[v][1],null,0]);return out;
+}
+const drawSnow=(g,w,h)=>{g.fillStyle="#dfe5ec";g.fillRect(0,0,w,h);for(let i=0;i<3500;i++){const v=200+Math.random()*55|0;g.fillStyle=`rgba(${v},${v+4},${v+10},.35)`;g.fillRect(Math.random()*w,Math.random()*h,2,2);}
+  for(let i=0;i<40;i++){g.fillStyle="rgba(160,175,195,.08)";g.beginPath();g.ellipse(Math.random()*w,Math.random()*h,20+Math.random()*30,6+Math.random()*8,Math.random()*3,0,7);g.fill();}};
+const drawPacked=(g,w,h)=>{g.fillStyle="#8a95a3";g.fillRect(0,0,w,h);noise(g,w,h,5000,.12);g.fillStyle="rgba(90,100,115,.18)";for(let y=4;y<h;y+=12){g.fillRect(0,y,w,3);}};
+
+const MAP_WHITEOUT={
+  id:"whiteout",job:"Whiteout",place:"Halden Peak Observatory",time:"03:20",multi:true,levels:[0,1],codeLen:4,zipTies:4,
+  spawn:{x:-35.5,z:0,yaw:-Math.PI/2},moon:50,needDiamond:"the Halden Meteorite",diamondValue:320000,
+  getaway:"cable car",leaveVerb:"send the cable car down",
+  bagValue:[22000,42000],goldValue:[60000,90000],cashValue:[200,1600],jewelValue:[2500,7000],
+  cardMsg:"",
+  bagSpots:[
+    {x:8.6,z:-8.9,y:0.22,ry:0.2,lvl:0},{x:10.4,z:-8.9,y:0.22,ry:-0.1,lvl:0},{x:12.6,z:-8.9,y:0.22,ry:0.3,lvl:0},{x:14.6,z:-5.0,y:0.22,ry:1.4,lvl:0,gold:true},
+    {x:-7.2,z:7.55,y:0.29,ry:0,lvl:1,box:"dsafe"}
+  ],
+  cash:[[-7.2,1.07,3.3],[-7.0,1.07,4.6,"jewel"],[-31.3,0.81,4.7],[-23.8,0.78,-22.9],[-20.6,0.98,-29.2],[5.2,0.98,-9.4],[6.2,0.98,-9.4],
+        [-6.0,4.81,-9.3],[2.6,4.81,-9.3],[-4.6,4.81,5.0],[22.8,0.98,-26.4],[-7.2,0.81,-9.3]],
+  isInside:(x,z)=>WO_BUILDINGS.some(r=>inR(x,z,r)),
+  restricted(x,z,lvl){return lvl>=1||inR(x,z,WO_OB)||inR(x,z,WO_DM)||inR(x,z,WO_GA)||inR(x,z,WO_MH);},
+  trespassMsg(){
+    if(P.level===1)return inR(P.x,P.z,WO_BAL)?"You're on the dome balcony. Anyone below can see you":"You're upstairs in the observatory. Don't let anyone see you";
+    if(inR(P.x,P.z,WO_DM))return "The staff are asleep in here. Don't wake anyone";
+    if(inR(P.x,P.z,WO_GA))return "You're in the snowcat garage. Don't let anyone see you";
+    if(inR(P.x,P.z,WO_MH))return "You're in the radio hut. Don't let anyone see you";
+    return "The observatory is closed for the night. Don't let anyone see you inside";
+  },
+  hasFloor(x,z,lvl){
+    if(lvl===0)return true;
+    if(lvl===1)return (inR(x,z,WO_OB)||inR(x,z,WO_BAL))&&!(inR(x,z,[WO_STAIR.minX,WO_STAIR.minZ,WO_STAIR.maxX,WO_STAIR.maxZ]));
+    return false;
+  },
+  ceil(x,z,lvl){
+    if(lvl===0&&inR(x,z,WO_OB))return 3.5;
+    if(lvl===0&&(inR(x,z,WO_DM)||inR(x,z,WO_MH)))return 2.9;
+    if(lvl===0&&inR(x,z,WO_GA))return 4.2;
+    if(lvl===0&&inR(x,z,WO_STP))return 5.4;
+    if(lvl===1&&inR(x,z,WO_OB)&&!inR(x,z,WO_DOME))return 3.5;
+    return null;
+  },
+  surface(x,z,lvl){
+    if(lvl===1)return inR(x,z,WO_DOME)||inR(x,z,WO_BAL)?"steel":"carpet";
+    if(inR(x,z,WO_OB))return inR(x,z,WO_LOBBY)||inR(x,z,WO_HALL)?"tile":"tile";
+    if(inR(x,z,WO_STP)||inR(x,z,WO_GA))return "asphalt";
+    if(inR(x,z,WO_DM)||inR(x,z,WO_MH))return "carpet";
+    return woOnPath(x,z)?"gravel":"snow";
+  },
+  // gusts: guards and cameras can't see far if either end of the sight line is out in the open
+  visMul(ox,oz,olvl){const w=G.w;if(!w||w.k<=0)return 1;return (woOutdoor(P.x,P.z,P.level)||woOutdoor(ox,oz,olvl||0))?1-0.62*w.k:1;},
+  extraGetaways(){const w=G.w,X=this.X;if(!w||!w.catKey||!X)return [];return [X.catGw];},
+  maskLabel(r){if(!r&&P.level===0&&inR(P.x,P.z,WO_STP))return ["UNMASKED · CABLE CAR STATION","ok"];return null;},
+  fly(a){camera.position.set(Math.sin(a)*30+4,14,26+Math.cos(a)*6);camera.lookAt(4,3,0);},
+  text:{
+    case:"Halden Peak Observatory at twenty past three, in a snowstorm. You came up on the last cable car. You can't leave without the Halden Meteorite, in a laser-guarded case in the meteorite hall. Stick to the cleared paths: fresh snow keeps your footprints, and the guards will follow them. Gusts blind everyone outdoors for a few seconds and fill the prints in. Hold G to put on your mask when you're ready.",
+    vault:"",
+    van:"Carry the bag to the cable car at the station (west), or to the snowcat in the garage if you have its keys.",
+    bins:"Dump the body in a grit bin by the paths. Q drops it."
+  },
+  build(){
+    const self=this,Y=ROOF_Y,WH=3.62;
+    // the storm sky
+    scene.background.setHex(0x0d131b);scene.fog.color.setHex(0x0d131b);scene.fog.density=0.022;
+    hemi.color.setHex(0x5a6a86);hemi.groundColor.setHex(0x2a3442);hemi.intensity=0.62;moon.color.setHex(0xa8bce0);moon.intensity=0.42;moon.position.set(-24,34,10);
+    const fm={snow:floorMat(drawSnow,26,20),packed:floorMat(drawPacked,8,8,{polygonOffset:true,polygonOffsetFactor:-1,polygonOffsetUnits:-1}),
+      tile:floorMat(drawTiles,6,4,{shininess:30}),stone:floorMat((g,w,h)=>{g.fillStyle="#2a2d33";g.fillRect(0,0,w,h);for(let i=0;i<2;i++)for(let j=0;j<2;j++){g.fillStyle=(i+j)%2?"#33363d":"#2d3036";g.fillRect(i*128+2,j*128+2,124,124);}noise(g,w,h,3000,.08);},5,4,{shininess:40}),
+      lino:floorMat((g,w,h)=>{g.fillStyle="#5a6068";g.fillRect(0,0,w,h);noise(g,w,h,4000,.08);},8,2),carpet:floorMat((g,w,h)=>{g.fillStyle="#26324a";g.fillRect(0,0,w,h);noise(g,w,h,6000,.12);},6,4),
+      plate:floorMat(drawPlate,5,9),conc:floorMat(drawConcrete,6,6),wood:floorMat((g,w,h)=>{g.fillStyle="#5c4430";g.fillRect(0,0,w,h);for(let y=0;y<h;y+=20){g.fillStyle="rgba(0,0,0,.25)";g.fillRect(0,y,w,2);}noise(g,w,h,3000,.1);},4,4)};
+    const outer=phong(0xcfd3d8),inner=phong(0xd9d5cc),dark=phong(0x24272c),wood=phong(0x5a3a26,{shininess:30}),steel=M.steel,snowTop=phong(0xe6ecf2),
+      timber=phong(0x6b4a33),redW=phong(0x8a2e26),yellow=phong(0xd9a724,{shininess:40}),rail=phong(0x6a7076,{shininess:40});
+    const box=(l,x1,z1,x2,z2,h,m,o)=>addBox(x1,z1,x2,z2,h,m,Object.assign({lvl:l},o||{}));
+    const wX=(l,z,a,b,h,m,o)=>addBox(a,z-0.2,b,z+0.2,h,m,Object.assign({lvl:l},o||{}));
+    const wZ=(l,x,a,b,h,m,o)=>addBox(x-0.2,a,x+0.2,b,h,m,Object.assign({lvl:l},o||{}));
+    // a wall with openings: items are [from,to,"w",name] for a window or [from,to,top] for a doorway/arch
+    const runX=(l,z,a,b,items,h,m)=>{let x=a;for(const it of items){if(it[0]>x)wX(l,z,x,it[0],h,m);if(it[2]==="w")windowOX(z,it[0],it[1],h,m,it[3]||"window",l);else if(it[2]<h)addBox(it[0],z-0.2,it[1],z+0.2,h,m,{lvl:l,y0:it[2],collide:false});x=it[1];}if(b>x)wX(l,z,x,b,h,m);};
+    const runZ=(l,x,a,b,items,h,m)=>{let z=a;for(const it of items){if(it[0]>z)wZ(l,x,z,it[0],h,m);if(it[2]==="w")windowOZ(x,it[0],it[1],h,m,it[3]||"window",l);else if(it[2]<h)addBox(x-0.2,it[0],x+0.2,it[1],h,m,{lvl:l,y0:it[2],collide:false});z=it[1];}if(b>z)wZ(l,x,z,b,h,m);};
+    const holesAt=l=>STAIRS.filter(s=>s.hi===l).map(s=>[s.minX,s.minZ,s.maxX,s.maxZ]);
+    const fl=(l,r,mat,extra)=>{for(const q of rectMinus(r,holesAt(l).concat(extra||[])))floor(q[0],q[1],q[2],q[3],mat,l*Y+0.03);};
+    const slab=(l,r,m,extra)=>{for(const q of rectMinus(r,holesAt(l).concat(extra||[])))addBox(q[0],q[1],q[2],q[3],l*Y,m||M.ceil,{y0:l*Y-0.38,collide:false});};
+    const light=(l,x,z,i,d,col)=>pointLight(x,l*Y+3.3,z,col||0xf0f4ff,i,d,true);
+    const desk=(l,x1,z1,x2,z2,top)=>{box(l,x1,z1,x2,z2,0.74,wood);box(l,x1,z1,x2,z2,0.78,top||M.counterTop,{y0:0.74,collide:false});};
+    const monitor=(l,x,z,ry,mat)=>{const m=new THREE.Mesh(new THREE.BoxGeometry(0.55,0.36,0.04),[dark,dark,dark,dark,mat||new THREE.MeshBasicMaterial({color:0x4a7ab0}),dark]);m.position.set(x,l*Y+0.98,z);m.rotation.y=ry||0;lvAdd(m);};
+    const bed=(l,x1,z1,x2,z2)=>{box(l,x1,z1,x2,z2,0.45,wood);box(l,x1+0.05,z1+0.05,x2-0.05,z2-0.05,0.55,phong(0xd8dce4),{y0:0.45,collide:false});};
+    const roofBox=(x1,z1,x2,z2,y,th)=>{addBox(x1,z1,x2,z2,y+th,dark,{y0:y,collide:false});addBox(x1-0.05,z1-0.05,x2+0.05,z2+0.05,y+th+0.18,snowTop,{y0:y+th,collide:false});};
+
+    // ---------- stairs (observatory: corridor up to the control room) ----------
+    makeStairs({minX:WO_STAIR.minX,maxX:WO_STAIR.maxX,minZ:WO_STAIR.minZ,maxZ:WO_STAIR.maxZ,axis:"z",up:-1,lo:0,mat:phong(0x6a6d70),railMat:M.trim});
+
+    // ---------- the summit: snow, cleared paths, the edge ----------
+    floor(-46,-36,46,36,fm.snow,0);
+    for(const r of WO_PATHS)floor(r[0],r[1],r[2],r[3],fm.packed,0.02);
+    // the drop beyond the snow fence: steep white slopes falling away into the cloud
+    {const sl=phong(0xc4ccd6);
+      for(const [x,z,w,ry] of [[0,-36,120,0],[0,36,120,Math.PI],[-46,0,90,Math.PI/2],[46,0,90,-Math.PI/2]]){const p=new THREE.Mesh(new THREE.PlaneGeometry(w,60),sl);p.rotation.order="YXZ";p.rotation.y=ry;p.rotation.x=-Math.PI/2+0.75;
+        p.position.set(x-Math.sin(ry)*21,-20,z-Math.cos(ry)*21);p.userData.noHit=true;lvAdd(p);}
+      const peak=phong(0x8a96a6),cap=phong(0xe8eef4);let sd=11;const rnd=()=>(sd=(sd*9301+49297)%233280)/233280;
+      for(let i=0;i<16;i++){const a=i/16*Math.PI*2+rnd()*0.3,r=95+rnd()*40,h=30+rnd()*40,x=Math.cos(a)*r,z=Math.sin(a)*r;
+        const m=new THREE.Mesh(new THREE.ConeGeometry(h*0.7,h,6),peak);m.position.set(x,h/2-28,z);m.rotation.y=rnd()*3;m.userData.noHit=true;lvAdd(m);
+        const c=new THREE.Mesh(new THREE.ConeGeometry(h*0.7*0.3,h*0.3,6),cap);c.position.set(x,h-28-h*0.15+0.4,z);c.rotation.y=m.rotation.y;c.userData.noHit=true;lvAdd(c);}}
+    // snow fence along the edge (you can't walk off the mountain)
+    for(const [a,b,c,d] of [[-44,-34,44,-33.8],[-44,33.8,44,34],[-44,-34,-43.8,34],[43.8,-34,44,34]]){
+      colliders.push({minX:a,maxX:c,minZ:b,maxZ:d,h:3,lvl:0});
+      const alongX=c-a>d-b;for(let t=(alongX?a:b);t<=(alongX?c:d);t+=3){const px=alongX?t:a+0.1,pz=alongX?b+0.1:t;box(0,px-0.06,pz-0.06,px+0.06,pz+0.06,1.2,timber,{collide:false});}
+      for(const y of [0.5,1.0])box(0,a,b,c,d,y+0.06,redW,{y0:y,collide:false});}
+    // grit bins along the paths (for bodies)
+    makeBin(-16.2,4.5,1.6,1.0,1.1,phong(0xb8902a),lidMat,"GRIT");makeBin(21.4,-12.1,1.6,1.0,1.1,phong(0xb8902a),lidMat,"GRIT");makeBin(-24.2,-12.2,1.6,1.0,1.1,phong(0xb8902a),lidMat,"GRIT");
+    // path lamps
+    for(const [x,z] of [[-20,2.4],[-15.4,7],[-6,16.4],[10,16.4],[20.8,4],[20.8,-11],[6,-12.2],[-12,-12.2],[-28.4,-9]])lamp(x,z,0xffd2a0);
+    // snowdrifts and boulders
+    {const dr=phong(0xe2e8ee),rk=phong(0x4c5058);let sd=5;const rnd=()=>(sd=(sd*9301+49297)%233280)/233280;
+      for(const [x,z] of [[-20,24],[-2,26],[14,25],[30,6],[38,-6],[-38,-20],[-10,-26],[8,-24],[36,28],[-36,24],[-40,14],[2,-30]]){
+        const s=new THREE.Mesh(new THREE.SphereGeometry(1,10,6,0,Math.PI*2,0,Math.PI/2),dr);s.scale.set(2+rnd()*3,0.6+rnd()*0.8,1.5+rnd()*2);s.position.set(x,0,z);s.userData.noHit=true;lvAdd(s);}
+      for(const [x,z,r] of [[-6,24,1.2],[24,26,1.6],[-30,20,1.0],[34,-30,1.4],[-40,-30,1.2],[40,16,1.1]]){const b=new THREE.Mesh(new THREE.DodecahedronGeometry(r,0),rk);b.position.set(x,r*0.6,z);b.rotation.set(rnd(),rnd()*3,rnd());lvAdd(b);
+        const sc=new THREE.Mesh(new THREE.SphereGeometry(r*0.85,8,5,0,Math.PI*2,0,Math.PI/2),dr);sc.position.set(x,r*1.05,z);sc.scale.set(1,0.35,1);lvAdd(sc);colliders.push({minX:x-r,maxX:x+r,minZ:z-r,maxZ:z+r,h:r*1.3,lvl:0});}}
+
+    // ---------- the cable car station (W) ----------
+    {const [x1,z1,x2,z2]=WO_ST;
+      fl(0,[-38,-7,-28,7],fm.conc);
+      runX(0,z1,x1,x2,[[-33,-31,"w","station window"]],5.6,outer);runX(0,z2,x1,x2,[[-36,-34,"w","station window"]],5.6,outer);
+      runZ(0,x2,z1,z2,[[-1,1,2.6]],5.6,outer);
+      makeDoorZ(x2,-1,1,2.6,{glass:true,name:"station doors"});
+      addBox(-42.4,-7.4,-27.6,7.4,6.0,dark,{y0:5.6,collide:false});addBox(-42.5,-7.5,-27.5,7.5,6.2,snowTop,{y0:6.0,collide:false});
+      // the open platform edge: a rail, a gap where the cabin docks
+      for(const [a,b] of [[-7,-2],[2,7]]){box(0,-38.25,a,-38.05,b,1.1,rail);}
+      colliders.push({minX:-38.3,maxX:-38.0,minZ:-2,maxZ:2,h:1.1,lvl:0});
+      addBox(-42,-7,-38,7,0.02,fm.conc,{collide:false});
+      // the bullwheel up in the roof and the operator's booth
+      {const bw=new THREE.Mesh(new THREE.CylinderGeometry(2.2,2.2,0.3,28),steel);bw.position.set(-34,4.6,0);lvAdd(bw);const hub=new THREE.Mesh(new THREE.CylinderGeometry(0.4,0.4,1.4,12),dark);hub.position.set(-34,4.4,0);lvAdd(hub);}
+      for(const [a,b] of [[-32,-30.6],[-29.6,-28.4]]){box(0,a,3.6,b,3.75,2.4,M.glass,{y0:1.0});box(0,a,3.6,b,3.75,1.0,wood);}
+      box(0,-32.1,3.6,-31.95,6.8,2.4,M.glass,{y0:1.0});box(0,-32.1,3.6,-31.95,6.8,1.0,wood);box(0,-32,3.6,-28.4,3.75,2.5,wood,{y0:2.4,collide:false});
+      desk(0,-31.85,4.0,-30.85,5.0);monitor(0,-31.35,4.3,-Math.PI/2);
+      bed(0,-30.6,5.4,-28.6,6.6);
+      for(const z of [-3,-1.5,1.5,3])box(0,-30.5,z-0.08,-29.7,z+0.08,1.0,steel);
+      plaque(signTex("HALDEN PEAK · 2,912 m",512,64,"#e8eef4","#1d2a3a","bold 32px Arial"),3.2,0.4,-27.75,3.4,0,Math.PI/2);
+      plaque(signTex("LAST CAR DOWN 03:30 · DO NOT MISS IT",512,48,"#ffd27a","#141414","bold 24px monospace"),2.6,0.24,-33,2.6,-6.78,0);
+      light(0,-33,-3,0.5,10);light(0,-33,3.5,0.45,9,0xffe0b0);pointLight(-40,3.5,0,0xffd9a0,0.5,8);
+      // the cabin at the platform: the getaway
+      {const cx=-40.0,cb=phong(0xb02a26,{shininess:50}),gl=M.glass;
+        addBox(cx-1.7,-1.9,cx+1.7,1.9,0.25,cb,{collide:false});addBox(cx-1.7,-1.9,cx+1.7,1.9,2.55,cb,{y0:2.35,collide:false});
+        for(const [a,b,c,d] of [[cx-1.7,-1.9,cx+1.7,-1.75],[cx-1.7,1.75,cx+1.7,1.9],[cx-1.7,-1.9,cx-1.55,1.9]]){addBox(a,b,c,d,1.1,cb,{y0:0.25,collide:false});addBox(a,b,c,d,2.35,gl,{y0:1.1,collide:false});}
+        addBox(cx+1.55,-1.9,cx+1.7,-0.7,2.35,cb,{y0:0.25,collide:false});addBox(cx+1.55,0.7,cx+1.7,1.9,2.35,cb,{y0:0.25,collide:false});
+        const arm=new THREE.Mesh(new THREE.BoxGeometry(0.18,3.0,0.18),steel);arm.position.set(cx,4.0,0);lvAdd(arm);
+        const grip=new THREE.Mesh(new THREE.BoxGeometry(1.4,0.3,0.4),dark);grip.position.set(cx,5.5,0);lvAdd(grip);
+        plaque(signTex("HALDEN PEAK 7",256,48,"#f2f2f2","#b02a26","bold 26px Arial"),1.2,0.22,cx+1.72,2.05,0,Math.PI/2);
+        SECURE={x:-37.0,z:0};VAN_Y=0.47;VAN_SLOTS=[[cx+0.8,-1.1],[cx+0.8,0],[cx+0.8,1.1],[cx-0.4,-1.1],[cx-0.4,0],[cx-0.4,1.1]];
+        ring=new THREE.Mesh(new THREE.RingGeometry(0.9,1.1,40),new THREE.MeshBasicMaterial({color:0x78d8a3,transparent:true,opacity:.35,depthWrite:false}));
+        ring.rotation.x=-Math.PI/2;ring.position.set(SECURE.x,0.05,SECURE.z);ring.userData.noHit=true;lvAdd(ring);}
+      // the haul cables, down into the cloud
+      for(const z of [-0.9,0.9]){const L=150,c=new THREE.Mesh(new THREE.BoxGeometry(L,0.05,0.05),dark);const a=Math.atan2(5.5+55,L*0.8);c.position.set(-40-Math.cos(a)*L/2,5.5-Math.sin(a)*L/2,z);c.rotation.z=a;c.userData.noHit=true;lvAdd(c);}
+    }
+
+    // ---------- the observatory: ground floor ----------
+    const [ox1,oz1,ox2,oz2]=WO_OB;
+    fl(0,WO_LOBBY,fm.tile);fl(0,WO_HALL,fm.stone);fl(0,[-8,-4,16,-2],fm.lino);fl(0,[-8,-10,16,-4],fm.lino);
+    // outer walls, ground floor
+    runX(0,oz2,ox1,ox2,[[-7.4,-5.4,"w","lobby window"],[-4,-2,2.6]],Y,outer);
+    runX(0,oz1,ox1,ox2,[[-6.6,-4.6,"w","security office window"],[2.6,4.2,"w","staff room window"]],Y,outer);
+    runZ(0,ox1,oz1,oz2,[[3,5,"w","lobby window"]],Y,outer);
+    runZ(0,ox2,oz1,oz2,[[-3.8,-2.4,2.38]],Y,outer);
+    makeDoor(-4,-2,oz2,2.6,{glass:true,pick:true,name:"front doors"});
+    const svc=makeDoorZ(ox2,-3.8,-2.4,2.38,{mat:M.steel,name:"service door"});makeReader(svc,16.25,1.25,-1.95,Math.PI/2);
+    // inside, ground floor: corridor walls, rooms
+    runX(0,-4,ox1,ox2,[[-6,-4.8,2.38],[-3,2,3.0],[3.6,4.8,2.38],[11,12.4,2.38]],WH,inner);
+    makeDoor(-6,-4.8,-4,2.38,{name:"security office door"});makeDoor(3.6,4.8,-4,2.38,{name:"staff room door"});
+    const store=makeDoor(11,12.4,-4,2.38,{mat:M.steel,name:"collection store door"});makeReader(store,12.65,1.25,-3.75,0);
+    runX(0,-2,ox1,2,[[-1.6,-0.4,2.38]],WH,inner);wX(0,-2,2,ox2,WH,inner);
+    makeDoor(-1.6,-0.4,-2,2.38,{pick:true,name:"staff door"});
+    wZ(0,-3,-10,-4,WH,inner);wZ(0,2,-10,-4,WH,inner);wZ(0,7,-10,-4,WH,inner);
+    runZ(0,2,-2,8,[[1,5,3.0]],WH,inner);
+    slab(1,WO_OB,M.ceil,[]);
+    // lobby: the gift counter, benches, the planet over the desk, the catalogue poster
+    box(0,-7.7,2.6,-6.7,5.4,1.0,wood);box(0,-7.75,2.55,-6.65,5.45,1.05,M.counterTop,{y0:1.0,collide:false});
+    for(const [x,z] of [[-3,4.5],[0,4.5]]){box(0,x-0.9,z-0.25,x+0.9,z+0.25,0.45,wood);}
+    {const pl=new THREE.Mesh(new THREE.SphereGeometry(0.8,24,16),phong(0xc9884a,{shininess:20}));pl.position.set(-3,2.9,1.5);pl.userData.noHit=true;lvAdd(pl);
+     const rg=new THREE.Mesh(new THREE.RingGeometry(1.0,1.5,32),new THREE.MeshPhongMaterial({color:0xd8c8a0,side:THREE.DoubleSide,transparent:true,opacity:.8}));rg.position.copy(pl.position);rg.rotation.x=-Math.PI/2+0.4;rg.userData.noHit=true;lvAdd(rg);}
+    const posterTex=tex(512,640,(g,w,h)=>{g.fillStyle="#0e1626";g.fillRect(0,0,w,h);g.fillStyle="#fff";for(let i=0;i<160;i++){g.globalAlpha=Math.random()*0.8;g.fillRect(Math.random()*w,Math.random()*h,2,2);}g.globalAlpha=1;
+      g.fillStyle="#e8d6a0";g.textAlign="center";g.font="bold 34px Georgia";g.fillText("THE NIGHT SKY",w/2,56);g.font="italic 20px Georgia";g.fillText("a visitor's guide to the NGC catalogue",w/2,86);
+      g.textAlign="left";g.font="20px Georgia";WO_TARGETS.forEach(([n,c],i)=>{const y=140+i*58;g.fillStyle="#e8eef4";g.fillText(n.replace(/^the /,"The "),40,y);g.fillStyle="#ffd27a";g.font="bold 22px monospace";g.fillText("NGC "+c,330,y);g.font="20px Georgia";
+        g.strokeStyle="rgba(232,214,160,.25)";g.beginPath();g.moveTo(40,y+16);g.lineTo(w-40,y+16);g.stroke();});});
+    {const p=new THREE.Mesh(new THREE.PlaneGeometry(1.5,1.9),new THREE.MeshBasicMaterial({map:posterTex}));p.position.set(-5,1.75,-1.78);p.userData.noHit=true;lvAdd(p);}
+    plaque(signTex("HALDEN PEAK OBSERVATORY",1024,96,"#e8eef4","#1d2a3a","bold 52px Georgia"),6,0.6,4,3.4,8.22);
+    plaque(signTex("THE METEORITE HALL →",512,64,"#e8d6a0","#141c2a","bold 30px Georgia"),1.8,0.24,1.78,3.1,3,-Math.PI/2);
+    light(0,-5,2,0.55,11,0xffe8c8);light(0,-1,6,0.45,9,0xffe8c8);
+    // the meteorite hall: the plinth, the case, the laser lanes, small exhibits
+    {const pb=new THREE.Mesh(new THREE.CylinderGeometry(0.62,0.72,1.0,20),phong(0x1d2028,{shininess:40}));pb.position.set(11,0.5,3);lvAdd(pb);colliders.push({minX:10.3,maxX:11.7,minZ:2.3,maxZ:3.7,h:1.0,lvl:0});}
+    const caseGlass=new THREE.MeshPhongMaterial({color:0xcfe3ee,transparent:true,opacity:.2,shininess:100,specular:0xffffff,depthWrite:false});
+    const casePiv=new THREE.Group();casePiv.position.set(10.55,1.0,2.55);lvAdd(casePiv);
+    {const g=new THREE.Mesh(new THREE.BoxGeometry(0.9,0.75,0.9),caseGlass);g.position.set(0.45,0.375,0.45);casePiv.add(g);
+     const top=new THREE.Mesh(new THREE.BoxGeometry(0.92,0.04,0.92),steel);top.position.set(0.45,0.77,0.45);casePiv.add(top);casePiv.traverse(o=>o.userData.dyn=1);}
+    const rockG=new THREE.DodecahedronGeometry(0.2,1);{const p=rockG.attributes.position;for(let i=0;i<p.count;i++){const s=0.82+Math.random()*0.3;p.setXYZ(i,p.getX(i)*s,p.getY(i)*s*0.8,p.getZ(i)*s);}rockG.computeVertexNormals();}
+    const meteor=new THREE.Mesh(rockG,phong(0x3a3430,{shininess:70,specular:0x8a7a60}));meteor.position.set(11,1.2,3);meteor.userData.dyn=1;lvAdd(meteor);
+    const mGlint=new THREE.Sprite(new THREE.SpriteMaterial({map:GLINT,transparent:true,depthWrite:false,blending:THREE.AdditiveBlending,opacity:.6}));mGlint.scale.set(0.4,0.4,0.4);mGlint.position.set(11,1.25,3);lvAdd(mGlint);
+    {const kp=new THREE.Mesh(new THREE.BoxGeometry(0.04,0.22,0.16),dark);kp.position.set(10.3,0.82,3);lvAdd(kp);}
+    const kpScr=new THREE.MeshBasicMaterial({color:0x3aff8a});{const s=new THREE.Mesh(new THREE.PlaneGeometry(0.12,0.04),kpScr);s.position.set(10.275,0.88,3);s.rotation.y=-Math.PI/2;s.userData.dyn=1;lvAdd(s);}
+    pointLight(11,3.2,3,0xfff0d8,0.8,8);
+    plaque(tex(512,160,(g,w,h)=>{g.fillStyle="#141c2a";g.fillRect(0,0,w,h);g.strokeStyle="#c9a24a";g.lineWidth=3;g.strokeRect(8,8,w-16,h-16);g.fillStyle="#e2c27a";g.textAlign="center";g.textBaseline="middle";
+      fitFont(g,"THE HALDEN METEORITE","bold 40px Georgia",w*0.8);g.fillText("THE HALDEN METEORITE",w/2,52);fitFont(g,"pallasite · fell on this summit in 1908","italic 22px Georgia",w*0.8);g.fillText("pallasite · fell on this summit in 1908",w/2,104);}),2.0,0.62,11,2.6,-1.78);
+    for(const [x,z] of [[14.6,0],[14.6,6.6],[10,7.4],[3.2,7.4]]){const b=new THREE.Mesh(new THREE.BoxGeometry(0.6,0.95,0.6),phong(0x1d2028));b.position.set(x,0.475,z);lvAdd(b);colliders.push({minX:x-0.3,maxX:x+0.3,minZ:z-0.3,maxZ:z+0.3,h:0.95,lvl:0});
+      const r=new THREE.Mesh(new THREE.DodecahedronGeometry(0.13,0),phong(0x4a4038,{shininess:50}));r.position.set(x,1.05,z);lvAdd(r);}
+    light(0,6,3,0.5,10,0xe8f0ff);light(0,13.5,3,0.45,9,0xe8f0ff);
+    // the laser lanes: a post at each end, a faint line on the floor, four beam heights that cycle
+    const lanes=[];const beamMat=new THREE.MeshBasicMaterial({color:0xff2020,transparent:true,opacity:.9}),lineMat=new THREE.MeshBasicMaterial({color:0x5a0c0c,transparent:true,opacity:.6,depthWrite:false});
+    WO_LANES.forEach((x,i)=>{
+      for(const z of [-1.72,7.72]){box(0,x-0.07,z-0.07,x+0.07,z+0.07,1.9,dark,{collide:false});}
+      const ln=new THREE.Mesh(new THREE.PlaneGeometry(0.05,9.4),lineMat);ln.rotation.x=-Math.PI/2;ln.position.set(x,0.045,3);ln.userData.noHit=true;lvAdd(ln);
+      const beams=[0.3,0.72,1.25,1.6].map(y=>{const b=new THREE.Mesh(new THREE.BoxGeometry(0.025,0.025,9.4),beamMat);b.position.set(x,y,3);b.userData.noHit=true;b.userData.dyn=1;lvAdd(b);return {y,b};});
+      const led=new THREE.MeshBasicMaterial({color:0xff3a30});for(const z of [-1.64,7.64]){const l=new THREE.Mesh(new THREE.BoxGeometry(0.05,0.05,0.02),led);l.position.set(x,1.8,z);l.userData.dyn=1;lvAdd(l);}
+      lanes.push({x,beams,off:i*1.2,led,state:""});
+    });
+    plaque(signTex("LASER CURTAIN · KEEP BEHIND THE LINE",512,48,"#ff8a7a","#1a0a0a","bold 22px monospace"),2.0,0.19,2.25,2.55,6.6,Math.PI/2);
+    // security office: monitors, the laser console, the key box (the snowcat key)
+    desk(0,-7.6,-9.7,-3.4,-8.9);for(const x of [-7,-6,-5,-4])monitor(0,x,-9.5,0,new THREE.MeshBasicMaterial({color:0x6a9ad0}));
+    const conM=new THREE.MeshBasicMaterial({color:0xff3a30});{const c=new THREE.Mesh(new THREE.BoxGeometry(0.6,0.05,0.35),dark);c.position.set(-4.0,0.81,-9.2);lvAdd(c);const l=new THREE.Mesh(new THREE.PlaneGeometry(0.4,0.12),conM);l.rotation.x=-Math.PI/2;l.position.set(-4.0,0.84,-9.2);l.userData.dyn=1;lvAdd(l);}
+    plaque(signTex("LASERS",128,32,"#ff8a7a","#141414","bold 20px monospace"),0.3,0.08,-4.0,1.1,-9.65,0);
+    {const kb=new THREE.Mesh(new THREE.BoxGeometry(0.06,0.5,0.4),phong(0x8a6a3a));kb.position.set(-3.23,1.5,-6.8);lvAdd(kb);}
+    const catKeyM=new THREE.Mesh(new THREE.BoxGeometry(0.03,0.1,0.05),yellow);catKeyM.position.set(-3.27,1.45,-6.7);catKeyM.userData.dyn=1;lvAdd(catKeyM);
+    plaque(signTex("SNOWCAT",128,32,"#141414","#e8d6a0","bold 20px Arial"),0.3,0.07,-3.27,1.8,-6.8,-Math.PI/2);
+    light(0,-5.5,-7,0.45,8);
+    // staff room: lockers, kitchenette, table
+    for(let z=-9.6;z<-7.3;z+=0.55)box(0,2.22,z,2.68,z+0.5,1.9,phong(0x5a6a7a));
+    box(0,4.8,-9.7,6.8,-9.1,0.95,M.counter);box(0,3.6,-7.4,5.6,-6.2,0.75,wood);
+    light(0,4.5,-7,0.4,7,0xfff0d8);
+    // the collection store: drawer cabinets, meteorite fragments
+    for(const x of [8.2,10,11.8,13.6])box(0,x,-9.85,x+1.6,-9.35,1.6,phong(0x4a5058));
+    for(const z of [-8,-6.4])box(0,15.3,z-0.6,15.85,z+0.6,1.8,phong(0x4a5058));
+    box(0,8.4,-6.6,10.6,-5.6,0.9,steel);
+    light(0,11.5,-7,0.45,9,0xe8f0ff);
+    // corridor
+    light(0,-4,-3,0.35,8);light(0,6,-3,0.35,8);light(0,13,-3,0.35,8);
+
+    // ---------- the observatory: upstairs ----------
+    fl(1,[ox1,oz1,6,oz2],fm.carpet);fl(1,WO_DOME,fm.plate);
+    runX(1,oz2,ox1,ox2,[[-5.6,-3.6,"w","office window"],[-0.4,2,"w","window"],[8.6,10.6,"w","dome window"],[12,14,"w","dome window"]],Y,outer);
+    runX(1,oz1,ox1,ox2,[[-6.4,-4,"w","control room window"],[10.3,11.7,2.38]],Y,outer);
+    runZ(1,ox1,oz1,oz2,[[-7.4,-5.2,"w","control room window"]],Y,outer);
+    runZ(1,ox2,oz1,oz2,[[-3,-1,"w","dome window"],[1,3,"w","dome window"]],Y,outer);
+    makeDoor(10.3,11.7,oz1,2.38,{lvl:1,pick:true,name:"balcony door"});
+    runZ(1,6,oz1,oz2,[[-1.6,-0.2,2.38]],Y,inner);makeDoorZ(6,-1.6,-0.2,2.38,{lvl:1,name:"dome door"});
+    runX(1,2,ox1,-2,[[-4,-2.8,2.38]],WH,inner);wZ(1,-2,2,oz2,WH,inner);makeDoor(-4,-2.8,2,2.38,{lvl:1,name:"director's door"});
+    // roof over the control wing and around the dome
+    roofBox(ox1-0.2,oz1-0.2,6,oz2+0.2,2*Y-0.02,0.3);
+    {const sh=new THREE.Shape();sh.moveTo(6,-(oz1-0.2));sh.lineTo(ox2+0.2,-(oz1-0.2));sh.lineTo(ox2+0.2,-(oz2+0.2));sh.lineTo(6,-(oz2+0.2));sh.lineTo(6,-(oz1-0.2));
+      const hole=new THREE.Path();hole.absarc(11,1,5.05,0,Math.PI*2,true);sh.holes.push(hole);
+      const g=new THREE.ExtrudeGeometry(sh,{depth:0.3,bevelEnabled:false});g.rotateX(-Math.PI/2);const m=new THREE.Mesh(g,dark);m.position.y=2*Y-0.02;lvAdd(m);
+      const g2=new THREE.ExtrudeGeometry(sh,{depth:0.15,bevelEnabled:false});g2.rotateX(-Math.PI/2);const m2=new THREE.Mesh(g2,snowTop);m2.position.y=2*Y+0.28;lvAdd(m2);}
+    // the dome (rotates slowly, slit open), the telescope
+    const dome=new THREE.Group();dome.position.set(11,2*Y+0.25,-1);lvAdd(dome);
+    {const dm=new THREE.MeshPhongMaterial({color:0xdfe5ec,shininess:60,side:THREE.DoubleSide});const slit=0.32;
+      const s=new THREE.Mesh(new THREE.SphereGeometry(5.0,40,16,slit/2,Math.PI*2-slit,0,Math.PI/2),dm);dome.add(s);
+      const ringM=new THREE.Mesh(new THREE.CylinderGeometry(5.08,5.08,0.3,40,1,true),new THREE.MeshPhongMaterial({color:0x8a9096,side:THREE.DoubleSide}));ringM.position.y=0.05;dome.add(ringM);
+      dome.traverse(o=>{o.userData.dyn=1;o.userData.noHit=true;});}
+    {const pier=new THREE.Mesh(new THREE.CylinderGeometry(0.75,0.9,1.6,16),phong(0x5a5f66));pier.position.set(11,Y+0.8,-1);lvAdd(pier);colliders.push({minX:10.1,maxX:11.9,minZ:-1.9,maxZ:-0.1,h:1.6,lvl:1});}
+    const scope=new THREE.Group();scope.position.set(11,Y+2.1,-1);lvAdd(scope);
+    {const fork=new THREE.Mesh(new THREE.BoxGeometry(1.4,1.0,0.3),steel);fork.position.y=0;scope.add(fork);
+      const tilt=new THREE.Group();tilt.position.y=0.4;tilt.rotation.x=-0.75;scope.add(tilt);
+      const tube=new THREE.Mesh(new THREE.CylinderGeometry(0.5,0.55,4.2,20,1,true),new THREE.MeshPhongMaterial({color:0xe8ecf0,shininess:50,side:THREE.DoubleSide}));tube.rotation.x=Math.PI/2;tube.position.z=0.9;tilt.add(tube);
+      const cell=new THREE.Mesh(new THREE.CylinderGeometry(0.58,0.58,0.4,20),dark);cell.rotation.x=Math.PI/2;cell.position.z=-1.2;tilt.add(cell);
+      scope.traverse(o=>o.userData.dyn=1);}
+    desk(1,13.4,-6.2,15.6,-5.4,steel);monitor(1,14.4,-5.7,Math.PI,new THREE.MeshBasicMaterial({color:0x2a4a7a}));
+    light(1,9,-6,0.35,9,0xffb0a0);light(1,13,5,0.3,8,0xffb0a0);
+    // the balcony on the north side, the maintenance ladder up to it
+    addBox(9,-11.6,13,-10,Y,fm.plate,{y0:Y-0.15,collide:false});addBox(9,-11.6,13,-10,Y-0.15,dark,{y0:Y-0.3,collide:false});
+    for(const [a,b,c,d] of [[9,-11.65,10.6,-11.55],[11.4,-11.65,13,-11.55],[8.95,-11.65,9.05,-10],[12.95,-11.65,13.05,-10]])box(1,a,b,c,d,1.05,rail);
+    makeLadder(11,-11.8,0,Y+0.5,0);
+    LADDERS.push({name:"maintenance ladder",x:11,z:-12.15,yaw:Math.PI,lo:0,top:Y+0.4,path:[[11,-12.15,Y+0.6],[11,-11.0,Y+0.6]],exit:{x:11,z:-10.8,lvl:1}});
+    // control room: consoles along the north wall, the observing log, the big screen
+    desk(1,-7.6,-9.7,-3.2,-8.9);for(const x of [-7,-6,-4.6,-3.8])monitor(1,x,-9.5,0,new THREE.MeshBasicMaterial({color:0x3a6aa0}));
+    desk(1,0.6,-9.7,5.6,-8.9);for(const x of [1.4,2.6,3.8,5])monitor(1,x,-9.5,0,new THREE.MeshBasicMaterial({color:0x2a5a3a}));
+    const logM=new THREE.Mesh(new THREE.BoxGeometry(0.4,0.04,0.3),phong(0x6a2a1a));logM.position.set(-5.3,Y+0.8,-9.2);logM.userData.dyn=1;lvAdd(logM);
+    {const scr=new THREE.Mesh(new THREE.PlaneGeometry(3,1.6),new THREE.MeshBasicMaterial({map:tex(256,140,(g,w,h)=>{g.fillStyle="#05070c";g.fillRect(0,0,w,h);for(let i=0;i<120;i++){g.fillStyle=`rgba(255,255,255,${Math.random()})`;g.fillRect(Math.random()*w,Math.random()*h,1.5,1.5);}
+      const gr=g.createRadialGradient(140,70,2,140,70,50);gr.addColorStop(0,"rgba(255,160,200,.8)");gr.addColorStop(1,"rgba(80,40,120,0)");g.fillStyle=gr;g.fillRect(0,0,w,h);g.fillStyle="#9fc4ff";g.font="10px monospace";g.fillText("LIVE · SEEING 2.9\" · WIND 74 km/h",6,132);})}));
+      scr.position.set(5.78,Y+2.0,-6);scr.rotation.y=-Math.PI/2;scr.userData.noHit=true;lvAdd(scr);}
+    box(1,-1,-1.2,3,0.4,0.75,wood);
+    light(1,-5,-7,0.5,10,0xfff0d8);light(1,2.5,-6,0.45,9,0xfff0d8);light(1,1,4,0.4,9,0xfff0d8);
+    // director's office: desk, the wall safe (a loot bag inside)
+    desk(1,-6.6,4.6,-4.0,5.6,wood);monitor(1,-5.3,5.3,Math.PI);
+    {const sx=-7.2,sz=7.9,W=1.2,D=0.7,Hh=1.2,t=0.07;
+      addBox(sx-W/2,sz-D,sx+W/2,sz-D+t,Hh,safeMat,{lvl:1,collide:false});addBox(sx-W/2,sz-D,sx-W/2+t,sz,Hh,safeMat,{lvl:1,collide:false});addBox(sx+W/2-t,sz-D,sx+W/2,sz,Hh,safeMat,{lvl:1,collide:false});
+      addBox(sx-W/2,sz-D,sx+W/2,sz,t,safeIn,{lvl:1,collide:false});addBox(sx-W/2,sz-D,sx+W/2,sz,Hh,safeMat,{lvl:1,y0:Hh-t,collide:false});
+      colliders.push({minX:sx-W/2,maxX:sx+W/2,minZ:sz-D-0.12,maxZ:sz,h:Hh,lvl:1});
+      var dsafe={pickT:0,open:false,t:0,x:sx,z:sz-D,pivot:new THREE.Group()};dsafe.pivot.position.set(sx+W/2,Y,sz-D-0.06);lvAdd(dsafe.pivot);
+      const dm=new THREE.Mesh(new THREE.BoxGeometry(W,Hh,0.1),safeMat);dm.position.set(-W/2,Hh/2,0);dsafe.pivot.add(dm);
+      const dial=new THREE.Mesh(new THREE.CylinderGeometry(0.1,0.1,0.04,20),M.steel);dial.rotation.x=Math.PI/2;dial.position.set(-W*0.62,0.65,-0.07);dsafe.pivot.add(dial);dsafe.pivot.traverse(o=>o.userData.dyn=1);}
+    plaque(signTex("DR. A. VESTERGAARD · DIRECTOR",512,48,"#e2c27a","#1a1d22","bold 22px Georgia"),1.4,0.14,-3.4,Y+2.7,1.78,Math.PI);
+    light(1,-5,5,0.45,8,0xffe0b0);
+
+    // ---------- the staff dormitory (NW) ----------
+    {const [x1,z1,x2,z2]=WO_DM;fl(0,WO_DM,fm.wood);
+      runX(0,z2,x1,x2,[[-32.4,-30.6,"w","dormitory window"],[-26.8,-25.6,2.38],[-22,-20,"w","dormitory window"]],3.3,outer);
+      makeDoor(-26.8,-25.6,z2,2.38,{name:"dormitory door"});
+      runX(0,z1,x1,x2,[],3.3,outer);runZ(0,x1,z1,z2,[],3.3,outer);runZ(0,x2,z1,z2,[[-26,-24,"w","dormitory window"]],3.3,outer);
+      runZ(0,-27,z1,z2,[[-27.6,-26.4,2.3],[-21.6,-20.4,2.3]],3.0,inner);runX(0,-23,x1,-27,[],3.0,inner);
+      makeDoorZ(-27,-27.6,-26.4,2.3,{name:"director's room door"});makeDoorZ(-27,-21.6,-20.4,2.3,{name:"bunk room door"});
+      // a pitched roof, snow on top
+      {const prism=(len,rx,rz,mat,y)=>{const m=new THREE.Mesh(new THREE.CylinderGeometry(1,1,len,3,1,false,Math.PI/2),mat);m.scale.set(rx,1,rz);m.rotation.z=Math.PI/2;m.position.set((x1+x2)/2,y,(z1+z2)/2);lvAdd(m);return m;};
+        addBox(x1-0.3,z1-0.3,x2+0.3,z2+0.3,3.45,dark,{y0:3.3,collide:false});
+        prism(x2-x1+0.6,1.4,8.4,phong(0x3a2a24),3.45+0.7);prism(x2-x1+0.5,1.4,8.45,snowTop,3.45+0.78);}
+      bed(0,-33.5,-29.6,-31.5,-27.8);box(0,-31.3,-29.6,-30.7,-29.0,0.6,wood);
+      for(const z of [-22.6,-20,-17.6])bed(0,-33.6,z-0.5,-31.6,z+0.5);for(const z of [-22.6,-17.6])bed(0,-29.4,z-0.5,-27.4,z+0.5);
+      box(0,-22,-29.6,-18.4,-28.8,0.95,M.counter);box(0,-25,-24,-22.6,-21.8,0.75,wood);box(0,-21.6,-19.4,-18.6,-16.8,0.45,phong(0x4a5a6a));
+      light(0,-23,-23,0.4,10,0xffd9a0);pointLight(-32,2.6,-28.5,0xffc890,0.18,5);pointLight(-30.5,2.6,-20,0xffc890,0.18,7);}
+
+    // ---------- the snowcat garage (NE) ----------
+    {const [x1,z1,x2,z2]=WO_GA;fl(0,WO_GA,fm.conc);
+      runX(0,z1,x1,x2,[],4.6,outer);runZ(0,x1,z1,z2,[],4.6,outer);runZ(0,x2,z1,z2,[],4.6,outer);
+      runX(0,z2,x1,x2,[[23,35,3.6]],4.6,outer);
+      roofBox(x1-0.2,z1-0.2,x2+0.2,z2+0.2,4.6,0.3);
+      // the raised roller door
+      box(0,23,z2-0.3,35,z2-0.1,4.2,phong(0x8a9196),{y0:3.6,collide:false});
+      // the snowcat
+      {const cat=phong(0xd04a1a,{shininess:40}),trk=phong(0x1a1c1e);
+        box(0,25.4,-26,30.6,-24.6,0.9,trk);box(0,25.4,-21.4,30.6,-20,0.9,trk);
+        box(0,25.6,-24.8,30.4,-21.2,1.6,cat,{y0:0.6});box(0,25.8,-24.6,28.2,-21.4,2.9,cat,{y0:1.6,collide:false});
+        box(0,28.2,-24.6,28.25,-21.4,2.8,M.glass,{y0:1.8,collide:false});box(0,26,-24.62,28,-24.58,2.8,M.glass,{y0:1.8,collide:false});
+        colliders.push({minX:25.4,maxX:30.6,minZ:-26,maxZ:-20,h:2.9,lvl:0});
+        plaque(signTex("HALDEN PEAK RESCUE",256,40,"#ffffff","#d04a1a","bold 22px Arial"),1.6,0.25,28.2,1.15,-19.98,0);}
+      box(0,33.6,-27.6,35.6,-24,1.8,M.cabinet);box(0,22.4,-27.6,24,-25,0.95,M.counter);
+      light(0,28,-22,0.5,12,0xf0f4ff);}
+    self.catGw={x:28,z:-18.6,lvl:0,name:"snowcat",verb:"drive the snowcat down the mountain",slots:[[26.4,-23.6],[27.4,-23.6],[26.4,-22.2],[27.4,-22.2],[29.4,-23.6],[29.4,-22.2]],y:1.82,n:0};
+
+    // ---------- the radio mast hut (SE) ----------
+    {const [x1,z1,x2,z2]=WO_MH;fl(0,WO_MH,fm.conc);
+      runX(0,z1,x1,x2,[],3.0,outer);runX(0,z2,x1,x2,[[28,29.6,"w","hut window"]],3.0,outer);runZ(0,x2,z1,z2,[],3.0,outer);
+      runZ(0,x1,z1,z2,[[16.4,17.6,2.3]],3.0,outer);makeDoorZ(x1,16.4,17.6,2.3,{pick:true,name:"radio hut door"});
+      roofBox(x1-0.2,z1-0.2,x2+0.2,z2+0.2,3.0,0.25);
+      box(0,31.2,15.2,31.8,18.8,2.0,phong(0x4a5058));box(0,27.2,14.4,29.6,15.0,0.8,wood);
+      plaque(signTex("RADIO RELAY · DO NOT SWITCH OFF",512,48,"#ffd27a","#141414","bold 22px monospace"),1.6,0.16,31.18,2.25,17,-Math.PI/2);
+      light(0,29,17,0.35,7);}
+    const relayLeds=[];{for(let i=0;i<6;i++){const m=new THREE.MeshBasicMaterial({color:0x40ff80});const l=new THREE.Mesh(new THREE.BoxGeometry(0.02,0.04,0.04),m);l.position.set(31.18,1.2+i*0.12,15.8+(i%3)*0.4);l.userData.dyn=1;lvAdd(l);relayLeds.push(m);}}
+    // the mast: a lattice tower with a red light on top
+    {const mx=35,mz=24,H=22,mm=phong(0x8a9096);for(const [dx,dz] of [[-1,-1],[1,-1],[-1,1],[1,1]]){const l=new THREE.Mesh(new THREE.CylinderGeometry(0.06,0.12,H,5),mm);l.position.set(mx+dx*0.8*0.7,H/2,mz+dz*0.8*0.7);l.rotation.z=-dx*0.025;l.rotation.x=dz*0.025;lvAdd(l);}
+      for(let y=2;y<H;y+=2.5){const r=new THREE.Mesh(new THREE.BoxGeometry(1.1*(1-y/H*0.45),0.05,0.05),mm);r.position.set(mx,y,mz-0.55*(1-y/H*0.45));lvAdd(r);const r2=r.clone();r2.position.z=mz+0.55*(1-y/H*0.45);lvAdd(r2);}
+      colliders.push({minX:mx-0.8,maxX:mx+0.8,minZ:mz-0.8,maxZ:mz+0.8,h:H,lvl:0});
+      for(const [y,s] of [[14,0.7],[19,0.5]]){const d=new THREE.Mesh(new THREE.CylinderGeometry(s,s,0.12,16),phong(0xdfe5ec));d.rotation.z=Math.PI/2;d.position.set(mx-0.6,y,mz);lvAdd(d);}
+      var mastLamp=new THREE.MeshBasicMaterial({color:0xff2020});const ml=new THREE.Mesh(new THREE.SphereGeometry(0.18,8,6),mastLamp);ml.position.set(mx,H+0.2,mz);ml.userData.dyn=1;lvAdd(ml);}
+    // a cable from the hut to the mast
+    {const c=new THREE.Mesh(new THREE.BoxGeometry(0.04,0.04,Math.hypot(3,4)),dark);c.position.set(33.5,2.6,22);c.rotation.y=Math.atan2(3,4);lvAdd(c);}
+
+    // ---------- keycard spots ----------
+    makeKeycard([[-4.2,0.81,-9.3],[5.0,0.78,-6.8],[-30.9,0.61,-29.3],[-23.6,0.76,-22.6],[-6.6,Y+0.81,5.0],[23.4,0.96,-26.4]]);
+
+    // ---------- cameras ----------
+    makeCam(-8.4,3.4,8.4,0.6,0.5,10,0,20,0.45,0,{shadow:false});            // front doors and plaza
+    makeCam(1.5,3.2,-1.55,-0.8,0.45,9,0.6,14,0.5,0,{shadow:false});         // lobby
+    makeCam(15.55,3.3,-1.55,-1.0,0.4,8,0.2,16,0.5,0);                        // meteorite hall, the lanes
+    makeCam(15.55,3.2,-3.0,-Math.PI/2,0.15,6,0.3,22,0.35,0,{shadow:false});  // corridor
+    makeCam(22.2,3.6,-15.6,-1.3,0.5,11,1.4,22,0.45,0,{shadow:false});         // north road, the garage
+    makeCam(-27.6,4.0,-7.4,3.0,0.45,9,0.8,18,0.45,0,{shadow:false});         // station, the dormitory path
+
+    // ---------- people ----------
+    new Guard([[-5.5,-8.4,Math.PI,0]],0,{security:true,seated:true,name:"Vos",flashShadow:false});
+    new Guard([[-6.2,6.6,null,3],[1.4,6.6,null,2],[1.4,0.2,Math.PI/2,4],[-6.2,0.2,null,2]],1.0,{name:"Keller",flashShadow:false});
+    new Guard([[-7,-3,null,3],[15,-3,null,3]],1.0,{name:"Dahl",flashShadow:false});
+    new Guard([[-6.5,-2.6,null,2],[3.6,-2.6,null,1],[3.6,-0.9],[8,-0.9],[13.6,3.6,null,4],[8,-0.9],[3.6,-0.9],[3.6,4.6,null,3],[3.6,-2.6]],1.0,{name:"Nilsen",level:1,flashShadow:false});
+    const halv=new Guard([[-26.5,0,null,1],[-13,0],[-13,12,null,2],[18.5,12],[24.6,16.8,null,3],[18.5,12],[18.5,-14.5,null,2],[29,-14.5,null,2],[18.5,-14.5],[-26.5,-14.5,null,2]],1.0,{name:"Halvorsen"});
+    const ruud=new Guard([[-26.5,-3,null,3],[-26.5,-14.5],[-12,-14.5,null,2],[-26.5,-14.5],[-30.5,-15,0,3]],1.0,{name:"Ruud"});
+    new Civilian([[-5.3,-8.6,Math.PI,9],[-3.0,-8.6],[-3.0,-2.8],[3.2,-2.8],[4.2,-0.9],[8.6,-0.9],[9.6,-2.4,Math.PI/2,14],[8.6,-0.9],[4.2,-0.9],[3.2,-2.8],[-3.0,-2.8],[-3.0,-8.6]],1.0,{worker:true,label:"The night astronomer",level:1});
+    new Civilian([[-29.6,6.0,Math.PI/2,0]],0,{asleep:true,label:"The cable car operator, asleep",bedY:0.62});
+    new Civilian([[-32.5,-28.7,Math.PI/2,0]],0,{asleep:true,worker:true,label:"The director, asleep",bedY:0.62});
+    new Civilian([[-32.6,-20,Math.PI/2,0]],0,{asleep:true,label:"A technician, asleep",bedY:0.62});
+    new Civilian([[-28.4,-17.6,-Math.PI/2,0]],0,{asleep:true,label:"A cook, asleep",bedY:0.62});
+
+    // ---------- VAULT: the meteorite case (keypad on the plinth) ----------
+    VAULT={x:11,z:3,pivot:casePiv,wheel:new THREE.Object3D(),col:{minX:10.5,maxX:11.5,minZ:2.5,maxZ:3.5,h:1.8,lvl:0},openCol:null,openDir:-1,custom:true,level:0,screen:kpScr,
+      drillGroup:new THREE.Group(),drillBit:new THREE.Object3D(),drillLight:{intensity:0}};
+    colliders.push(VAULT.col);
+
+    // ---------- footprints, falling snow ----------
+    const FP_N=260,fpGeo=new THREE.PlaneGeometry(0.14,0.3);fpGeo.rotateX(-Math.PI/2);
+    const fpMat=new THREE.MeshLambertMaterial({color:0xffffff,polygonOffset:true,polygonOffsetFactor:-2,polygonOffsetUnits:-2});
+    const prints=new THREE.InstancedMesh(fpGeo,fpMat,FP_N);prints.userData.dyn=1;prints.userData.noHit=true;prints.frustumCulled=false;
+    {const m=new THREE.Matrix4().makeScale(0,0,0),c=new THREE.Color(0xffffff);for(let i=0;i<FP_N;i++){prints.setMatrixAt(i,m);prints.setColorAt(i,c);}prints.instanceMatrix.needsUpdate=true;prints.instanceColor.needsUpdate=true;}
+    lvAdd(prints);
+    const SN=1400,sp=new Float32Array(SN*3);for(let i=0;i<SN;i++){sp[i*3]=(Math.random()-0.5)*44;sp[i*3+1]=Math.random()*16;sp[i*3+2]=(Math.random()-0.5)*44;}
+    const sg=new THREE.BufferGeometry();sg.setAttribute("position",new THREE.BufferAttribute(sp,3));
+    const snow=new THREE.Points(sg,new THREE.PointsMaterial({color:0xe6eef8,size:0.07,transparent:true,opacity:.85,depthWrite:false}));snow.frustumCulled=false;snow.userData.dyn=1;snow.userData.noHit=true;lvAdd(snow);
+
+    Object.assign(self,{X:{lanes,dome,scope,meteor,mGlint,casePiv,kpScr,conM,catKeyM,logM,dsafe,relayLeds,mastLamp,prints,FP_N,snow,sp,SN,halv,ruud,
+      catGw:self.catGw,routes:new Map()}});
+    guards.forEach(g=>self.X.routes.set(g,g.route));
+  },
+  reset(){
+    const X=this.X;if(!X)return;
+    const ti=Math.random()*WO_TARGETS.length|0;G.safeCode=WO_TARGETS[ti][1];
+    G.w={target:ti,poster:false,log:false,lasersOff:false,catKey:false,relayDown:false,relayT:0,fixer:null,fixT:0,relayHold:0,relayTip:false,
+      k:0,gust:false,windT:30+Math.random()*15,gustT:0,gustN:0,gustTip:false,windSnd:0,
+      prints:[],fpSeq:0,fpI:0,lastX:null,lastZ:null,fpSide:1,fpTip:false,trackers:new Map(),holdT:0,holdId:"",laserTip:false};
+    X.routes.forEach((r,g)=>{g.route=r;});
+    X.catGw.n=0;
+    X.casePiv.rotation.y=0;X.meteor.visible=true;X.mGlint.visible=true;X.kpScr.color.setHex(0x3aff8a);X.conM.color.setHex(0xff3a30);X.catKeyM.visible=true;
+    X.dsafe.open=false;X.dsafe.t=0;X.dsafe.pickT=0;X.dsafe.pivot.rotation.y=0;
+    X.relayLeds.forEach(m=>m.color.setHex(0x40ff80));
+    const m0=new THREE.Matrix4().makeScale(0,0,0);for(let i=0;i<X.FP_N;i++)X.prints.setMatrixAt(i,m0);X.prints.instanceMatrix.needsUpdate=true;
+    scene.fog.density=0.022;
+    VAULT.keypadTitle="CASE LOCK · NGC NUMBER";VAULT.failMsg="Three wrong codes. The case locked down and the alarm went off!";
+    VAULT.onCode=()=>{openSafe();toast("The case unlocks. The Halden Meteorite is yours for the taking","good",2600);};
+  },
+  addPrint(x,z,yaw){
+    const w=G.w,X=this.X;const i=w.fpI;w.fpI=(w.fpI+1)%X.FP_N;
+    const p={x,z,yaw,age:0,seq:++w.fpSeq,i};w.prints=w.prints.filter(q=>q.i!==i);w.prints.push(p);
+    const m=new THREE.Matrix4().compose(new THREE.Vector3(x,0.012,z),new THREE.Quaternion().setFromEuler(new THREE.Euler(0,yaw,0)),new THREE.Vector3(1,1,1));
+    X.prints.setMatrixAt(i,m);X.prints.instanceMatrix.needsUpdate=true;
+  },
+  tick(dt){
+    const X=this.X,w=G.w;if(!X||!w)return;
+    // dome turns, the telescope turns with it; the mast light blinks
+    X.dome.rotation.y+=dt*0.025;X.scope.rotation.y=X.dome.rotation.y-Math.PI/2;
+    X.mastLamp.color.setHex(Math.floor(G.world*1.2)%2?0xff2020:0x3a0808);
+    X.meteor.rotation.y+=dt*0.4;X.mGlint.material.opacity=0.35+0.25*Math.sin(G.world*2.5);
+    if(X.dsafe.open&&X.dsafe.t<1){X.dsafe.t=Math.min(1,X.dsafe.t+dt/1.2);X.dsafe.pivot.rotation.y=-X.dsafe.t*1.6;}
+    // the storm: calm spells, then a gust
+    if(w.gust){w.gustT-=dt;w.k=Math.min(1,w.k+dt/1.8);if(w.gustT<=0){w.gust=false;w.windT=40+Math.random()*28;}}
+    else{w.k=Math.max(0,w.k-dt/2.2);w.windT-=dt;
+      if(w.windT<=3.2&&!w.warned){w.warned=true;if(state==="playing")noiseHit({type:"lowpass",freq:380,dur:2.6,vol:.08,attack:1.4});}
+      if(w.windT<=0){w.gust=true;w.warned=false;w.gustT=10+Math.random()*5;w.gustN++;
+        if(state==="playing"&&!w.gustTip){w.gustTip=true;toast("A gust hits the summit. Nobody outside can see far: move now","good",3000);}}}
+    scene.fog.density=0.022+w.k*0.075;
+    if(state==="playing"){w.windSnd-=dt;if(w.windSnd<=0){w.windSnd=w.k>0.2?0.55:1.8;noiseHit({type:"lowpass",freq:300+w.k*500,dur:w.k>0.2?1.0:2.2,vol:(woOutdoor(P.x,P.z,P.level)?1:0.35)*(0.025+w.k*0.11),attack:0.4});}}
+    // falling snow around the camera (drifts sideways in a gust); hidden indoors
+    {const s=X.sp,cx=camera.position.x,cy=camera.position.y,cz=camera.position.z,fall=1.2+w.k*1.6,drift=0.6+w.k*7;
+      X.snow.visible=!(P.level===0&&this.isInside(P.x,P.z))&&!(P.level===1&&inR(P.x,P.z,WO_OB)&&!inR(P.x,P.z,WO_BAL));
+      for(let i=0;i<X.SN;i++){let x=s[i*3]-dt*drift,y=s[i*3+1]-dt*fall*(0.8+(i%5)*0.1),z=s[i*3+2]+dt*drift*0.3;
+        if(y<cy-6||y<-0.2){y=cy+10+Math.random()*4;}if(x<cx-22)x+=44;if(x>cx+22)x-=44;if(z<cz-22)z+=44;if(z>cz+22)z-=44;
+        s[i*3]=x;s[i*3+1]=y;s[i*3+2]=z;}
+      X.snow.geometry.attributes.position.needsUpdate=true;X.snow.material.size=0.07+w.k*0.05;}
+    // lasers
+    const P5=4.8;
+    for(const L of X.lanes){
+      let st="off";if(!w.lasersOff){const ph=((G.world+L.off)%P5+P5)%P5;st=ph<1.2?"low":ph<2.4?"full":ph<3.6?"high":"off";}
+      if(st!==L.state){L.state=st;for(const b of L.beams)b.b.visible=st==="full"||(st==="low"&&b.y<0.5)||(st==="high"&&b.y>1.0);L.led.color.setHex(w.lasersOff?0x40ff80:st==="off"?0x3a0808:0xff3a30);}
+    }
+    // footprints fade (much faster in a gust)
+    if(w.prints.length){const snowC=new THREE.Color(0xdfe5ec),fpC=new THREE.Color(0x7a889c),c=new THREE.Color();let dirty=false;
+      w.prints=w.prints.filter(p=>{p.age+=dt*(1+w.k*6);const t=Math.min(1,p.age/110);c.copy(fpC).lerp(snowC,t*t);X.prints.setColorAt(p.i,c);dirty=true;
+        if(t>=1){X.prints.setMatrixAt(p.i,new THREE.Matrix4().makeScale(0,0,0));X.prints.instanceMatrix.needsUpdate=true;return false;}return true;});
+      if(dirty)X.prints.instanceColor.needsUpdate=true;}
+    if(state!=="playing")return;
+    // the laser lanes: any lit beam between your feet and the top of your head trips the alarm
+    if(!w.lasersOff&&!DEV.ghost&&!G.alarm&&P.level===0&&inR(P.x,P.z,WO_HALL)){
+      if(!w.laserTip&&P.x<4.1){w.laserTip=true;toast("Laser lanes. Each one cycles: low beam (jump it), high beams (crouch under), all on (wait), all off (walk)","warn",4200);}
+      const feet=P.jh,head=P.jh+P.eye+0.1;
+      for(const L of X.lanes){if(Math.abs(P.x-L.x)>0.3)continue;
+        for(const b of L.beams)if(b.b.visible&&b.y>feet&&b.y<head){triggerAlarm("You walked into a laser beam. Alarm!");break;}
+        if(G.alarm)break;}
+    }
+    // leave prints in fresh snow
+    if(!DEV.ghost&&!P.climb&&woOutdoor(P.x,P.z,P.level)&&!woOnPath(P.x,P.z)&&P.jh<0.1){
+      if(w.lastX==null){w.lastX=P.x;w.lastZ=P.z;}
+      const d=Math.hypot(P.x-w.lastX,P.z-w.lastZ);
+      if(d>0.62){const yaw=Math.atan2(P.x-w.lastX,P.z-w.lastZ),s=w.fpSide=-w.fpSide;
+        this.addPrint(P.x+Math.cos(yaw)*0.12*s,P.z-Math.sin(yaw)*0.12*s,yaw);w.lastX=P.x;w.lastZ=P.z;
+        if(!w.fpTip){w.fpTip=true;toast("You're leaving footprints in the fresh snow. Guards who find them will follow them","warn",3200);}}
+    }else{w.lastX=null;}
+    // guards who come across fresh prints follow the trail
+    if(!G.alarm)for(const g of guards){
+      if(g.down||g.level!==0||g.security||g===w.fixer)continue;
+      const tr=w.trackers.get(g);
+      if(tr){
+        tr.t+=dt;
+        if(g.seeDist>=0||g.reportT>0||g.wounded>0){this.stopTracking(g,false);continue;}
+        const cur=w.prints.find(p=>p.seq===tr.seq);
+        if(!cur||Math.hypot(g.x-cur.x,g.z-cur.z)<0.55){
+          // the next print along the trail
+          const next=w.prints.filter(p=>p.seq>tr.seq&&p.seq<=tr.seq+6&&p.age<100).sort((a,b)=>a.seq-b.seq)[0];
+          if(next&&(!cur||Math.hypot(next.x-cur.x,next.z-cur.z)<3.2)){tr.seq=next.seq;g.route=[[next.x,next.z,null,0],[next.x,next.z,null,0]];g.wp=0;g.heard={x:next.x,z:next.z};tr.lost=0;}
+          else{tr.lost+=dt;g.speedNow=0;if(tr.lost>3.5){this.stopTracking(g,true);continue;}}
+        }
+        if(tr.t>40)this.stopTracking(g,true);
+        continue;
+      }
+      if((g.trkCD||0)>0){g.trkCD-=dt;continue;}
+      if(!woOutdoor(g.x,g.z,0))continue;
+      const reach=9*(1-0.65*w.k);let best=null;
+      for(const p of w.prints){if(p.age>70)continue;const dx=p.x-g.x,dz=p.z-g.z,d=Math.hypot(dx,dz);if(d>reach||d<0.3)continue;
+        if(Math.abs(wrap(Math.atan2(dx,dz)-g.yaw))>0.9)continue;if(blocked(g.x,g.z,p.x,p.z,0.4,0))continue;if(!best||p.seq<best.seq)best=p;}
+      if(best){
+        w.trackers.set(g,{seq:best.seq,t:0,lost:0});g.route=[[best.x,best.z,null,0],[best.x,best.z,null,0]];g.wp=0;g.wait=0;g.heard={x:best.x,z:best.z};SFX.hear(g.x,g.z,0);
+        const s=spatial(g.x,g.z,30,0);if(s)showSub("G",["Footprints? Who's been out here?","Fresh tracks. Somebody's walking around.","Those aren't mine…"][w.fpSeq%3],2600,g.name.toUpperCase());
+        toast(`${g.name} found your footprints and is following them`,"warn",2600);
+      }
+    }
+    // the radio relay: once it's down, someone gets sent out to fix it
+    if(w.relayDown){
+      w.relayT+=dt;X.relayLeds.forEach((m,i)=>m.color.setHex(Math.floor(G.world*3+i)%2?0x3a0808:0x1a0404));
+      if(!w.fixer&&w.relayT>40&&!w.noFixer){
+        const f=[X.halv,X.ruud].find(g=>!g.down&&!(w.trackers.has(g)));
+        if(f){w.fixer=f;this.stopTracking(f,false);const r=woRoute(f.x,f.z,24.6,16.8);r.push([29.6,17,Math.PI/2,0]);f.route=r;f.wp=0;f.wait=0;w.fixT=0;
+          toast(`The radios are dead. ${f.name} is heading to the mast hut to check the relay`,"warn",3200);}
+        else w.noFixer=true;
+      }
+      const f=w.fixer;
+      if(f){
+        if(f.down){w.fixer=null;w.noFixer=true;}
+        else if(Math.hypot(f.x-29.6,f.z-17)<0.6){f.route=[[29.6,17,Math.PI/2,0]];w.fixT+=dt;
+          if(w.fixT>8){w.relayDown=false;w.fixer=null;w.relayT=0;f.route=X.routes.get(f);f.wp=f.nearestWaypoint();X.relayLeds.forEach(m=>m.color.setHex(0x40ff80));
+            toast("Someone got the radio relay running again","bad",2600);}}
+      }
+    }
+  },
+  stopTracking(g,lost){
+    const w=G.w,X=this.X;if(!w.trackers.has(g))return;w.trackers.delete(g);
+    g.route=X.routes.get(g);g.wp=g.nearestWaypoint();g.wait=0;g.heard=null;g.trkCD=12;
+    if(lost&&!G.alarm){const s=spatial(g.x,g.z,30,0);if(s)showSub("G",["The snow's covered them. Never mind.","Lost them. Probably one of the techs.","Huh. They just stop."][w.fpSeq%3],2400,g.name.toUpperCase());}
+  },
+  interact(dt,facing){
+    const X=this.X,w=G.w;if(!X||!w)return null;
+    const hold=(id,secs,label)=>{
+      if(!keys.KeyE){if(w.holdId===id)w.holdT=0;return null;}
+      if(w.holdId!==id){w.holdId=id;w.holdT=0;}
+      w.holdT+=dt;P.fiddle=Math.max(P.fiddle,0.3);
+      if(w.holdT>=secs){w.holdT=0;w.holdId="";return "done";}
+      return {p:label,prog:w.holdT/secs};
+    };
+    const lv=P.level;
+    // the catalogue poster in the lobby
+    if(lv===0&&inR(P.x,P.z,WO_LOBBY)&&facing(-5,-1.8,2.2)>=0){
+      if(pressedE){w.poster=true;SFX.paper();showSub("D",WO_TARGETS.map(([n,c])=>`${n.replace(/^the /,"")} NGC ${c}`).join(" · "),11000,"THE STAR CATALOGUE POSTER");}
+      return {p:w.poster?"The catalogue poster: famous objects and their NGC numbers":"Press <kbd>E</kbd> to read the poster"};
+    }
+    // the observing log in the control room
+    if(lv===1&&inR(P.x,P.z,WO_OB)&&facing(-5.3,-9.2,1.7)>=0){
+      if(pressedE){w.log=true;SFX.paper();const t=WO_TARGETS[w.target][0];
+        showSub("D",`Night log. Target: ${t}, all night. Seeing poor, wind gusting to 80. Note from the director: "The meteorite case follows the telescope. Its code is tonight's target's NGC number. New code every night!"`,10000,"THE OBSERVING LOG");}
+      return {p:w.log?`The log: tonight's target is ${WO_TARGETS[w.target][0]}. The case code is its NGC number`:"Press <kbd>E</kbd> to read the observing log"};
+    }
+    // the laser console in the security office
+    if(lv===0&&inR(P.x,P.z,WO_SEC)&&facing(-4.0,-9.2,1.6)>=0){
+      if(w.lasersOff)return {p:"Laser curtain: off"};
+      const r=hold("lasers",2.5,"Switching off the laser curtain…");
+      if(r==="done"){w.lasersOff=true;X.conM.color.setHex(0x40ff80);SFX.kpOk();toast("Laser curtain off. The meteorite hall is open","good",2600);return null;}
+      return r||{p:"Hold <kbd>E</kbd> to switch off the laser curtain"};
+    }
+    // the snowcat key
+    if(lv===0&&!w.catKey&&inR(P.x,P.z,WO_SEC)&&facing(-3.27,-6.75,1.5)>=0){
+      if(pressedE){w.catKey=true;X.catKeyM.visible=false;SFX.card();toast("The snowcat key. The garage is north-east: it's a second way down","good",2800);}
+      return {p:"Press <kbd>E</kbd> to take the snowcat key"};
+    }
+    // the meteorite case
+    if(lv===0&&!G.vaultOpen&&inR(P.x,P.z,WO_HALL)&&facing(10.3,3,1.6)>=0&&P.x<10.6){
+      if(P.carry)return {p:"Drop what you're carrying to use the keypad. <kbd>Q</kbd>"};
+      if(!G.keypad&&pressedE)openKeypad();
+      const hint=w.log&&w.poster?` · ${WO_TARGETS[w.target][0]}: NGC ${G.safeCode}`:w.log?` · tonight's target: ${WO_TARGETS[w.target][0]}`:"";
+      return {p:`Press <kbd>E</kbd> to type the case code${hint}`};
+    }
+    if(lv===0&&G.vaultOpen&&!G.hasDiamond&&facing(11,3,1.8)>=0){
+      if(pressedE){G.hasDiamond=true;G.diamondVal=this.diamondValue;X.meteor.visible=false;X.mGlint.visible=false;SFX.cash();toast("You have the Halden Meteorite","good",2600);}
+      return {p:"Press <kbd>E</kbd> to take the Halden Meteorite"};
+    }
+    // the director's safe
+    if(lv===1&&!X.dsafe.open&&inR(P.x,P.z,WO_OFF)&&facing(-7.2,7.2,1.6)>=0){
+      if(keys.KeyE){if(pickTick(X.dsafe,10,dt)){X.dsafe.open=true;bags.forEach(b=>{if(b.state==="locked"&&b.box==="dsafe")b.state="ground";});SFX.unlock();toast("The director's safe is open","good",1800);}
+        return {p:`Cracking the safe by feel… ${Math.min(5,Math.floor(X.dsafe.pickT/10*5)+1)}/5`,prog:X.dsafe.pickT/10};}
+      return {p:"Hold <kbd>E</kbd> to crack the director's safe (10 s, quiet)",prog:X.dsafe.pickT>0?X.dsafe.pickT/10:null};
+    }
+    // the radio relay
+    if(lv===0&&inR(P.x,P.z,WO_MH)&&facing(31.2,17,1.8)>=0){
+      if(w.relayDown)return {p:w.fixer?"The relay is off. Someone's coming to fix it":"The relay is off: no radios, phones or pagers up here"};
+      const r=hold("relay",6,"Pulling the relay's fuses…");
+      if(r==="done"){w.relayDown=true;w.relayT=0;w.noFixer=false;SFX.jamOff();toast("The relay is dead: no radios, phones or pagers on the summit. Someone will notice in a minute or so","good",3600);return null;}
+      return r||{p:"Hold <kbd>E</kbd> to pull the relay's fuses (cuts every radio, phone and pager up here)"};
+    }
+    return null;
+  },
+  chip(){
+    const w=G.w;if(!w)return "";const s=[];
+    s.push(w.gust?"GUST":`CALM`);
+    if(w.relayDown)s.push(w.fixer?"RELAY DOWN · REPAIR COMING":"RELAY DOWN");
+    if(w.lasersOff)s.push("LASERS OFF");
+    if(w.log)s.push("TARGET "+WO_TARGETS[w.target][0].replace(/^the /,"").toUpperCase());
+    if(w.log&&w.poster&&!G.vaultOpen)s.push("CODE "+G.safeCode);
+    if(w.catKey)s.push("SNOWCAT KEY");
+    if(w.trackers.size)s.push("TRACKED");
+    return s.join(" · ");
+  },
+  objective(){
+    const w=G.w;if(!w)return this.text.case;
+    if(P.carry&&P.carry.kind==="loot")return this.text.van;
+    if(G.hasDiamond)return `You have the Halden Meteorite. Take what else you want (the collection store, the director's safe) and get to the cable car at the station${w.catKey?", or the snowcat in the garage":""}.`;
+    if(G.vaultOpen)return "The case is open. Take the Halden Meteorite.";
+    if(!P.masked&&!restricted(P.x,P.z))return this.text.case;
+    const need=[];
+    if(!w.log)need.push("tonight's target: it's in the observing log in the control room upstairs (the night astronomer works there)");
+    if(!w.poster)need.push("the target's NGC number: the star catalogue poster in the lobby");
+    if(w.log&&w.poster)need.push(`type NGC ${G.safeCode} into the keypad on the meteorite's plinth`);
+    if(!w.lasersOff)need.push("get past the laser lanes in the hall: watch the rhythm, crouch under the high beams, jump the low one, or switch them off in the security office");
+    return needList("To get the Halden Meteorite:",need);
+  }
+};
+
+const MAPS={whiteout:MAP_WHITEOUT,harbor:MAP_HARBOR,meridian:MAP_MERIDIAN,harborDay:MAP_HARBOR_DAY,meridianDay:MAP_MERIDIAN_DAY,club:MAP_CLUB,manor:MAP_MANOR,casino:MAP_CASINO,port:MAP_PORT,tower:MAP_TOWER,jewel:MAP_JEWEL,jewelDay:MAP_JEWEL_DAY};
 
 // night: moonlight and sodium lamps. day: sun, blue sky, light haze
 function setSky(day){
@@ -4748,7 +5370,7 @@ function canSee(ox,oz,yaw,half,range,lvl){
   if(DEV.ghost||!exposed())return -1;
   if((lvl||0)!==P.level)return -1;
   const dx=P.x-ox,dz=P.z-oz,d=Math.hypot(dx,dz);
-  if(d>range)return -1;
+  if(d>range*(LV.def.visMul?LV.def.visMul(ox,oz,lvl):1))return -1;
   if(Math.abs(wrap(Math.atan2(dx,dz)-yaw))>half)return -1;
   if(blocked(ox,oz,P.x,P.z,(P.crouch?1.0:1.6)+P.jh,P.level))return -1;
   return d;
@@ -4839,7 +5461,7 @@ function spatial(x,z,maxD,lvl){
   return {vol,pan,lp};
 }
 function surface(x,z,lvl){return LV.def.multi?LV.def.surface(x,z,lvl||0):lvl===1?"gravel":LV.def.surface(x,z);}
-const STEP={gravel:{freq:1300,q:.5,dur:.1,v:.8},tile:{freq:1700,q:1.4,dur:.07,v:1},carpet:{freq:420,q:.7,dur:.1,v:.5},steel:{freq:2400,q:3,dur:.08,v:1,ping:true},asphalt:{freq:850,q:.9,dur:.08,v:.85}};
+const STEP={snow:{freq:520,q:.6,dur:.13,v:.75},gravel:{freq:1300,q:.5,dur:.1,v:.8},tile:{freq:1700,q:1.4,dur:.07,v:1},carpet:{freq:420,q:.7,dur:.1,v:.5},steel:{freq:2400,q:3,dur:.08,v:1,ping:true},asphalt:{freq:850,q:.9,dur:.08,v:.85}};
 function stepSound(x,z,vol,pan,lp,lvl){
   const s=STEP[surface(x,z,lvl||0)];
   noiseHit({freq:s.freq*(0.9+Math.random()*0.2),q:s.q,dur:s.dur,vol:vol*s.v,pan,lp});
@@ -5226,7 +5848,7 @@ function setState(s){
 
 /* ================= toast & prompt ================= */
 let toastTimer=0;
-function toast(msg,tone,ms){const t=$("toast");t.textContent=msg;t.className="show "+(tone||"");clearTimeout(toastTimer);toastTimer=setTimeout(hideToast,ms||2200);}
+function toast(msg,tone,ms){const t=$("toast");t.textContent=msg;t.className="show "+(tone||"")+(msg.length>58?" long":"");clearTimeout(toastTimer);toastTimer=setTimeout(hideToast,ms||2200);}
 function hideToast(){$("toast").className="";}
 let lastPrompt="";
 function setPrompt(html,progress){
@@ -5510,6 +6132,7 @@ function shout(target){
   setTimeout(()=>{if(state!=="playing")return;speak(1.0,VOICE_CIV);showSub("C",pickLine(CIV_DOWN),2000,"CIVILIAN");},850);
   toast(stopped?"Call stopped. They're on the floor":n>1?`${n} people on the floor`:"On the floor","good",1500);
 }
+function jamming(){return G.jamT>0||!!(LV&&LV.id==="whiteout"&&G.w&&G.w.relayDown);}
 function placeJammer(){
   if(P.locked||P.climb)return;
   if(!P.masked){toast("Put on your mask first. Hold G","warn");return;}
@@ -6075,7 +6698,7 @@ function updatePagers(dt){
   for(const g of guards){
     const pg=g.pager;if(!pg||pg.state==="done"||G.alarm)continue;
     if(pg.state==="pending"){
-      if(G.jamT<=0)pg.t-=dt;
+      if(!jamming())pg.t-=dt;
       if(pg.t<=0){pg.state="ringing";pg.t=PAGER_WINDOW;pg.beepT=0;toast(`${g.name}'s pager is going off!`,"bad",2200);}
     }
     if(pg.state==="ringing"||pg.state==="answering"){
@@ -6084,7 +6707,7 @@ function updatePagers(dt){
       const k=pg.state==="ringing"?0.42+0.08*Math.sin(G.world*12):0.4;g.sprite.scale.set(k,k,k);
     }
     if(pg.state==="ringing"){
-      if(G.jamT<=0){pg.t-=dt;pg.beepT-=dt;}
+      if(!jamming()){pg.t-=dt;pg.beepT-=dt;}
       if(pg.beepT<=0){SFX.pager(g.x,g.z);pg.beepT=1.0;}
       if(pg.t<=0){
         pg.state="done";g.sprite.visible=false;
@@ -6134,20 +6757,20 @@ function updateHUD(){
   const reporter=G.alarm?null:guards.filter(g=>!g.down&&(g.reportT>0||g.wounded>0)).sort((a,b)=>(a.reportT||a.wounded)-(b.reportT||b.wounded))[0]||null;
   const repT=reporter?(reporter.wounded>0?reporter.wounded:reporter.reportT):G.secAlert>0?G.secAlert:0;
   const radio=!G.alarm&&(G.secAlert>0||!!reporter);
-  const jam=G.jamT>0;
+  const jam=jamming(),jamTxt=G.jamT>0?`${Math.ceil(G.jamT)} s`:"relay down";
   const ringing=G.alarm?null:guards.find(g=>g.pager&&(g.pager.state==="ringing"||g.pager.state==="answering"));
   const hud=$("hud");hud.classList.toggle("alarm",G.alarm||radio);hud.classList.toggle("watched",watched);
   const meter=G.alarm?1:radio?Math.max(0,1-repT/REPORT_TIME):caller?1-caller.callT/CALL_TIME:Math.max(G.susp,civSus);
   $("detectFill").style.width=(meter*100).toFixed(1)+"%";
   if(ringing||caller)hud.classList.add("alarm");
   const radioWho=reporter?reporter.name:"The security guard";
-  $("detectLbl").textContent=G.alarm?"Alarm raised":radio?(jam?`${radioWho}'s radio is jammed · ${Math.ceil(G.jamT)} s`:`${radioWho} is radioing it in · ${Math.ceil(repT)} s`):caller?(jam?`${caller.label} has no signal · ${Math.ceil(G.jamT)} s`:`${caller.label} is calling the police · ${Math.ceil(caller.callT)} s`):ringing?(ringing.pager.state==="ringing"?`Pager going off · ${Math.ceil(ringing.pager.t)} s`:"On the line with dispatch"):radio?"A guard is reaching for his radio":G.civWatched?"A camera sees a panicking civilian":G.bodyWatched?(G.bodyHost?"Hostage spotted":"Body spotted"):civSus>G.susp?"A civilian is getting suspicious":watched?"Being watched":"Detection";
+  $("detectLbl").textContent=G.alarm?"Alarm raised":radio?(jam?`${radioWho}'s radio is jammed · ${jamTxt}`:`${radioWho} is radioing it in · ${Math.ceil(repT)} s`):caller?(jam?`${caller.label} has no signal · ${jamTxt}`:`${caller.label} is calling the police · ${Math.ceil(caller.callT)} s`):ringing?(ringing.pager.state==="ringing"?`Pager going off · ${Math.ceil(ringing.pager.t)} s`:"On the line with dispatch"):radio?"A guard is reaching for his radio":G.civWatched?"A camera sees a panicking civilian":G.bodyWatched?(G.bodyHost?"Hostage spotted":"Body spotted"):civSus>G.susp?"A civilian is getting suspicious":watched?"Being watched":"Detection";
   $("seenEdge").style.opacity=G.alarm?0:(Math.max(G.susp,civSus)*0.55).toFixed(3);
   $("clockLbl").textContent=G.alarm?"Police arrive in":"Elapsed";
   $("clockVal").textContent=G.alarm?fmt(G.alarmT):fmtUp(G.time);
   let obj,urgent="";
   const loose=G.bodies.filter(b=>!b.hostage).length;
-  if(radio)urgent=reporter?`Drop ${reporter.name} before he radios it in! ${jam?`Jammed for ${Math.ceil(G.jamT)} s.`:`${Math.ceil(repT)} s left.`}`:`Take out the security guard before he calls it in! ${jam?`Jammed for ${Math.ceil(G.jamT)} s.`:`${Math.ceil(repT)} s left.`}`;
+  if(radio)urgent=reporter?`Drop ${reporter.name} before he radios it in! ${jam?(G.jamT>0?`Jammed for ${Math.ceil(G.jamT)} s.`:"No signal: the relay is down."):`${Math.ceil(repT)} s left.`}`:`Take out the security guard before he calls it in! ${jam?(G.jamT>0?`Jammed for ${Math.ceil(G.jamT)} s.`:"No signal: the relay is down."):`${Math.ceil(repT)} s left.`}`;
   else if(caller)urgent=`Stop the call! Look at ${caller.label.replace(/^A /,"the ").replace(/^The /,"the ")} and press F to shout before it goes through. ${Math.ceil(caller.callT)} s left.`;
   else if(ringing&&ringing.pager.state==="ringing")urgent=`Answer ${ringing.name}'s pager! Hold E at his body and keep holding. ${Math.ceil(ringing.pager.t)} s left.`;
   if(false){}
@@ -6171,8 +6794,8 @@ function updateHUD(){
   else if(r){mc.textContent=onRoof()?"UNMASKED · ON THE ROOF":LV.day?"UNMASKED · STAFF AREA":"UNMASKED · TRESPASSING";mc.className="chip warn";}
   else{mc.textContent=LV.day&&inside()?"UNMASKED · BLENDING IN":"UNMASKED · OUTSIDE";mc.className="chip ok";}
   if(!P.masked&&LV.def.maskLabel){const l=LV.def.maskLabel(r);if(l){mc.textContent=l[0];mc.className="chip "+l[1];}}
-  const jc=$("jamChip");jc.hidden=!P.masked&&!jam;
-  if(!jc.hidden){const t=jam?`JAMMER ON · ${Math.ceil(G.jamT)} s`:`JAMMERS ${P.jammers} · J`;if(jc.textContent!==t)jc.textContent=t;jc.className=jam?"chip warn":P.jammers?"chip":"chip bad";}
+  const jc=$("jamChip"),jamOn=G.jamT>0;jc.hidden=!P.masked&&!jamOn;
+  if(!jc.hidden){const t=jamOn?`JAMMER ON · ${Math.ceil(G.jamT)} s`:`JAMMERS ${P.jammers} · J`;if(jc.textContent!==t)jc.textContent=t;jc.className=jamOn?"chip warn":P.jammers?"chip":"chip bad";}
   $("cardChip").hidden=!P.hasCard;
   {const cc=$("codeChip");const t=LV.def.chip?LV.def.chip():(G.knowCode&&!G.vaultOpen?`SAFE CODE ${G.safeCode}`:"");cc.hidden=!t;if(t&&cc.textContent!==t)cc.textContent=t;}
   {const lc=$("loopChip"),lp=cams.filter(c=>c.loopT>0&&!c.dead);lc.hidden=!lp.length||G.alarm;
@@ -6243,7 +6866,7 @@ function stepGame(dt){
   if(state!=="playing")return;
   G.bodies=collectBodies();
   if(G.secAlert>0&&!G.alarm){
-    if(G.jamT<=0)G.secAlert-=dt;
+    if(!jamming())G.secAlert-=dt;
     if(G.secAlert<=0){G.secAlert=0;triggerAlarm(G.secMsg||"The security guard raised the alarm.");}
   }
   if(LV.def.tick)LV.def.tick(dt);
