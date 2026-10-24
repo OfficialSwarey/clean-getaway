@@ -296,7 +296,7 @@ details.help .keys{margin-bottom:14px}
         <dt>0–9</dt><dd>Type a code on a keypad (Backspace erases). In an elevator or on a gondola: pick the floor</dd>
         <dt>HOLD E</dt><dd>At the van, with nothing in your hands: drive off with whatever you've got</dd>
         <dt>Q</dt><dd>Drop what you're carrying</dd>
-        <dt>J</dt><dd>Put down a jammer: for 15 seconds no radio, phone or pager can raise the alarm (2 per job)</dd>
+        <dt>J</dt><dd>Put down a jammer: for 15 seconds no radio, phone or pager can raise the alarm, and any call already under way starts over (2 per job)</dd>
         <dt>CLICK</dt><dd>Fire the silenced pistol</dd>
         <dt>R-CLICK</dt><dd>Aim down the sights (click again to lower)</dd>
         <dt>R</dt><dd>Reload</dd>
@@ -823,7 +823,7 @@ class Guard{
     const radioing=this.wounded>0||this.reportT>0||(this.security&&G.secAlert>0);
     if(radioing&&!G.alarm){
       // wounded guard, a guard who spotted you, or the operator who saw something on camera: reaches for the radio.
-      // A running jammer holds every countdown where it is.
+      // A running jammer holds every countdown (placing one also resets them to the start).
       this.speedNow=0;this.seeDist=-1;this.bodyDist=-1;const jam=G.jamT>0;
       if(this.wounded>0){
         if(!jam)this.wounded-=dt;this.turn(Math.atan2(P.x-this.x,P.z-this.z),3,dt);
@@ -3796,6 +3796,14 @@ const MAP_TOWER={
     box(6,-16.2,-12.2,16.2,-11.8,1.3,par);box(6,-16.2,11.8,16.2,12.2,1.3,par);box(6,-16.2,-12.2,-15.8,12.2,1.3,par);
     box(6,15.8,-12.2,16.2,-4,1.3,par);box(6,15.8,4,16.2,12.2,1.3,par);
     const gonChain={minX:15.85,maxX:16.15,minZ:-4,maxZ:4,h:1.3,see:true,lvl:6};colliders.push(gonChain);
+    // a red-and-white chain across the gap while the gondola is elsewhere, and the dock painted on the roof
+    const chainG=new THREE.Group();chainG.userData.dyn=1;lvAdd(chainG);
+    {const cm=new THREE.MeshPhongMaterial({map:tex(32,8,(g,w,h)=>{g.fillStyle="#d02a20";g.fillRect(0,0,w/2,h);g.fillStyle="#eeeeee";g.fillRect(w/2,0,w/2,h);},16,1)});
+      for(const y of [0.55,1.05]){const c=new THREE.Mesh(new THREE.BoxGeometry(0.04,0.04,8),cm);c.position.set(16,6*Y+y,0);c.userData.dyn=1;chainG.add(c);}
+      const sg=plaque(signTex("GONDOLA · WAIT HERE",256,48,"#e0b020","#141414","bold 22px Arial"),0.9,0.17,15.97,6*Y+0.82,0,-Math.PI/2);LV.group.remove(sg);sg.userData.dyn=1;chainG.add(sg);}
+    {const dock=new THREE.Mesh(new THREE.PlaneGeometry(7.6,1.5),new THREE.MeshBasicMaterial({transparent:true,depthWrite:false,map:tex(512,100,(g,w,h)=>{g.clearRect(0,0,w,h);g.strokeStyle="#e0b020";g.lineWidth=6;g.strokeRect(5,5,w-10,h-10);
+      g.fillStyle="rgba(224,176,32,.85)";g.font="bold 46px Arial";g.textAlign="center";g.textBaseline="middle";g.fillText("GONDOLA",w/2,h/2+2);for(let x=20;x<w-20;x+=26){if(x>150&&x<362)continue;g.fillRect(x,h-18,12,6);g.fillRect(x,12,12,6);}})}));
+      dock.rotation.x=-Math.PI/2;dock.rotation.z=-Math.PI/2;dock.position.set(14.95,6*Y+0.045,0);dock.userData.dyn=1;lvAdd(dock);}
     for(const z of [-3,-1,1,3]){const c=new THREE.Mesh(new THREE.BoxGeometry(0.04,0.04,1.9),phong(0xd9a724));c.position.set(16,6*Y+0.9,z);c.userData.noHit=true;lvAdd(c);}
 
     // ---------- L0 · lobby ----------
@@ -3936,13 +3944,21 @@ const MAP_TOWER={
     }
 
     // ---------- the window cleaners' gondola (east side) ----------
-    const gon=new THREE.Group();lvAdd(gon);
+    const gon=new THREE.Group();lvAdd(gon);let gate;
     {const deck=new THREE.Mesh(new THREE.BoxGeometry(2.0,0.14,8),M.steel);deck.position.set(17.2,0.07,0);gon.add(deck);
-      for(const [x,z,w,d] of [[18.15,0,0.06,8],[17.2,-3.97,2,0.06],[17.2,3.97,2,0.06]]){const r=new THREE.Mesh(new THREE.BoxGeometry(w,0.06,d),yellow);r.position.set(x,1.1,z);gon.add(r);
+      for(const [x,z,w,d] of [[18.15,0,0.06,8],[16.62,-3.97,0.75,0.06],[17.2,3.97,2,0.06]]){const r=new THREE.Mesh(new THREE.BoxGeometry(w,0.06,d),yellow);r.position.set(x,1.1,z);gon.add(r);
         const p=new THREE.Mesh(new THREE.BoxGeometry(w,0.5,d),new THREE.MeshPhongMaterial({color:0xd9a724,transparent:true,opacity:.35}));p.position.set(x,0.4,z);gon.add(p);}
-      for(const [x,z] of [[18.15,-3.97],[18.15,3.97],[16.25,-3.97],[16.25,3.97],[18.15,0]]){const p=new THREE.Mesh(new THREE.BoxGeometry(0.06,1.1,0.06),yellow);p.position.set(x,0.6,z);gon.add(p);}
+      for(const [x,z] of [[18.15,-3.97],[18.15,3.97],[16.25,-3.97],[16.25,3.97],[18.15,0],[17.0,-3.97]]){const p=new THREE.Mesh(new THREE.BoxGeometry(0.06,1.1,0.06),yellow);p.position.set(x,0.6,z);gon.add(p);}
       const ctl=new THREE.Mesh(new THREE.BoxGeometry(0.35,0.5,0.25),M.cabinet);ctl.position.set(17.9,1.1,-3.6);gon.add(ctl);
       const ledg=new THREE.Mesh(new THREE.BoxGeometry(0.06,0.06,0.02),new THREE.MeshBasicMaterial({color:0x40ff80}));ledg.position.set(17.9,1.28,-3.47);gon.add(ledg);
+      // hazard stripes where you step on and off: the gate at the south end, and the whole building side (windows, roof)
+      const haz=new THREE.MeshPhongMaterial({map:tex(64,16,(g,w,h)=>{g.fillStyle="#e0b020";g.fillRect(0,0,w,h);g.fillStyle="#16181a";for(let x=-16;x<w+16;x+=16){g.beginPath();g.moveTo(x,h);g.lineTo(x+8,0);g.lineTo(x+16,0);g.lineTo(x+8,h);g.fill();}},1,1),shininess:10});
+      const strip=(x,z,w,d,rep)=>{const m=haz.clone();m.map=haz.map.clone();m.map.needsUpdate=true;m.map.repeat.set(rep,1);const s=new THREE.Mesh(new THREE.PlaneGeometry(w,d),m);s.rotation.x=-Math.PI/2;if(d>w)s.rotation.z=Math.PI/2,s.geometry=new THREE.PlaneGeometry(d,w);s.position.set(x,0.147,z);gon.add(s);};
+      strip(17.58,-3.75,1.1,0.32,4);strip(16.33,0,0.26,7.8,24);
+      // the gate: swings in along the outer rail when the gondola is down at the street
+      gate=new THREE.Group();gate.position.set(18.12,0,-3.97);gon.add(gate);
+      for(const [x,y,w,h] of [[-0.56,1.1,1.1,0.06],[-0.56,0.6,1.1,0.05],[-1.09,0.58,0.06,1.1]]){const b=new THREE.Mesh(new THREE.BoxGeometry(w,h,0.06),yellow);b.position.set(x,y,0);gate.add(b);}
+      {const p=new THREE.Mesh(new THREE.BoxGeometry(1.08,0.5,0.03),new THREE.MeshPhongMaterial({color:0xd9a724,transparent:true,opacity:.35}));p.position.set(-0.56,0.33,0);gate.add(p);}
       gon.traverse(o=>o.userData.dyn=1);}
     const cables=[-4.4,4.4].map(z=>{const c=new THREE.Mesh(new THREE.BoxGeometry(0.03,1,0.03),M.pole);c.userData.dyn=1;c.userData.noHit=true;lvAdd(c);return {c,z};});
     const gonRails=[{minX:18.1,maxX:18.25,minZ:-4,maxZ:4,h:1.15,see:true,lvl:0},{minX:16.1,maxX:17.0,minZ:-4.05,maxZ:-3.9,h:1.15,see:true,lvl:0},{minX:16.1,maxX:18.25,minZ:3.9,maxZ:4.05,h:1.15,see:true,lvl:0},{minX:17.0,maxX:18.25,minZ:-4.05,maxZ:-3.9,h:1.15,see:true,lvl:-9,gate:true}];
@@ -3999,7 +4015,7 @@ const MAP_TOWER={
     new Civilian([[-12.4,5.0,0,0]],0,{seated:true,label:"A private client",level:3,evac:()=>[[-10,5.9],[-7,5.9],[-7,-7],[6.2,-7],N(3)]});
     const vane=new Civilian([[12.6,-8.1,0,9],[14.6,-9.8,null,1],[14.6,-2.0,Math.PI/2,6],[10.0,-3.0,null,2],[8.6,-10.0,Math.PI,6]],1.2,{label:"Victor Vane",level:5});
     new Civilian([[8.5,3.0,Math.PI,0]],0,{seated:true,worker:true,label:"Vane's assistant",level:5,evac:()=>[[5.45,3.0],N(5)]});
-    Object.assign(self,{X:{car,shaftDoors,gon,cables,gonRails,gonChain,heli,hale,vane,priya,mgrSafe,vaneSafe,vLed,srvDoor,itNote}});
+    Object.assign(self,{X:{car,shaftDoors,gon,gate,chainG,cables,gonRails,gonChain,heli,hale,vane,priya,mgrSafe,vaneSafe,vLed,srvDoor,itNote}});
   },
   reset(){
     const X=this.X;if(!X)return;
@@ -4010,7 +4026,7 @@ const MAP_TOWER={
       call:{next:12+Math.random()*10,on:false,t:0,line:0},bell:0,strobe:0};
     G.t.heliGw={x:-12.2,z:3.0,lvl:6,y:6*ROOF_Y+0.95,name:"helicopter",verb:"lift off",slots:[[-10.4,2.5],[-9.6,2.5],[-10.4,3.5],[-9.6,3.5]],n:0};
     X.car.position.y=0;X.shaftDoors.forEach(d=>{d.t=0;d.a.position.z=-0.85;d.b.position.z=-0.15;if(!colliders.includes(d.col))colliders.push(d.col);});
-    X.gon.position.y=0;X.gonRails.forEach(c=>c.lvl=0);if(!colliders.includes(X.gonChain))colliders.push(X.gonChain);this.cable();
+    X.gon.position.y=0;X.gate.rotation.y=Math.PI/2;X.gateT=1;X.chainG.visible=true;X.gonRails.forEach(c=>c.lvl=0);if(!colliders.includes(X.gonChain))colliders.push(X.gonChain);this.cable();
     X.heli.visible=false;
     for(const s of [X.mgrSafe,X.vaneSafe]){s.open=false;s.t=0;s.pickT=0;s.pivot.rotation.y=0;}
     X.vLed.color.setHex(0xff3a30);
@@ -4090,7 +4106,8 @@ const MAP_TOWER={
     else if(g.moving&&g.ghostDur){g.ghostT+=dt;const u=clamp(g.ghostT/g.ghostDur,0,1),s=u*u*(3-2*u);X.gon.position.y=(g.from+(g.target-g.from)*s)*Y;if(u>=1){g.lvl=g.target;g.moving=false;g.ghostDur=0;}}
     else X.gon.position.y=g.lvl*Y;
     X.gonRails.forEach(c=>c.lvl=g.moving||(c.gate&&g.lvl===0)?-9:g.lvl);
-    {const i=colliders.indexOf(X.gonChain),dock=!g.moving&&g.lvl===6;if(dock&&i>=0)colliders.splice(i,1);else if(!dock&&i<0)colliders.push(X.gonChain);}
+    {const i=colliders.indexOf(X.gonChain),dock=!g.moving&&g.lvl===6;if(dock&&i>=0)colliders.splice(i,1);else if(!dock&&i<0)colliders.push(X.gonChain);X.chainG.visible=!dock;}
+    {const tg=!g.moving&&g.lvl===0?1:0;if(X.gateT!==tg){X.gateT=clamp((X.gateT||0)+(tg?dt:-dt)/0.6,0,1);X.gate.rotation.y=X.gateT*Math.PI/2;}}
     this.cable();
     if(state!=="playing")return;
     if(g.moving){g.noise=(g.noise||0)-dt;if(g.noise<=0){g.noise=0.6;const s=spatial(17.2,0,30,levelOfY(X.gon.position.y+0.5));tone({type:"sawtooth",f0:110,f1:118,dur:.6,vol:.03*(s?s.vol:0.3)+.01,lp:600});G.bang={x:15,z:0,r:6,lvl:levelOfY(X.gon.position.y+0.5)};}}
@@ -5502,8 +5519,13 @@ function placeJammer(){
   resolve(p,0.2,P.level);
   makeJammer(p.x,p.z,P.onStair?P.y:P.level*ROOF_Y+supportAt(p.x,p.z,0.12,P.level,P.gnd),P.yaw);
   P.jammers--;G.jamsUsed++;G.jamT=JAM_TIME;G.jamBeep=0;SFX.jamOn();
+  // every countdown the jammer catches starts over: when it burns out, they begin again from the top
+  for(const g of guards){if(g.down)continue;if(g.wounded>0)g.wounded=2.0;if(g.reportT>0)g.reportT=REPORT_TIME;}
+  for(const g of guards){const pg=g.pager;if(!pg)continue;if(pg.state==="pending")pg.t=PAGER_DELAY;else if(pg.state==="ringing")pg.t=PAGER_WINDOW;}
+  for(const c of civs)if(c.state==="calling")c.callT=CALL_TIME;
+  if(G.secAlert>0)G.secAlert=G.secAlertFull||REPORT_TIME;
   if(civs.some(c=>c.state==="calling")){speak(1.1,VOICE_CIV);showSub("C","Hello? Hello?! …I've got no signal!",2400,"CIVILIAN · ON THE PHONE");}
-  toast("Jammer on: no radios, phones or pagers for 15 s","good",2400);
+  toast("Jammer on: no radios, phones or pagers for 15 s. Any call in progress starts over","good",2600);
 }
 function updateJammer(dt){
   const j=jammerMeshes[jammerMeshes.length-1];
@@ -5576,7 +5598,7 @@ function shoot(){
       c.dead=true;c.loopT=0;c.seeDist=-1;c.bodyDist=-1;c.civDist=-1;c.cone.visible=false;c.spot.intensity=0;c.led.visible=false;c.head.rotation.set(0.95,0,0.35);c.body.material=CAM_DEAD;G.camsShot++;
       SFX.camBreak(c.x,c.z);
       if(secGuard&&!secGuard.down&&!G.alarm){
-        if(!(G.secAlert>0)){G.secAlert=3;G.secMsg="The security guard saw a camera go dark. Alarm!";}
+        if(!(G.secAlert>0)){G.secAlert=G.secAlertFull=3;G.secMsg="The security guard saw a camera go dark. Alarm!";}
         toast("The security guard saw the feed die! Take him out","bad",2600);
       }else toast("Camera down","good",1200);
     }
@@ -5714,7 +5736,7 @@ function startReport(o,msg,at){
     toast(G.lastCause==="body"?`${o.name} found something! Drop him before he radios it in`:`${o.name} spotted you! Drop him before he radios it in`,"bad",2600);
   }else if(o&&o.kind==="camera"&&secGuard&&!secGuard.down){
     if(G.secAlert>0)return;
-    G.secAlert=REPORT_TIME;G.secMsg=G.lastCause==="civ"?"The security guard saw a panicking civilian on camera. Alarm!":G.lastCause==="body"?"The security guard saw something on camera. Alarm!":"The security guard saw you on camera. Alarm!";
+    G.secAlert=G.secAlertFull=REPORT_TIME;G.secMsg=G.lastCause==="civ"?"The security guard saw a panicking civilian on camera. Alarm!":G.lastCause==="body"?"The security guard saw something on camera. Alarm!":"The security guard saw you on camera. Alarm!";
     toast("The security guard saw it on camera! Take him out","bad",2600);
   }else triggerAlarm(msg);
 }
