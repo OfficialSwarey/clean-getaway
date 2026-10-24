@@ -186,22 +186,33 @@ details.help .keys{margin-bottom:14px}
 .tb.fire{border-color:rgba(255,75,62,.6)}
 .tb[data-act="aim"]{right:calc(184px + env(safe-area-inset-right,0px));bottom:calc(90px + env(safe-area-inset-bottom,0px))}
 .tb[data-act="coin"]{right:calc(22px + env(safe-area-inset-right,0px));bottom:calc(204px + env(safe-area-inset-bottom,0px))}
-.tb[data-act="jam"]{right:calc(80px + env(safe-area-inset-right,0px));bottom:calc(176px + env(safe-area-inset-bottom,0px))}
+.tb[data-act="jam"]{right:calc(80px + env(safe-area-inset-right,0px));bottom:calc(188px + env(safe-area-inset-bottom,0px))}
 .tb[data-act="drop"]{right:calc(138px + env(safe-area-inset-right,0px));bottom:calc(166px + env(safe-area-inset-bottom,0px))}
 .tb[data-act="reload"]{right:calc(196px + env(safe-area-inset-right,0px));bottom:calc(162px + env(safe-area-inset-bottom,0px))}
 #tPause{left:calc(12px + env(safe-area-inset-left,0px));top:calc(10px + env(safe-area-inset-top,0px));width:44px;height:44px;border-radius:10px;font-size:14px}
+#tObj{left:calc(12px + env(safe-area-inset-left,0px));top:calc(62px + env(safe-area-inset-top,0px));width:44px;height:44px;border-radius:10px;font-size:9px}
+#obj.mini .lbl,#obj.mini #objText,#obj.mini #bagsRow{display:none}
 #tNum{position:absolute;left:50%;top:calc(50% + 100px);transform:translateX(-50%);display:flex;gap:8px;pointer-events:auto}
 #tNum button{width:46px;height:46px;border:1px solid var(--line);background:rgba(10,14,20,.8);color:var(--fg);font-family:var(--f-mono);font-size:18px}
 #tNum button.sel{outline:2px solid var(--sodium)}
 #rotate{position:fixed;inset:0;z-index:9;display:grid;place-items:center;background:var(--ink);color:var(--fg);font-size:20px;text-align:center;padding:24px}
 #rotate b{display:block;font-size:56px;color:var(--sodium);margin-bottom:12px}
-body.touch #obj{left:calc(64px + env(safe-area-inset-left,0px));top:calc(10px + env(safe-area-inset-top,0px));bottom:auto;max-width:min(260px,28vw);padding:8px 10px}
-body.touch #objText{font-size:12.5px;line-height:1.3;display:-webkit-box;-webkit-line-clamp:4;-webkit-box-orient:vertical;overflow:hidden}
-body.touch #obj .lbl,body.touch #bagsRow{font-size:10px}body.touch #objTip{font-size:11px}
-body.touch #status{top:calc(62px + env(safe-area-inset-top,0px));bottom:auto;gap:4px;flex-direction:row;flex-wrap:wrap;justify-content:flex-end;max-width:min(330px,40vw)}body.touch #status .chip{font-size:9px;padding:3px 6px}body.touch #stance,body.touch #sound{display:none}
+body.touch #obj{left:calc(64px + env(safe-area-inset-left,0px));top:calc(10px + env(safe-area-inset-top,0px));bottom:auto;padding:8px 10px}
+body.touch #objText{font-size:12.5px;line-height:1.3;display:-webkit-box;-webkit-line-clamp:6;-webkit-box-orient:vertical;overflow:hidden}
+body.touch #obj .lbl,body.touch #bagsRow{font-size:10px}body.touch #objTip{font-size:11px}body.touch #objTip.urgent{font-size:12px}
+body.touch #status{top:calc(46px + env(safe-area-inset-top,0px));left:calc(95px + min(300px,30vw) + env(safe-area-inset-left,0px));right:calc(170px + env(safe-area-inset-right,0px));bottom:auto;gap:4px;flex-direction:row;flex-wrap:wrap;justify-content:center;align-items:flex-start;max-width:none}body.touch #status .chip{font-size:9px;padding:3px 6px}body.touch #stance,body.touch #sound{display:none}
 @media (max-height:520px){.card.menu .menu-head h1{font-size:40px}.card.menu{padding:16px 18px;gap:12px}#menuIntro{font-size:14px}.cr-top{padding:10px 12px}.cr-stat b{font-size:20px}}
-body.touch #subs{top:calc(70px + env(safe-area-inset-top,0px));bottom:auto;width:min(480px,46vw);font-size:13px}
-body.touch #prompt{top:calc(50% + 30px)}body.touch #detect{width:min(240px,28vw)}
+/* phones: objective top left, the clock top right, the detection meter and the status chips in the band between them;
+   subtitles bottom left */
+body.touch #obj{max-width:min(300px,30vw);gap:3px}
+body.touch #obj:has(#objTip:not([hidden])) #objText{-webkit-line-clamp:4}body.touch #objTip{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}body.touch #objTip[hidden]{display:none}
+body.touch #subs{left:calc(64px + env(safe-area-inset-left,0px));top:auto;bottom:calc(14px + env(safe-area-inset-bottom,0px));transform:none;width:min(300px,34vw);padding:6px 10px 8px;font-size:13px}
+body.touch #subLine{font-size:14px}body.touch #subWho{font-size:9px}
+body.touch #prompt{top:calc(50% + 30px)}body.touch #promptText{font-size:14px;padding:5px 10px}body.touch #promptText kbd{font-size:11px}
+body.touch #detect{top:calc(12px + env(safe-area-inset-top,0px));left:calc(95px + min(300px,30vw) + env(safe-area-inset-left,0px));right:calc(170px + env(safe-area-inset-right,0px));width:auto;transform:none;gap:3px}
+body.touch #detectLbl{font-size:9px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}body.touch #detect .bar{height:7px}
+body.touch #coinChip,body.touch #jamChip,body.touch #maskChip{display:none}
+.tb small{display:block;font-size:12px;color:var(--sodium)}
 body.touch #clockVal{font-size:20px}
 body.pad #kpHint b,body.touch #kpHint b{color:var(--sodium)}
 .modes button:focus,.cr-tabs button:focus,.btn:focus,.job:focus,.node:focus{outline:2px solid var(--fg);outline-offset:2px}
@@ -276,6 +287,7 @@ body.pad #kpHint b,body.touch #kpHint b{color:var(--sodium)}
 <div id="touch" hidden>
   <div id="tStick" hidden><div id="tKnob"></div></div>
   <button type="button" class="tb" id="tPause" data-act="pause" aria-label="Pause">II</button>
+  <button type="button" class="tb" id="tObj" data-act="obj" aria-label="Show or hide the objective">OBJ</button>
   <div id="tNum" hidden></div>
   <button type="button" class="tb big" data-act="use">USE</button>
   <button type="button" class="tb mid" data-act="f">ACTION</button>
@@ -445,7 +457,7 @@ body.pad #kpHint b,body.touch #kpHint b{color:var(--sodium)}
         <dt>START</dt><dd>Pause. In menus the d-pad moves, A picks, B goes back, LB/RB flip tabs</dd>
       </dl>
       <p class="lbl">Touch</p>
-      <p>Left thumb: the joystick appears where you touch (push past the ring to sprint). Drag anywhere on the right to look. The buttons on the right change with what you can do; USE glows when there's something to use. Tap the keypad keys directly.</p>
+      <p>Left thumb: the joystick appears where you touch (push past the ring to sprint). Drag anywhere on the right to look. The buttons on the right change with what you can do; USE glows when there's something to use. Tap the keypad keys directly. OBJ (under the pause button) folds the objective away; a new objective still pops up for a few seconds, and urgent warnings always show.</p>
       <ul class="tips">
         <li>Outside without a mask you're just someone on the street. Inside a closed building, in a staff-only area or on a roof, anyone who sees you fills the detection meter, mask or not.</li>
         <li>Day jobs: the public areas are open, so walk in unmasked and look around. Behind counters and staff doors is off limits, and staff and guards notice you back there.</li>
@@ -6208,15 +6220,35 @@ function setState(s){
 }
 
 /* ================= toast & prompt ================= */
+// Prompts, tips and messages name keyboard keys. On touch and on a controller, name the button instead.
+const KEYNAMES={
+  touch:{E:"USE",F:"ACTION",G:"MASK",Q:"DROP",T:"COIN",J:"JAM",R:"RELOAD",C:"CROUCH",SPACE:"JUMP"},
+  pad:{E:"X",F:"Y",G:"D-PAD UP",Q:"D-PAD DOWN",T:"RB",J:"LB",R:"D-PAD LEFT",C:"B",SPACE:"A"}};
+function inputSrc(){try{return IN.src;}catch(e){return "kbm";}}
+function keyWords(s){
+  const src=inputSrc();
+  const m=KEYNAMES[src];if(!m||!s)return s;
+  const touch=src==="touch";
+  if(touch)s=s.replace(/\b([Pp])ress F to shout\b/g,(a,p)=>(p==="P"?"T":"t")+"ap SHOUT").replace(/\bF to smash\b/g,"SMASH to smash");
+  s=s.replace(/<kbd>(E|F|G|Q|T|J|R|C|SPACE)<\/kbd>/g,(a,k)=>`<kbd>${m[k]}</kbd>`)
+   .replace(/<kbd>W<\/kbd> \/ <kbd>S<\/kbd>/g,touch?"Joystick up / down":"<kbd>LEFT STICK</kbd>")
+   .replace(/\bW\/S\b|\bW and S\b/g,touch?"the joystick":"the left stick")
+   .replace(/\b([Hh]old|[Pp]ress|[Tt]ap|with|[Uu]se) (E|F|G|Q|T|J|R|C|SPACE)\b/g,(a,v,k)=>v+" "+m[k])
+   .replace(/\bQ drops it\b/g,`${m.Q} puts it down`)
+   .replace(/\b(E|Q|SPACE) (drops|to let go|to open|to pocket)/g,(a,k,r)=>m[k]+" "+r);
+  if(touch)s=s.replace(/\bPress\b/g,"Tap").replace(/\bpress\b/g,"tap");
+  return s;
+}
 let toastTimer=0;
-function toast(msg,tone,ms){const t=$("toast");t.textContent=msg;t.className="show "+(tone||"")+(msg.length>58?" long":"");clearTimeout(toastTimer);toastTimer=setTimeout(hideToast,ms||2200);}
+function toast(msg,tone,ms){msg=keyWords(msg);const t=$("toast");t.textContent=msg;t.className="show "+(tone||"")+(msg.length>58?" long":"");clearTimeout(toastTimer);toastTimer=setTimeout(hideToast,ms||2200);}
 function hideToast(){$("toast").className="";}
 let lastPrompt="";
 function setPrompt(html,progress){
   const pr=$("prompt");
   if(!html){pr.hidden=true;lastPrompt="";return;}
   pr.hidden=false;
-  if(html!==lastPrompt){$("promptText").innerHTML=html;lastPrompt=html;}
+  const key=html+"|"+inputSrc();
+  if(key!==lastPrompt){$("promptText").innerHTML=keyWords(html);lastPrompt=key;}
   const bar=$("pbar");
   if(progress==null)bar.hidden=true;else{bar.hidden=false;$("pfill").style.width=(progress*100).toFixed(1)+"%";}
 }
@@ -7201,8 +7233,8 @@ function updateHUD(){
   else if(P.carry)obj=LV.def.text.van;
   else if(G.secured>=bags.length)obj=`Every bag is in the ${LV.def.getaway||"van"}. Hold E at the ${LV.def.getaway||"van"} to ${LV.def.leaveVerb||"drive off"}, or grab some loose cash first.`;
   else obj=(VAULT.safe?"Grab a loot bag from the safe.":"Grab a loot bag from the vault.")+(G.secured?` Or hold E at the ${LV.def.getaway||"van"} to ${LV.def.leaveVerb||"drive off"} with what you have.`:"");
-  $("objText").textContent=obj;
-  {const tip=urgent?urgent:P.carry&&P.carry.kind==="body"?"Tip: "+LV.def.text.bins:loose&&!G.alarm?`Tip: ${loose>1?`${loose} bodies are`:"a body is"} lying in the open. If a guard or camera finds one, they raise the alarm. You can bag a body (hold E) and dump it in a bin, or leave it.`:"";
+  obj=keyWords(obj);if($("objText").textContent!==obj)$("objText").textContent=obj;
+  {const tip=keyWords(urgent?urgent:P.carry&&P.carry.kind==="body"?"Tip: "+LV.def.text.bins:loose&&!G.alarm?`Tip: ${loose>1?`${loose} bodies are`:"a body is"} lying in the open. If a guard or camera finds one, they raise the alarm. You can bag a body (hold E) and dump it in a bin, or leave it.`:"");
     const el=$("objTip");if(el.textContent!==tip)el.textContent=tip;el.hidden=!tip;el.classList.toggle("urgent",!!urgent);}
   $("bagsLbl").textContent=`Bags in the ${LV.def.getaway||"van"}`;$("bagsVal").textContent=`${G.secured}/${bags.length}`;
   {const tk=G.vanTake+G.pocket+G.diamondVal,t=G.pocket+G.diamondVal>0?`${money(tk)} (${money(G.pocket+G.diamondVal)} on you)`:money(G.vanTake);if($("takeVal").textContent!==t)$("takeVal").textContent=t;}
@@ -7224,7 +7256,11 @@ function updateHUD(){
    if(!lc.hidden){const m=Math.min(...lp.map(c=>c.loopT)),t=`CAM LOOP${lp.length>1?" ×"+lp.length:""} · ${Math.ceil(m)} s`;if(lc.textContent!==t)lc.textContent=t;lc.className=m<6?"chip warn":"chip ok";}}
   const tc=$("tieChip");tc.hidden=!(P.masked&&civs.length);
   if(!tc.hidden){const nf=civs.filter(c=>c.follow&&!c.dead).length;const t=`ZIP TIES ${P.ties}`+(nf?` · ${nf} FOLLOWING`:"");if(tc.textContent!==t)tc.textContent=t;tc.className=P.ties===0?"chip bad":"chip";}
-  $("obj").hidden=!$("subs").hidden; // subtitles take the bottom of the screen during a call
+  // phones: the OBJ button folds the objective away; a new objective still shows for a few seconds, and an urgent warning always does
+  const objKey=obj.replace(/\d+/g,"#");if(objKey!==IN.objKey){if(IN.objKey)IN.objPeek=performance.now()+6000;IN.objKey=objKey;}
+  const mini=IN.src==="touch"&&IN.objHide&&performance.now()>IN.objPeek;
+  $("obj").classList.toggle("mini",mini);$("tObj").classList.toggle("on",!mini);
+  $("obj").hidden=IN.src==="touch"?(mini&&!urgent):!$("subs").hidden; // subtitles take the bottom of the screen during a call (on phones they sit bottom left instead)
   const pc=$("pagerChip");pc.hidden=!P.masked;
   {const t=`PAGERS ${G.pagersUsed}/${maxPagers()}`;if(pc.textContent!==t)pc.textContent=t;pc.className=G.pagersUsed>=maxPagers()?"chip bad":G.pagersUsed>0?"chip warn":"chip";}
   const am=$("ammo");am.hidden=!P.masked;
@@ -7340,7 +7376,8 @@ let last=performance.now();
 /* ================= touch and gamepad input =================
    Both feed the same game: an analog move vector (IN.fwd/IN.right), look deltas, and the same actions the keys trigger.
    IN.src is whatever you used last (kbm / touch / pad): aim assist only ever helps touch and gamepad. */
-const IN={fwd:0,right:0,mag:0,sprint:false,lookX:0,lookY:0,src:"kbm",touchUI:false,pad:-1,prev:{},stickT:0,assistT:0,menuT:0,kpSel:4,numSel:0};
+const IN={fwd:0,right:0,mag:0,sprint:false,lookX:0,lookY:0,src:"kbm",touchUI:false,pad:-1,prev:{},stickT:0,assistT:0,menuT:0,kpSel:4,numSel:0,objHide:false,objPeek:0,objKey:""};
+try{IN.objHide=localStorage.getItem("cg-objhide")==="1";}catch(e){}
 const TOUCH_DEV=(()=>{try{return matchMedia("(pointer: coarse)").matches&&navigator.maxTouchPoints>0;}catch(e){return false;}})();
 const PAD_BTN={A:0,B:1,X:2,Y:3,LB:4,RB:5,LT:6,RT:7,BACK:8,START:9,LS:10,RS:11,UP:12,DOWN:13,LEFT:14,RIGHT:15};
 function setSrc(s){
@@ -7373,6 +7410,7 @@ function touchAct(act,down){
     case "coin":if(down)throwCoin();break;
     case "jam":if(down)placeJammer();break;
     case "pause":if(down)setState("paused");break;
+    case "obj":if(down){IN.objHide=!IN.objHide;IN.objPeek=0;try{localStorage.setItem("cg-objhide",IN.objHide?"1":"0");}catch(e){}}break;
   }
 }
 function initTouch(){
@@ -7409,6 +7447,8 @@ function touchHUD(){
   const vis=(act,v)=>{const b=document.querySelector(`.tb[data-act="${act}"]`);if(b&&b.hidden!==!v)b.hidden=!v;};
   vis("mask",!P.masked);vis("fire",P.masked);vis("aim",P.masked);vis("reload",P.masked&&P.mag<magSize()&&P.reserve>0);
   vis("drop",!!P.carry);vis("coin",G.coins>0);vis("jam",P.masked&&P.jammers>0);
+  const cnt=(act,lbl,n)=>{const b=document.querySelector(`.tb[data-act="${act}"]`),h=`${lbl}<small>${n}</small>`;if(b.innerHTML!==h)b.innerHTML=h;};
+  cnt("coin","COIN",G.coins);cnt("jam","JAM",P.jammers);
   const f=document.querySelector('.tb[data-act="f"]'),tl=takedownTarget()?"TAKE DOWN":windowAhead()?"SMASH":civs.length&&P.masked?"SHOUT":"ACTION";if(f.textContent!==tl)f.textContent=tl;
   document.querySelector('.tb[data-act="use"]').classList.toggle("ready",!$("prompt").hidden);
   document.querySelector('.tb[data-act="crouch"]').classList.toggle("on",P.crouch);
