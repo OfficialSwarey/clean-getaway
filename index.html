@@ -228,6 +228,14 @@ body.pad #kpHint b,body.touch #kpHint b{color:var(--sodium)}
 .coop-status{font-size:14px;color:var(--secure)}
 body.coop-guest .job{pointer-events:none}body.coop-guest .job:not([aria-checked="true"]){opacity:.45}
 
+.menu-switches{display:flex;flex-wrap:wrap;gap:10px}
+.diffs{display:flex;border:1px solid var(--line)}
+.diffs button{background:transparent;border:0;color:var(--dim);font-family:var(--f-mono);font-size:12px;letter-spacing:.14em;text-transform:uppercase;padding:8px 12px}
+.diffs button[aria-selected="true"]{background:var(--fg);color:var(--ink)}
+.diffs button[data-diff="easy"][aria-selected="true"]{background:var(--secure)}.diffs button[data-diff="hard"][aria-selected="true"]{background:var(--alarm);color:#fff}
+.diffs button:focus-visible{outline:2px solid var(--fg);outline-offset:2px}
+body.coop-guest .diffs{pointer-events:none;opacity:.6}
+.job-detail .jd-diff{font-size:13px;color:var(--dim);line-height:1.4}
 /* ---------- career: the safehouse ---------- */
 .menu-top{display:flex;flex-wrap:wrap;gap:12px;align-items:center;justify-content:space-between}
 .modes,.cr-tabs{display:flex;gap:0;border:1px solid var(--line)}
@@ -290,7 +298,8 @@ body.coop-guest .job{pointer-events:none}body.coop-guest .job:not([aria-checked=
   .job-detail{position:sticky;top:auto;bottom:0;z-index:2;margin:0 -16px;padding:10px 16px calc(10px + env(safe-area-inset-bottom,0px));gap:4px 10px;
     grid-template-columns:minmax(0,1fr) auto auto;align-items:center;background:rgba(8,11,16,.97);border:0;border-top:1px solid var(--line);backdrop-filter:blur(8px)}
   .job-detail>*{grid-column:1/-1}
-  #jdTags,#jdDesc,#jdStats,#jdBest,.job-detail .dev{display:none}
+  #jdTags,#jdDesc,#jdStats,#jdBest,#jdDiff,.job-detail .dev{display:none}
+  .diffs button,.modes button{padding:6px 9px;font-size:11px;letter-spacing:.1em}
   #jdName{grid-column:1;grid-row:1;font-size:22px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   #jdPlace{grid-column:1;grid-row:2;font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   #coopToggle{display:block;grid-column:2;grid-row:1/3;align-self:center}
@@ -351,7 +360,8 @@ body.touch .dev{display:none}
   <div class="card menu">
     <header class="menu-head">
       <div class="menu-top"><span class="stamp" id="menuStamp">THE SAFEHOUSE</span>
-        <div class="modes" role="tablist" aria-label="Mode"><button type="button" role="tab" data-mode="career" aria-selected="true">Career</button><button type="button" role="tab" data-mode="free" aria-selected="false">Free play</button></div></div>
+        <div class="menu-switches"><div class="diffs" role="tablist" aria-label="Difficulty"><button type="button" role="tab" data-diff="easy">Easy</button><button type="button" role="tab" data-diff="normal">Normal</button><button type="button" role="tab" data-diff="hard">Hard</button></div>
+        <div class="modes" role="tablist" aria-label="Mode"><button type="button" role="tab" data-mode="career" aria-selected="true">Career</button><button type="button" role="tab" data-mode="free" aria-selected="false">Free play</button></div></div></div>
       <h1>Clean Getaway</h1>
       <p id="menuIntro">Case the place, slip in and get the money to the getaway before anyone knows you were there.</p>
     </header>
@@ -463,6 +473,7 @@ body.touch .dev{display:none}
         <p id="jdDesc"></p>
         <ul class="jd-stats" id="jdStats"></ul>
         <div class="job-best" id="jdBest"></div>
+        <p class="jd-diff" id="jdDiff"></p>
         <button class="btn" id="startBtn">Start the job</button>
         <button type="button" class="btn ghost small" id="coopToggle" aria-expanded="false">Co-op</button>
         <label class="dev" for="devToggle"><input type="checkbox" id="devToggle"><span>Dev mode<small>Press V during a job for noclip: fly through walls, unseen by guards and cameras. SPACE up, CTRL or C down, SHIFT faster.</small></span></label>
@@ -551,7 +562,7 @@ body.touch .dev{display:none}
 // Co-op: the same code runs for every player by swapping who P is. CTX.cur is the player whose turn it is (null = you);
 // HUD writes during another player's turn go to that player's copy of the HUD, which is sent to them.
 const CTX={cur:null,kind:null,pl:null};
-const GAME_VERSION="0.31.2";
+const GAME_VERSION="0.32.0";
 const NET={on:false,host:false,guest:false,send:null,close:null,code:"",busy:false,waiting:false,started:false,acc:0,remote:null,ending:false};
 const $=id=>(CTX.cur&&CTX.cur.dom&&CTX.cur.dom[id])||document.getElementById(id);
 // a timer started during another player's turn runs as that player
@@ -5258,6 +5269,7 @@ function buildMap(id){
   LV={group:new THREE.Group(),def,id:def.id,day:!!def.day,sunny:!!def.day&&!def.night,fx:null};scene.add(LV.group);
   setSky(LV.sunny);
   def.build();
+  benchGuards();
   guards.forEach(g=>g.route0=g.route);THROWN=[];
   buildEnv(def.id||id);
   secGuard=guards.find(g=>g.security)||null;
@@ -5898,7 +5910,7 @@ function updateAudio(){
     A.drill.out.gain.setTargetAtTime(s?0.04+0.34*s.vol:0.0001,t,0.12);
     if(A.drill.pan)A.drill.pan.pan.setTargetAtTime(s?s.pan:0,t,0.08);
   }
-  if(A.alarm)A.alarm.siren.gain.setTargetAtTime(0.03+0.17*(1-G.alarmT/ALARM_TIME),t,0.3);
+  if(A.alarm)A.alarm.siren.gain.setTargetAtTime(0.03+0.17*(1-G.alarmT/(G.alarmFull||ALARM_TIME)),t,0.3);
 }
 
 /* ================= game state ================= */
@@ -5913,6 +5925,26 @@ const STEALTH_BONUS=0.3,CIV_BONUS=0.15,LEAVE_TIME=1.5,LOOP_TIME=25,LOOP_HOLD=2.0
 let state="menu",locked=false,everLocked=false,fallback=false,pendingStart=false,pressedE=false;
 let keys={};
 const DRILL_TIME=20,ALARM_TIME=60;
+/* difficulty: Easy sends a third of the patrol guards home and gives you more slack; Hard tightens everything up */
+const DIFFS={
+  easy:{name:"Easy",cut:1/3,det:0.7,report:1.35,police:1.4,pagers:1,cam:0.85,pay:0.75,
+    blurb:"A third fewer guards on patrol. Slower to spot you, more time on the radio and before the police arrive, one extra pager excuse. Pay −25%."},
+  normal:{name:"Normal",cut:0,det:1,report:1,police:1,pagers:0,cam:1,pay:1,blurb:"The job as it was planned."},
+  hard:{name:"Hard",cut:0,det:1.35,report:0.75,police:0.75,pagers:-1,cam:1.15,pay:1.3,
+    blurb:"Guards and cameras spot you faster and further, radios are quicker, the police come sooner and dispatch takes one excuse less. Pay +30%."}};
+let DIFF_ID="normal";try{const d=localStorage.getItem("cg-diff");if(DIFFS[d])DIFF_ID=d;}catch(e){}
+let DIFF=DIFFS[DIFF_ID];
+function setDifficulty(id,save){if(!DIFFS[id])return;DIFF_ID=id;DIFF=DIFFS[id];if(save!==false)try{localStorage.setItem("cg-diff",id);}catch(e){}diffUI();}
+function diffUI(){document.querySelectorAll(".diffs button").forEach(b=>b.setAttribute("aria-selected",String(b.dataset.diff===DIFF_ID)));const el=$("jdDiff");if(el)el.textContent=`${DIFF.name}: ${DIFF.blurb}`;}
+// Easy: some patrol guards stay home. Never the camera operator, and never a guard the job's own logic needs.
+function benchGuards(){
+  if(!DIFF.cut)return;
+  const keep=new Set();for(const v of Object.values(LV.def.X||{})){if(v instanceof Guard)keep.add(v);else if(Array.isArray(v))v.forEach(x=>{if(x instanceof Guard)keep.add(x);});}
+  const cand=guards.filter(g=>!g.security&&!keep.has(g)&&!g.opts.key);
+  const n=Math.min(Math.round(cand.length*DIFF.cut),Math.max(0,cand.length-1));if(!n)return;
+  const out=cand.filter((g,i)=>Math.floor((i+1)*n/cand.length)>Math.floor(i*n/cand.length));
+  for(const g of out){LV.group.remove(g.root);guards.splice(guards.indexOf(g),1);}
+}
 
 /* ================= CAREER: money, experience, skills, gear, the job board =================
    Career mode keeps one save in localStorage. Jobs come off a board of offers, each a map plus one or two twists that change
@@ -5999,7 +6031,7 @@ function computeSK(){
   return s;
 }
 const magSize=()=>MAG+(SK.mag||0);
-const maxPagers=()=>(G.tw&&G.tw.jumpy?1:MAX_PAGERS)+(SK.pagers||0);
+const maxPagers=()=>Math.max(1,(G.tw&&G.tw.jumpy?1:MAX_PAGERS)+(SK.pagers||0)+DIFF.pagers);
 
 // the job board
 function jobInfo(id){const b=document.querySelector(`.job[data-map="${id}"]`);if(!b)return null;
@@ -6056,7 +6088,7 @@ function careerOnEnd(won,score,stealth){
     if(c.tw.includes("nokill")&&deaths){mult*=0.5;notes.push("Somebody died · ×0.5");}
     pay=Math.round(score*mult/10)*10;CAREER.cash+=pay;CAREER.stats.jobs++;if(stealth&&score>0)CAREER.stats.clean++;CAREER.stats.earned+=pay;CAREER.stats.best=Math.max(CAREER.stats.best,pay);
   }else{fee=Math.round(CAREER.cash*BUST_FEE/10)*10;CAREER.cash-=fee;CAREER.stats.busts++;}
-  const xp=Math.round(won?(150*c.stars+(stealth&&score>0?200:0)+score/500)*c.xp:60*c.stars);
+  const xp=Math.round((won?(150*c.stars+(stealth&&score>0?200:0)+score/500)*c.xp:60*c.stars)*(won?DIFF.pay:1));
   CAREER.xp+=xp;const L1=levelInfo(CAREER.xp).level;
   fillBoard();saveCareer();
   return {pay,fee,xp,L0,L1,notes,mult:+mult.toFixed(2)};
@@ -6252,14 +6284,15 @@ function jobDetail(){
   $("jdName").textContent=b.querySelector(".job-name").textContent;
   $("jdPlace").textContent=b.querySelector(".job-place").textContent;
   $("jdDesc").textContent=b.querySelector(".job-desc").textContent;
-  $("jdStats").innerHTML=b.querySelector(".job-stats").textContent.split(" · ").map(t=>{const m=/^(\d+) (.*)$/.exec(t);return `<li><b>${m[1]}</b>${m[2]}</li>`;}).join("");
+  // the guard count follows the difficulty once the job is built
+  $("jdStats").innerHTML=b.querySelector(".job-stats").textContent.split(" · ").map(t=>{const m=/^(\d+) (.*)$/.exec(t);let n=m[1];if(/^guard/.test(m[2])&&LV&&LV.id===selectedMap&&!coopBuild.busy)n=String(guards.length);return `<li><b>${n}</b>${n==="1"?m[2].replace(/s$/,""):m[2].replace(/^guard$/,"guards")}</li>`;}).join("");
   const v=readBest(selectedMap);$("jdBest").textContent=v?"BEST SCORE "+money(v):"";
 }
 function pickMap(id){
   selectedMap=id;
   document.querySelectorAll(".job").forEach(b=>b.setAttribute("aria-checked",String(b.dataset.map===id)));
   jobDetail();
-  if(LV.id!==id){buildMap(id);resetGame();}
+  if(LV.id!==id){buildMap(id);resetGame();jobDetail();}
   if(NET.host&&NET.send)NET.send({t:"pick",map:id});
   if(NET.on)coopUI();
 }
@@ -6673,7 +6706,7 @@ function placeJammer(){
   {const jy=P.onStair?P.y:P.level*ROOF_Y+supportAt(p.x,p.z,0.12,P.level,P.gnd);makeJammer(p.x,p.z,jy,P.yaw);if(NET.host)netEvAll(["jam",r3(p.x),r3(p.z),r3(jy),r3(P.yaw)]);}
   P.jammers--;G.jamsUsed++;G.jamT=JAM_TIME+SK.jamT;G.jamBeep=0;SFX.jamOn();
   // every countdown the jammer catches starts over: when it burns out, they begin again from the top
-  for(const g of guards){if(g.down)continue;if(g.wounded>0)g.wounded=2.0;if(g.reportT>0)g.reportT=REPORT_TIME;}
+  for(const g of guards){if(g.down)continue;if(g.wounded>0)g.wounded=2.0;if(g.reportT>0)g.reportT=REPORT_TIME*DIFF.report;}
   for(const g of guards){const pg=g.pager;if(!pg)continue;if(pg.state==="pending")pg.t=PAGER_DELAY;else if(pg.state==="ringing")pg.t=PAGER_WINDOW*SK.pagerWin;}
   for(const c of civs)if(c.state==="calling")c.callT=CALL_TIME;
   if(G.secAlert>0)G.secAlert=G.secAlertFull||REPORT_TIME;
@@ -6837,7 +6870,7 @@ function updateCams(dt,simOnly){
       continue;
     }
     c.led.material.color.setHex(0xff3030);
-    c.seeDist=simOnly?-1:seeAny(c,c.x,c.z,c.yaw,c.half,c.range*(G.camMul||1),c.level);
+    c.seeDist=simOnly?-1:seeAny(c,c.x,c.z,c.yaw,c.half,c.range*(G.camMul||1)*DIFF.cam,c.level);
     if(c.seeDist>=0&&c.seeDist<1.3)c.seeDist=-1; // blind spot right under the camera
     if(!simOnly&&civs.length&&!G.alarm)for(const v of civs){
       if(v.state!=="calling"||v.level!==c.level)continue;
@@ -6863,7 +6896,7 @@ function updateDetection(dt){
       let r=o.base*(1+2.2*(1-o.seeDist/range));const fp=focusP(o);
       if(fp.sprinting)r*=1.7;if(fp.crouch)r*=0.65;
       if(!fp.masked)r*=0.6*SK.unmasked; // a lost customer gets a little benefit of the doubt
-      gain+=r*SK.shadow*(G.detMul||1);spotter=o;
+      gain+=r*SK.shadow*(G.detMul||1)*DIFF.det;spotter=o;
     }
     if(o.bodyDist>=0){bodyGain+=0.45*(1+1.5*(1-o.bodyDist/range));bodySpotter=o;G.bodyHost=!!o.bodyHost;}
     if(o.civDist>=0){civGain+=0.5*(1+1.5*(1-o.civDist/range));civSpotter=o;}
@@ -6893,11 +6926,11 @@ function startReport(o,msg,at){
     toast(`Vanish: ${o.kind==="guard"?o.name:"the camera"} lost you. That was your one`,"good",2800);return;}
   if(o&&o.kind==="guard"&&!o.down){
     if(o.reportT>0||o.wounded>0)return;
-    o.reportT=REPORT_TIME;o.reportMsg=msg;o.reportAt=at;SFX.squelch();
+    o.reportT=REPORT_TIME*DIFF.report;o.reportMsg=msg;o.reportAt=at;SFX.squelch();
     toast(G.lastCause==="body"?`${o.name} found something! Drop him before he radios it in`:`${o.name} spotted you! Drop him before he radios it in`,"bad",2600);
   }else if(o&&o.kind==="camera"&&secGuard&&!secGuard.down){
     if(G.secAlert>0)return;
-    G.secAlert=G.secAlertFull=REPORT_TIME;G.secMsg=G.lastCause==="civ"?"The security guard saw a panicking civilian on camera. Alarm!":G.lastCause==="body"?"The security guard saw something on camera. Alarm!":"The security guard saw you on camera. Alarm!";
+    G.secAlert=G.secAlertFull=REPORT_TIME*DIFF.report;G.secMsg=G.lastCause==="civ"?"The security guard saw a panicking civilian on camera. Alarm!":G.lastCause==="body"?"The security guard saw something on camera. Alarm!":"The security guard saw you on camera. Alarm!";
     toast("The security guard saw it on camera! Take him out","bad",2600);
   }else triggerAlarm(msg);
 }
@@ -6905,7 +6938,7 @@ function triggerAlarm(msg){
   if(G.alarm)return;
   for(const g of guards){if(g.pager&&g.pager.state!=="done"){if(g.pager.state==="answering")stopVoices();g.pager.state="done";g.sprite.visible=false;}}
   P.locked=false;
-  G.alarm=true;G.everAlarm=true;G.alarmT=ALARM_TIME;G.susp=1;
+  G.alarm=true;G.everAlarm=true;G.alarmT=G.alarmFull=ALARM_TIME*DIFF.police;G.susp=1;
   $("alarmEdge").hidden=false;
   SFX.alarmHit();alarmOn();
   toastAll(msg||"Alarm!","bad",3000);
@@ -7303,7 +7336,7 @@ function updateHUD(){
   const jam=jamming(),jamTxt=G.jamT>0?`${Math.ceil(G.jamT)} s`:"relay down";
   const ringing=G.alarm?null:guards.find(g=>g.pager&&(g.pager.state==="ringing"||g.pager.state==="answering"));
   const hud=$("hud");hud.classList.toggle("alarm",G.alarm||radio);hud.classList.toggle("watched",watched);
-  const meter=G.alarm?1:radio?Math.max(0,1-repT/REPORT_TIME):caller?1-caller.callT/CALL_TIME:Math.max(G.susp,civSus);
+  const meter=G.alarm?1:radio?Math.max(0,1-repT/(REPORT_TIME*DIFF.report)):caller?1-caller.callT/CALL_TIME:Math.max(G.susp,civSus);
   $("detectFill").style.width=(meter*100).toFixed(1)+"%";
   if(ringing||caller)hud.classList.add("alarm");
   const radioWho=reporter?reporter.name:"The security guard";
@@ -7387,7 +7420,7 @@ function endGame(won,reason){
   // bonuses on top of the take: never raising the alarm, and (where there are civilians) nobody innocent killed
   const bStealth=won&&take>0&&stealth?Math.round(take*STEALTH_BONUS):0;
   const hasCivs=civs.length>0,bCivs=won&&take>0&&hasCivs&&!G.civKills?Math.round(take*CIV_BONUS):0;
-  const score=take+bStealth+bCivs;
+  const base=take+bStealth+bCivs,score=Math.round(base*DIFF.pay/10)*10,bDiff=score-base;
   const cr=careerOnEnd(won,score,stealth),ec=$("endCareer");ec.hidden=!cr;
   if(cr){const li=levelInfo(CAREER.xp);
     ec.innerHTML=(won?`<dt>Your cut (contract ×${cr.mult.toFixed(2)})</dt><dd class="good">+${money(cr.pay)}</dd>`:`<dt>Lawyers' fees (15% of your cash)</dt><dd class="bad">−${money(cr.fee)}</dd>`)
@@ -7402,6 +7435,7 @@ function endGame(won,reason){
     br.push(["Stealth bonus +"+Math.round(STEALTH_BONUS*100)+"%",bStealth?"+"+money(bStealth):"alarm raised",bStealth?"good":"lost"]);
     if(hasCivs)br.push(["No civilians killed +"+Math.round(CIV_BONUS*100)+"%",bCivs?"+"+money(bCivs):`${G.civKills} killed`,bCivs?"good":"lost"]);
   }
+  if(won&&take>0&&DIFF.pay!==1)br.push([`${DIFF.name} ${DIFF.pay>1?"+":"−"}${Math.round(Math.abs(DIFF.pay-1)*100)}%`,(bDiff>0?"+":"−")+money(Math.abs(bDiff)),bDiff>0?"good":"lost"]);
   $("endBreak").innerHTML=br.map(([a,b,c])=>`<dt>${a}</dt><dd class="${c}">${b}</dd>`).join("");
   const prev=readBest(LV.id),eb=$("endBest");
   if(won&&score>prev){try{localStorage.setItem(bestKey(),String(score));}catch(e){}eb.textContent=prev?`NEW BEST · old best ${money(prev)}`:"NEW BEST FOR THIS JOB";eb.className="new";}
@@ -7836,7 +7870,7 @@ function netJoin(code){
 function hostConnected(send,close){
   wire(send,close);NET.on=true;NET.host=true;NET.busy=false;NET.waiting=false;
   const pl=newRemote(1);PLAYERS.push(pl);NET.remote=pl;
-  setMode("free");NET.send({t:"welcome",v:GAME_VERSION,map:selectedMap});
+  setMode("free");NET.send({t:"welcome",v:GAME_VERSION,map:selectedMap,diff:DIFF_ID});
   if(DEV.on){DEV.on=false;DEV.ghost=false;$("devToggle").checked=false;}
   coopUI();toast(state==="menu"?"Your partner joined":"Your partner joined. They'll be in the next job you start","good",2600);
 }
@@ -7889,8 +7923,9 @@ function netRecv(d){
     return;
   }
   switch(d.t){
-    case "welcome":coopUI("Connected. The host picks the job");if(d.v!==GAME_VERSION)coopUI("You and the host are on different versions. Reload both pages.");if(d.map)guestPick(d.map);break;
+    case "welcome":if(d.diff)setDifficulty(d.diff,false);coopUI("Connected. The host picks the job");if(d.v!==GAME_VERSION)coopUI("You and the host are on different versions. Reload both pages.");if(d.map)guestPick(d.map);break;
     case "pick":guestPick(d.map);break;
+    case "diff":setDifficulty(d.d,false);break;
     case "start":guestStart(d);break;
     case "snap":guestSnap(d);break;
     case "end":guestEnd(d);break;
@@ -7984,6 +8019,7 @@ coopBuild.warm=new Set();
 function guestStart(d){
   initAudio();guestPick(d.map);
   if(state!=="menu"){NET.ending=true;try{setState("menu");}finally{NET.ending=false;}}
+  if(d.diff)setDifficulty(d.diff,false);
   coopBuild(d.map,d.seed);
   Object.assign(GS,{hd:false,hdSeq:0,out:false,pose:null,joined:false});dropAvatars();
   NET.started=true;
@@ -8120,7 +8156,7 @@ function coopUI(msg){
 function coopStartRun(){
   const seed=(Math.random()*4294967296)>>>0;
   NET.started=true;NET.remote.ready=false;NET.remote.ev.length=0;
-  NET.send({t:"start",map:selectedMap,seed});
+  NET.send({t:"start",map:selectedMap,seed,diff:DIFF_ID});
   coopBuild(selectedMap,seed);
 }
 function initCoopUI(){
@@ -8395,6 +8431,8 @@ function frame(now){
   if(state==="playing"||state==="paused"){renderer.clearDepth();renderer.render(vmScene,vmCam);}
 }
 initInput();initCoopUI();
+document.querySelectorAll(".diffs button").forEach(b=>b.addEventListener("click",()=>{if(NET.guest)return;setDifficulty(b.dataset.diff);if(state==="menu"){buildMap(selectedMap);resetGame();jobDetail();}if(NET.host&&NET.send)NET.send({t:"diff",d:DIFF_ID});}));
+diffUI();
 buildMap(selectedMap);
 document.querySelectorAll(".job").forEach(b=>b.setAttribute("aria-checked",String(b.dataset.map===selectedMap)));jobDetail();
 resetGame();

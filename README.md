@@ -14,6 +14,7 @@ Case the place, slip in and get the money to the getaway before anyone knows you
 
 - **Career (the safehouse):** take jobs off a board of offers. Each has a twist that changes how it plays and what it pays. Money buys permanent gear; experience gives levels and skill points for three skill trees (Ghost, Technician, Enforcer). Get busted and the lawyers take 15% of your cash. The career saves in the browser.
 - **Free play:** any job, no twists, skills or gear.
+- **Difficulty (Easy, Normal, Hard):** at the top of the menu, for both modes. Easy sends a third of the patrol guards home and gives more slack for 25% less pay; Hard tightens detection, radios, police and pagers for 30% more.
 - **Co-op (free play, 2 players online):** one player presses Host under the job details and reads out the code, the other types it and presses Join. The host picks the job and starts it. Works on the bank, club and jeweller's jobs so far.
 
 ### How co-op works

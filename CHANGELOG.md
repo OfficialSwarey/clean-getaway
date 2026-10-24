@@ -5,6 +5,13 @@ feature round bumps MINOR, a bug-fix-only update bumps PATCH, and 1.0.0 is
 the first "finished" release. Up to 0.30.0, MINOR is the version number the
 claude.ai artifact had. Releases are tagged `v0.30.0` and so on.
 
+## 0.32.0 — difficulty
+- Three difficulties, picked at the top of the job menu (it applies to career and free play, and in co-op the host's choice counts):
+  - **Easy:** a third of the patrol guards stay home (never the camera operator or anyone the job needs), guards and cameras are slower to spot you, radios and police take longer, one extra pager excuse. Pay −25%.
+  - **Normal:** as before.
+  - **Hard:** guards and cameras spot you faster and further, radios are quicker, the police come sooner, one pager excuse less. Pay +30%.
+- The job panel shows the real guard count for the chosen difficulty; the job report shows the difficulty bonus or cut.
+
 ## 0.31.2 — job menu
 - Phones and small windows: compact job tiles, and the chosen job with its Start button stays pinned to the bottom of the screen, so you can start without scrolling. Co-op opens from a button next to Start.
 - Career on phones: the level and cash bar shares a row with the Jobs / Shop / Skills tabs, and the contract cards are tighter, so "Take the job" is on the first screen.
