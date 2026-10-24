@@ -7,6 +7,7 @@ claude.ai artifact had. Releases are tagged `v0.30.0` and so on.
 
 ## 0.30.1
 - iPhone: the touch controls now show up. A tap on an iPhone also sends a fake mouse click, which switched the game to mouse and keyboard; the game now goes by pointer type instead.
+- Phones no longer get the old "needs a keyboard and mouse" note on the menu.
 
 ## 0.30.0 — phones and controllers
 - Touch controls on phones and tablets: floating joystick, drag to look, context buttons, tappable keypads, a floor picker in elevators, pause button, landscape prompt.

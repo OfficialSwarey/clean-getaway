@@ -493,9 +493,6 @@ if(typeof THREE==="undefined"){
   $("note").textContent="The 3D engine failed to load. Check your connection and reload the page.";
   $("startBtn").disabled=true; return;
 }
-if(matchMedia("(pointer: coarse)").matches && !matchMedia("(pointer: fine)").matches){
-  $("note").textContent="This game needs a keyboard and mouse. Open it on a computer to play.";
-}
 
 /* ================= renderer / scene ================= */
 const renderer=new THREE.WebGLRenderer({antialias:true,powerPreference:"high-performance"});
