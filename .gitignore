@@ -7,3 +7,4 @@ build/
 /*.jpg
 .DS_Store
 tests/*.png
+tests/coop.html
