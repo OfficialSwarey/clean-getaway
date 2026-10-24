@@ -157,6 +157,44 @@ details.help summary{cursor:pointer;font-family:var(--f-mono);font-size:12px;let
 details.help[open] summary{margin-bottom:12px}
 details.help .keys{margin-bottom:14px}
 @media (max-width:560px){.jobs{grid-template-columns:1fr}}
+
+/* ---------- touch controls (phones and tablets) ---------- */
+#keypad{pointer-events:auto}#kpKeys span{cursor:pointer;user-select:none;-webkit-user-select:none}#kpKeys span.sel{outline:2px solid var(--sodium);outline-offset:1px}
+#touch{position:fixed;inset:0;z-index:3;touch-action:none;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none}
+#tStick{position:absolute;width:124px;height:124px;margin:-62px 0 0 -62px;border-radius:50%;border:2px solid rgba(226,232,234,.3);background:rgba(10,14,20,.25)}
+#tKnob{position:absolute;left:50%;top:50%;width:54px;height:54px;border-radius:50%;background:rgba(226,232,234,.35);transform:translate(-50%,-50%)}
+.tb{position:absolute;border-radius:50%;border:2px solid rgba(226,232,234,.35);background:rgba(10,14,20,.45);color:var(--fg);font-family:var(--f-mono);font-size:11px;letter-spacing:.06em;
+  display:grid;place-items:center;padding:0;line-height:1.1;text-align:center;touch-action:none}
+.tb.down{background:rgba(244,171,61,.55);border-color:var(--sodium)}.tb.on{border-color:var(--sodium);color:var(--sodium)}
+.tb.big{width:86px;height:86px;right:calc(22px + env(safe-area-inset-right,0px));bottom:calc(22px + env(safe-area-inset-bottom,0px));font-size:14px}
+.tb.big.ready{border-color:var(--secure);color:var(--secure);box-shadow:0 0 0 4px rgba(120,216,163,.18)}
+.tb.mid{width:62px;height:62px}.tb.small{width:50px;height:50px;font-size:9px;border-radius:12px}
+.tb[data-act="f"]{right:calc(120px + env(safe-area-inset-right,0px));bottom:calc(16px + env(safe-area-inset-bottom,0px))}
+.tb[data-act="jump"]{right:calc(34px + env(safe-area-inset-right,0px));bottom:calc(122px + env(safe-area-inset-bottom,0px))}
+.tb[data-act="crouch"]{right:calc(196px + env(safe-area-inset-right,0px));bottom:calc(16px + env(safe-area-inset-bottom,0px))}
+.tb[data-act="mask"],.tb[data-act="fire"]{right:calc(112px + env(safe-area-inset-right,0px));bottom:calc(96px + env(safe-area-inset-bottom,0px))}
+.tb.fire{border-color:rgba(255,75,62,.6)}
+.tb[data-act="aim"]{right:calc(184px + env(safe-area-inset-right,0px));bottom:calc(90px + env(safe-area-inset-bottom,0px))}
+.tb[data-act="coin"]{right:calc(22px + env(safe-area-inset-right,0px));bottom:calc(204px + env(safe-area-inset-bottom,0px))}
+.tb[data-act="jam"]{right:calc(80px + env(safe-area-inset-right,0px));bottom:calc(176px + env(safe-area-inset-bottom,0px))}
+.tb[data-act="drop"]{right:calc(138px + env(safe-area-inset-right,0px));bottom:calc(166px + env(safe-area-inset-bottom,0px))}
+.tb[data-act="reload"]{right:calc(196px + env(safe-area-inset-right,0px));bottom:calc(162px + env(safe-area-inset-bottom,0px))}
+#tPause{left:calc(12px + env(safe-area-inset-left,0px));top:calc(10px + env(safe-area-inset-top,0px));width:44px;height:44px;border-radius:10px;font-size:14px}
+#tNum{position:absolute;left:50%;top:calc(50% + 100px);transform:translateX(-50%);display:flex;gap:8px;pointer-events:auto}
+#tNum button{width:46px;height:46px;border:1px solid var(--line);background:rgba(10,14,20,.8);color:var(--fg);font-family:var(--f-mono);font-size:18px}
+#tNum button.sel{outline:2px solid var(--sodium)}
+#rotate{position:fixed;inset:0;z-index:9;display:grid;place-items:center;background:var(--ink);color:var(--fg);font-size:20px;text-align:center;padding:24px}
+#rotate b{display:block;font-size:56px;color:var(--sodium);margin-bottom:12px}
+body.touch #obj{left:calc(64px + env(safe-area-inset-left,0px));top:calc(10px + env(safe-area-inset-top,0px));bottom:auto;max-width:min(260px,28vw);padding:8px 10px}
+body.touch #objText{font-size:12.5px;line-height:1.3;display:-webkit-box;-webkit-line-clamp:4;-webkit-box-orient:vertical;overflow:hidden}
+body.touch #obj .lbl,body.touch #bagsRow{font-size:10px}body.touch #objTip{font-size:11px}
+body.touch #status{top:calc(62px + env(safe-area-inset-top,0px));bottom:auto;gap:4px;flex-direction:row;flex-wrap:wrap;justify-content:flex-end;max-width:min(330px,40vw)}body.touch #status .chip{font-size:9px;padding:3px 6px}body.touch #stance,body.touch #sound{display:none}
+@media (max-height:520px){.card.menu .menu-head h1{font-size:40px}.card.menu{padding:16px 18px;gap:12px}#menuIntro{font-size:14px}.cr-top{padding:10px 12px}.cr-stat b{font-size:20px}}
+body.touch #subs{top:calc(70px + env(safe-area-inset-top,0px));bottom:auto;width:min(480px,46vw);font-size:13px}
+body.touch #prompt{top:calc(50% + 30px)}body.touch #detect{width:min(240px,28vw)}
+body.touch #clockVal{font-size:20px}
+body.pad #kpHint b,body.touch #kpHint b{color:var(--sodium)}
+.modes button:focus,.cr-tabs button:focus,.btn:focus,.job:focus,.node:focus{outline:2px solid var(--fg);outline-offset:2px}
 /* ---------- career: the safehouse ---------- */
 .menu-top{display:flex;flex-wrap:wrap;gap:12px;align-items:center;justify-content:space-between}
 .modes,.cr-tabs{display:flex;gap:0;border:1px solid var(--line)}
@@ -225,6 +263,23 @@ details.help .keys{margin-bottom:14px}
   <div id="toast"></div>
 </div>
 
+<div id="touch" hidden>
+  <div id="tStick" hidden><div id="tKnob"></div></div>
+  <button type="button" class="tb" id="tPause" data-act="pause" aria-label="Pause">II</button>
+  <div id="tNum" hidden></div>
+  <button type="button" class="tb big" data-act="use">USE</button>
+  <button type="button" class="tb mid" data-act="f">ACTION</button>
+  <button type="button" class="tb mid" data-act="jump">JUMP</button>
+  <button type="button" class="tb mid" data-act="crouch">CROUCH</button>
+  <button type="button" class="tb mid" data-act="mask">MASK</button>
+  <button type="button" class="tb mid fire" data-act="fire">FIRE</button>
+  <button type="button" class="tb mid" data-act="aim">AIM</button>
+  <button type="button" class="tb small" data-act="coin">COIN</button>
+  <button type="button" class="tb small" data-act="jam">JAM</button>
+  <button type="button" class="tb small" data-act="drop">DROP</button>
+  <button type="button" class="tb small" data-act="reload">RELOAD</button>
+</div>
+<div id="rotate" hidden><div><b>↻</b>Turn your phone sideways to play</div></div>
 <div id="menu" class="overlay">
   <div class="card menu">
     <header class="menu-head">
@@ -368,6 +423,19 @@ details.help .keys{margin-bottom:14px}
         <dt>M</dt><dd>Sound on/off</dd>
         <dt>ESC</dt><dd>Pause</dd>
       </dl>
+      <p class="lbl">Controller</p>
+      <dl class="keys">
+        <dt>LEFT STICK</dt><dd>Move (push lightly to walk slowly, click to sprint)</dd>
+        <dt>RIGHT STICK</dt><dd>Look around. Aim assist helps a little on a controller and on touch</dd>
+        <dt>A · B</dt><dd>Jump · crouch</dd>
+        <dt>X · Y</dt><dd>Use (hold for long actions) · take down, shout or smash</dd>
+        <dt>LT · RT</dt><dd>Aim (hold) · fire</dd>
+        <dt>LB · RB</dt><dd>Jammer · throw a coin</dd>
+        <dt>D-PAD</dt><dd>Up: hold for the mask · Down: drop · Left: reload · in elevators, left/right picks a floor and up confirms</dd>
+        <dt>START</dt><dd>Pause. In menus the d-pad moves, A picks, B goes back, LB/RB flip tabs</dd>
+      </dl>
+      <p class="lbl">Touch</p>
+      <p>Left thumb: the joystick appears where you touch (push past the ring to sprint). Drag anywhere on the right to look. The buttons on the right change with what you can do; USE glows when there's something to use. Tap the keypad keys directly.</p>
       <ul class="tips">
         <li>Outside without a mask you're just someone on the street. Inside a closed building, in a staff-only area or on a roof, anyone who sees you fills the detection meter, mask or not.</li>
         <li>Day jobs: the public areas are open, so walk in unmasked and look around. Behind counters and staff doors is off limits, and staff and guards notice you back there.</li>
@@ -2633,7 +2701,7 @@ const MAP_CASINO={
     const armed=!c.sensorsOff;
     if(armed&&!DEV.ghost&&!G.alarm&&P.level===-1&&inR(P.x,P.z,[-14,-16,12,-6])){
       if(!c.sensorTip){c.sensorTip=true;toast("Motion sensors down here. Crouch-walk or they'll trip","warn",2600);}
-      const moving=keys.KeyW||keys.KeyA||keys.KeyS||keys.KeyD;
+      const moving=keys.KeyW||keys.KeyA||keys.KeyS||keys.KeyD||IN.mag>0.1;
       if(moving&&!P.crouch)c.sensorT+=dt*(P.sprinting?3:1);else c.sensorT=Math.max(0,c.sensorT-dt);
       if(c.sensorT>0.5){triggerAlarm("The motion sensors picked you up. Alarm!");}
     }
@@ -3501,7 +3569,7 @@ const MAP_JEWEL={
     // motion sensors on the shop floor
     if(!LV.day&&!DEV.ghost&&P.level===0&&inR(P.x,P.z,JW_FLOOR)){
       if(!j.sensorTip){j.sensorTip=true;toast("Motion sensors in here. Crouch-walk and keep your distance, or disarm the alarm first","warn",3000);}
-      const moving=keys.KeyW||keys.KeyA||keys.KeyS||keys.KeyD;let seen=false;
+      const moving=keys.KeyW||keys.KeyA||keys.KeyS||keys.KeyD||IN.mag>0.1;let seen=false;
       for(const p of X.pirs){const dx=P.x-p.x,dz=P.z-p.z,d=Math.hypot(dx,dz);const reach=P.crouch?2.6:9;
         if(d<reach&&Math.abs(wrap(Math.atan2(dx,dz)-p.yaw))<0.85&&!blocked(p.x,p.z,P.x,P.z,1.3,0)){seen=true;p.lm.color.setHex(moving&&Math.floor(G.world*8)%2?0xffd040:0xff3a30);}else p.lm.color.setHex(0xff3a30);}
       if(seen&&moving)j.sensorT+=dt*(P.sprinting?3:1);else j.sensorT=Math.max(0,j.sensorT-dt);
@@ -6047,6 +6115,7 @@ addEventListener("keydown",e=>{
   if(e.code==="Escape"&&!locked)setState("paused");
 });
 addEventListener("keyup",e=>{keys[e.code]=false;});
+document.addEventListener("visibilitychange",()=>{if(document.hidden&&state==="playing")setState("paused");});
 addEventListener("blur",()=>{for(const k in keys)keys[k]=false;if(state==="playing"&&fallback)setState("paused");});
 document.addEventListener("mousemove",e=>{
   if(state!=="playing")return;
@@ -6079,6 +6148,7 @@ document.addEventListener("pointerlockerror",lockFailed);
 
 function begin(){
   pendingStart=true;
+  if(IN.src!=="kbm"){goFullscreen();fallback=true;pendingStart=false;setState("playing");return;}   // touch and gamepad: no mouse to capture
   if(fallback){pendingStart=false;setState("playing");return;}
   requestLock();
   setTimeout(()=>{if(pendingStart&&!locked)lockFailed();},1500);
@@ -6209,7 +6279,7 @@ function updatePlayer(dt){
     const sp=(keys.ShiftLeft||keys.ShiftRight?20:9)*dt,cp=Math.cos(P.pitch);
     const fx=-Math.sin(P.yaw)*cp,fy=Math.sin(P.pitch),fz=-Math.cos(P.yaw)*cp,rx=Math.cos(P.yaw),rz=-Math.sin(P.yaw);
     let vx=0,vy=0,vz=0;
-    if(keys.KeyW){vx+=fx;vy+=fy;vz+=fz;}if(keys.KeyS){vx-=fx;vy-=fy;vz-=fz;}
+    if(keys.KeyW){vx+=fx;vy+=fy;vz+=fz;}if(keys.KeyS){vx-=fx;vy-=fy;vz-=fz;}if(IN.mag>0.1){vx+=fx*IN.fwd;vy+=fy*IN.fwd;vz+=fz*IN.fwd;}
     if(keys.KeyD){vx+=rx;vz+=rz;}if(keys.KeyA){vx-=rx;vz-=rz;}
     if(keys.Space)vy+=1;if(keys.ControlLeft||keys.ControlRight||keys.KeyC)vy-=1;
     const l=Math.hypot(vx,vy,vz);if(l>0){P.x+=vx/l*sp;P.y+=vy/l*sp;P.z+=vz/l*sp;}
@@ -6221,7 +6291,7 @@ function updatePlayer(dt){
   }
   if(P.ladder){
     const L=P.ladder.l;let v=0;
-    if(!P.locked&&keys.KeyW)v+=1;if(!P.locked&&keys.KeyS)v-=1;
+    if(!P.locked&&keys.KeyW)v+=1;if(!P.locked&&keys.KeyS)v-=1;if(!P.locked&&Math.abs(IN.fwd)>0.3)v+=Math.sign(IN.fwd);v=clamp(v,-1,1);
     const before=Math.floor(P.ladder.y/0.32);
     P.ladder.y=Math.max(L.lo*ROOF_Y,P.ladder.y+v*2.3*dt);
     if(Math.floor(P.ladder.y/0.32)!==before)SFX.rung();
@@ -6240,11 +6310,14 @@ function updatePlayer(dt){
   let mx=0,mz=0;
   if(!P.locked&&keys.KeyW){mx+=fx;mz+=fz;}if(!P.locked&&keys.KeyS){mx-=fx;mz-=fz;}
   if(!P.locked&&keys.KeyD){mx+=rx;mz+=rz;}if(!P.locked&&keys.KeyA){mx-=rx;mz-=rz;}
+  const analog=!P.locked&&IN.mag>0.08&&!(keys.KeyW||keys.KeyS||keys.KeyA||keys.KeyD);
+  if(analog){mx+=fx*IN.fwd+rx*IN.right;mz+=fz*IN.fwd+rz*IN.right;}
   const len=Math.hypot(mx,mz);
-  const shift=keys.ShiftLeft||keys.ShiftRight;
+  const shift=keys.ShiftLeft||keys.ShiftRight||(analog&&IN.sprint);
   if(shift&&P.crouch&&len>0)P.crouch=false;
   P.sprinting=!!(shift&&len>0&&!(P.carry&&P.carry.gold&&!SK.heavy));
   let speed=P.crouch?1.7*SK.crouch:(P.sprinting?5.4:3.1);
+  if(analog&&!P.sprinting)speed*=0.4+0.6*Math.min(1,IN.mag);   // a light push on the stick walks slowly
   if(P.carry)speed*=P.carry.kind==="body"?SK.body:P.carry.gold?(SK.heavy?0.6:0.45):(SK.heavy?0.75:0.62);
   if(len>0){
     mx/=len;mz/=len;
@@ -6525,7 +6598,7 @@ function shoot(){
   SFX.shot();
   flash.visible=true;flash.rotation.z=Math.random()*3;muzzleLight.intensity=2.2;setTimeout(()=>{flash.visible=false;muzzleLight.intensity=0;},45);
   // spread: tight when aiming and still, wider from the hip or on the move
-  const moving=keys.KeyW||keys.KeyA||keys.KeyS||keys.KeyD;
+  const moving=keys.KeyW||keys.KeyA||keys.KeyS||keys.KeyD||IN.mag>0.1;
   const spread=((P.aimT>0.8?0.002:0.016)+(moving?0.012:0)+(P.sprinting?0.03:0))*SK.aim;
   const ndc=1/Math.tan(THREE.MathUtils.degToRad(camera.fov/2)); // radians -> NDC
   _v2.set((Math.random()-.5)*2*spread*ndc/camera.aspect,(Math.random()-.5)*2*spread*ndc);
@@ -6610,7 +6683,7 @@ function updateWeapon(dt){
   gun.visible=P.raise>0.01;
   gun.position.lerpVectors(HIP,ADS,P.aimT);
   const t=G.world,bobA=(1-P.aimT);
-  const moving=keys.KeyW||keys.KeyA||keys.KeyS||keys.KeyD;
+  const moving=keys.KeyW||keys.KeyA||keys.KeyS||keys.KeyD||IN.mag>0.1;
   gun.position.x+=moving?Math.cos(P.bobT*0.5)*0.008*bobA:0;
   gun.position.y+=(moving?Math.abs(Math.sin(P.bobT*0.5))*0.008:Math.sin(t*1.6)*0.002)*bobA-(1-P.raise)*0.3+P.recoil*(0.012-0.006*P.aimT);
   gun.position.z+=P.recoil*(0.035-0.015*P.aimT);
@@ -7205,6 +7278,7 @@ function endGame(won,reason){
 /* ================= main loop ================= */
 function stepGame(dt){
   G.time+=dt;G.world+=dt;
+  inputLook(dt);
   updatePlayer(dt);
   updateWeapon(dt);
   updateDoors(dt,false);
@@ -7256,9 +7330,223 @@ function animate(dt){
 }
 renderer.autoClear=false;
 let last=performance.now();
+/* ================= touch and gamepad input =================
+   Both feed the same game: an analog move vector (IN.fwd/IN.right), look deltas, and the same actions the keys trigger.
+   IN.src is whatever you used last (kbm / touch / pad): aim assist only ever helps touch and gamepad. */
+const IN={fwd:0,right:0,mag:0,sprint:false,lookX:0,lookY:0,src:"kbm",touchUI:false,pad:-1,prev:{},stickT:0,assistT:0,menuT:0,kpSel:4,numSel:0};
+const TOUCH_DEV=(()=>{try{return matchMedia("(pointer: coarse)").matches&&navigator.maxTouchPoints>0;}catch(e){return false;}})();
+const PAD_BTN={A:0,B:1,X:2,Y:3,LB:4,RB:5,LT:6,RT:7,BACK:8,START:9,LS:10,RS:11,UP:12,DOWN:13,LEFT:14,RIGHT:15};
+function setSrc(s){
+  if(IN.src===s)return;IN.src=s;
+  document.body.classList.toggle("touch",s==="touch");document.body.classList.toggle("pad",s==="pad");
+  if(s!=="touch")$("touch").hidden=true;
+  const h=$("kpHint");if(h)h.innerHTML=s==="touch"?"Tap the keys. <b>OK</b> to try the code, ⌫ to erase. Tap outside to close.":s==="pad"?"D-pad to pick a key, <b>A</b> to press it, <b>B</b> to close.":"Type the code with the number keys. Backspace erases. <kbd>E</kbd> or a step away closes it.";
+}
+addEventListener("keydown",()=>setSrc("kbm"),true);
+addEventListener("mousedown",e=>{if(e.pointerType!=="touch"&&!e.sourceCapabilities?.firesTouchEvents)setSrc("kbm");},true);
+
+/* ---------- touch ---------- */
+const TP=new Map(); // pointerId -> {kind:"stick"|"look"|"btn",...}
+const STICK_R=58;
+function touchAct(act,down){
+  if(state!=="playing")return;
+  switch(act){
+    case "use":keys.KeyE=down;if(down)pressedE=true;if(down&&G.keypad)closeKeypad();break;
+    case "f":if(down)pressF();break;
+    case "jump":keys.Space=down;if(down)tryJump();break;
+    case "crouch":if(down&&!DEV.ghost)P.crouch=!P.crouch;break;
+    case "mask":keys.KeyG=down;if(down&&!P.masked)SFX.mask();break;
+    case "fire":if(down)shoot();break;
+    case "aim":if(down){P.aim=!P.aim;if(P.aim)IN.assistT=0.35;}break;
+    case "reload":if(down)startReload();break;
+    case "drop":if(down)dropCarry();break;
+    case "coin":if(down)throwCoin();break;
+    case "jam":if(down)placeJammer();break;
+    case "pause":if(down)setState("paused");break;
+  }
+}
+function initTouch(){
+  const layer=$("touch"),knob=$("tKnob"),stick=$("tStick");
+  layer.addEventListener("pointerdown",e=>{
+    if(e.pointerType==="mouse")return;
+    setSrc("touch");e.preventDefault();
+    const b=e.target.closest(".tb");
+    if(b){TP.set(e.pointerId,{kind:"btn",act:b.dataset.act,el:b});b.classList.add("down");touchAct(b.dataset.act,true);layer.setPointerCapture(e.pointerId);return;}
+    if(e.clientX<innerWidth*0.42&&![...TP.values()].some(t=>t.kind==="stick")){
+      TP.set(e.pointerId,{kind:"stick",x0:e.clientX,y0:e.clientY});stick.hidden=false;stick.style.left=e.clientX+"px";stick.style.top=e.clientY+"px";knob.style.transform="translate(-50%,-50%)";
+    }else TP.set(e.pointerId,{kind:"look",x:e.clientX,y:e.clientY});
+    layer.setPointerCapture(e.pointerId);
+  },{passive:false});
+  layer.addEventListener("pointermove",e=>{
+    const t=TP.get(e.pointerId);if(!t)return;e.preventDefault();
+    if(t.kind==="stick"){let dx=e.clientX-t.x0,dy=e.clientY-t.y0;const d=Math.hypot(dx,dy);if(d>STICK_R){dx*=STICK_R/d;dy*=STICK_R/d;}
+      knob.style.transform=`translate(calc(-50% + ${dx}px),calc(-50% + ${dy}px))`;IN.right=dx/STICK_R;IN.fwd=-dy/STICK_R;IN.mag=Math.min(1,d/STICK_R);IN.sprint=d>STICK_R*1.35;}
+    else if(t.kind==="look"){IN.lookX+=e.clientX-t.x;IN.lookY+=e.clientY-t.y;t.x=e.clientX;t.y=e.clientY;}
+  },{passive:false});
+  const up=e=>{const t=TP.get(e.pointerId);if(!t)return;TP.delete(e.pointerId);
+    if(t.kind==="stick"){IN.fwd=IN.right=IN.mag=0;IN.sprint=false;stick.hidden=true;}
+    if(t.kind==="btn"){t.el.classList.remove("down");touchAct(t.act,false);}};
+  layer.addEventListener("pointerup",up);layer.addEventListener("pointercancel",up);
+  // keypad and the floor picker: tap the keys
+  document.querySelectorAll("#kpKeys span").forEach(sp=>sp.addEventListener("pointerdown",e=>{e.preventDefault();e.stopPropagation();const k=sp.dataset.k;if(k==="B")keypadBack();else if(k==="OK")keypadEnter();else keypadDigit(k);}));
+  $("keypad").addEventListener("pointerdown",e=>e.stopPropagation());
+  $("tNum").addEventListener("pointerdown",e=>{const b=e.target.closest("[data-n]");if(!b)return;e.preventDefault();e.stopPropagation();pressDigit(+b.dataset.n);});
+  document.addEventListener("pointerdown",e=>{if(G.keypad&&IN.src==="touch"&&!e.target.closest("#keypad"))closeKeypad();});
+}
+function pressDigit(n){if(state==="playing"&&LV.def.onDigit)LV.def.onDigit(n);}
+function touchHUD(){
+  const on=IN.src==="touch"&&state==="playing"&&!G.keypad;$("touch").hidden=!on;if(!on){if(G.keypad){IN.fwd=IN.right=IN.mag=0;TP.clear();}return;}
+  const vis=(act,v)=>{const b=document.querySelector(`.tb[data-act="${act}"]`);if(b&&b.hidden!==!v)b.hidden=!v;};
+  vis("mask",!P.masked);vis("fire",P.masked);vis("aim",P.masked);vis("reload",P.masked&&P.mag<magSize()&&P.reserve>0);
+  vis("drop",!!P.carry);vis("coin",G.coins>0);vis("jam",P.masked&&P.jammers>0);
+  const f=document.querySelector('.tb[data-act="f"]'),tl=takedownTarget()?"TAKE DOWN":windowAhead()?"SMASH":civs.length&&P.masked?"SHOUT":"ACTION";if(f.textContent!==tl)f.textContent=tl;
+  document.querySelector('.tb[data-act="use"]').classList.toggle("ready",!$("prompt").hidden);
+  document.querySelector('.tb[data-act="crouch"]').classList.toggle("on",P.crouch);
+  document.querySelector('.tb[data-act="aim"]').classList.toggle("on",P.aim);
+  numPicker();
+}
+// elevator and gondola: when the prompt asks for a floor number, offer the numbers as buttons
+function numPicker(){
+  const np=$("tNum");const m=!$("prompt").hidden&&/<kbd>0<\/kbd>–<kbd>(\d)<\/kbd>/.exec($("promptText").innerHTML);
+  const show=!!m&&(IN.src==="touch"||IN.src==="pad");np.hidden=!show;if(!show)return;
+  const n=+m[1];if(np.dataset.n!==String(n)){np.dataset.n=n;np.innerHTML=Array.from({length:n+1},(_,i)=>`<button type="button" data-n="${i}">${i===0?"G":i}</button>`).join("");IN.numSel=Math.min(IN.numSel,n);}
+  np.querySelectorAll("button").forEach((b,i)=>b.classList.toggle("sel",IN.src==="pad"&&i===IN.numSel));
+}
+
+/* ---------- gamepad ---------- */
+const DZ=0.2;
+const axis=v=>Math.abs(v)<DZ?0:Math.sign(v)*(Math.abs(v)-DZ)/(1-DZ);
+function padState(){
+  const ps=navigator.getGamepads?navigator.getGamepads():[];let p=null;
+  for(const g of ps)if(g&&g.connected&&g.mapping==="standard"){p=g;break;}
+  if(!p)for(const g of ps)if(g&&g.connected){p=g;break;}
+  return p;
+}
+function padFrame(dt){
+  const p=padState();if(!p)return;
+  const b=i=>!!(p.buttons[i]&&(p.buttons[i].pressed||p.buttons[i].value>0.5));
+  const now={};for(const k in PAD_BTN)now[k]=b(PAD_BTN[k]);
+  const ax=[axis(p.axes[0]||0),axis(p.axes[1]||0),axis(p.axes[2]||0),axis(p.axes[3]||0)];
+  const any=Object.values(now).some(Boolean)||ax.some(a=>a!==0);
+  if(any)setSrc("pad");
+  const hit=k=>now[k]&&!IN.prev[k],rel=k=>!now[k]&&IN.prev[k];
+  if(IN.src==="pad"){
+    if(state==="playing"){
+      if(G.keypad){padKeypad(hit,ax,dt);}
+      else{
+        IN.right=ax[0];IN.fwd=-ax[1];IN.mag=Math.min(1,Math.hypot(ax[0],ax[1]));
+        if(hit("LS"))IN.sprintLatch=true;if(IN.mag<0.3)IN.sprintLatch=false;IN.sprint=!!IN.sprintLatch;
+        const curve=v=>Math.sign(v)*Math.pow(Math.abs(v),1.7);
+        const aimSlow=1-0.45*P.aimT;IN.padLookX=curve(ax[2])*3.2*aimSlow;IN.padLookY=curve(ax[3])*2.2*aimSlow;
+        const np=!$("tNum").hidden;
+        if(np){const n=+$("tNum").dataset.n;if(hit("LEFT"))IN.numSel=(IN.numSel+n)%(n+1);if(hit("RIGHT"))IN.numSel=(IN.numSel+1)%(n+1);if(hit("UP"))pressDigit(IN.numSel);}
+        if(hit("A"))tryJump();keys.Space=now.A;
+        if(hit("B")&&!DEV.ghost)P.crouch=!P.crouch;
+        if(hit("X"))pressedE=true;keys.KeyE=now.X;
+        if(hit("Y"))pressF();
+        if(hit("RT"))shoot();
+        if(hit("LT")){P.aim=true;IN.assistT=0.35;}if(rel("LT"))P.aim=false;
+        if(hit("LB"))placeJammer();if(hit("RB"))throwCoin();
+        if(!np&&hit("UP")&&!P.masked)SFX.mask();keys.KeyG=!np&&now.UP;
+        if(hit("DOWN"))dropCarry();if(hit("LEFT")&&!np)startReload();
+        if(hit("START"))setState("paused");
+      }
+    }else{IN.fwd=IN.right=IN.mag=0;IN.padLookX=IN.padLookY=0;padMenu(hit,ax,dt);}
+  }
+  IN.prev=now;
+}
+// the safe keypad with the d-pad: a cursor over the 3x4 grid
+function padKeypad(hit,ax,dt){
+  const order=["1","2","3","4","5","6","7","8","9","B","0","OK"];
+  let s=IN.kpSel;if(hit("LEFT")&&s%3>0)s--;if(hit("RIGHT")&&s%3<2)s++;if(hit("UP")&&s>2)s-=3;if(hit("DOWN")&&s<9)s+=3;IN.kpSel=s;
+  document.querySelectorAll("#kpKeys span").forEach((sp,i)=>sp.classList.toggle("sel",i===s));
+  if(hit("A")){const k=order[s];if(k==="B")keypadBack();else if(k==="OK")keypadEnter();else keypadDigit(k);}
+  if(hit("B")||hit("X"))closeKeypad();
+}
+// menus: the d-pad or left stick moves focus to the nearest button in that direction, A clicks, B backs out
+function padFocusables(){
+  const root=state==="menu"?$("menu"):state==="paused"?$("pause"):state==="ended"?$("end"):null;if(!root)return [];
+  return [...root.querySelectorAll("button,summary,input,.job")].filter(el=>{if(el.disabled)return false;const r=el.getBoundingClientRect();return r.width>0&&r.height>0&&!el.closest("[hidden]");});
+}
+function padMenu(hit,ax,dt){
+  IN.menuT-=dt;
+  let dx=(hit("RIGHT")?1:0)-(hit("LEFT")?1:0),dy=(hit("DOWN")?1:0)-(hit("UP")?1:0);
+  if(!dx&&!dy&&IN.menuT<=0&&(Math.abs(ax[0])>0.6||Math.abs(ax[1])>0.6)){if(Math.abs(ax[0])>Math.abs(ax[1]))dx=Math.sign(ax[0]);else dy=Math.sign(ax[1]);IN.menuT=0.22;}
+  if(Math.abs(ax[0])<0.3&&Math.abs(ax[1])<0.3)IN.menuT=0;
+  const els=padFocusables();if(!els.length)return;
+  let cur=document.activeElement;if(!els.includes(cur))cur=null;
+  if(dx||dy){
+    if(!cur){els[0].focus();els[0].scrollIntoView({block:"nearest"});}
+    else{const a=cur.getBoundingClientRect(),ax0=a.left+a.width/2,ay0=a.top+a.height/2;let best=null,bs=1e9;
+      for(const el of els){if(el===cur)continue;const r=el.getBoundingClientRect(),x=r.left+r.width/2,y=r.top+r.height/2,ddx=x-ax0,ddy=y-ay0;
+        const along=dx?ddx*dx:ddy*dy,across=dx?Math.abs(ddy):Math.abs(ddx);if(along<=4)continue;const sc=along+across*2.2;if(sc<bs){bs=sc;best=el;}}
+      if(best){best.focus();best.scrollIntoView({block:"nearest",behavior:"smooth"});}}
+  }
+  if(hit("A")){if(cur)cur.click();else if(els[0]){els[0].focus();}}
+  if(hit("B")){if(state==="paused")$("resumeBtn").click();else if(state==="ended")$("menuBtn").click();}
+  if(hit("START")){if(state==="paused")$("resumeBtn").click();}
+  // shoulder buttons flip the safehouse tabs
+  if(state==="menu"&&(hit("LB")||hit("RB"))){const tabs=[...document.querySelectorAll(MODE==="career"?".cr-tabs button":".modes button")];const i=tabs.findIndex(t=>t.getAttribute("aria-selected")==="true");const n=tabs[(i+(hit("RB")?1:tabs.length-1))%tabs.length];if(n)n.click();}
+}
+
+/* ---------- aim assist (touch and gamepad only) ---------- */
+const _aimV=new THREE.Vector3();
+function aimTarget(maxAng){
+  let best=null,bs=maxAng;const cp=Math.cos(P.pitch),fx=-Math.sin(P.yaw)*cp,fy=Math.sin(P.pitch),fz=-Math.cos(P.yaw)*cp;
+  const ex=P.x,ey=P.y+P.eye,ez=P.z;
+  const cands=[];
+  for(const g of guards)if(!g.down&&(g.level||0)===P.level)cands.push({x:g.x,y:(g.level||0)*ROOF_Y+(g.seated?0.95:1.3),z:g.z,lvl:g.level||0});
+  for(const c of cams)if(!c.dead&&c.head){c.head.getWorldPosition(_aimV);cands.push({x:_aimV.x,y:_aimV.y,z:_aimV.z,lvl:c.level||0,cam:true});}
+  for(const t of cands){
+    if((t.lvl||0)!==P.level)continue;
+    const dx=t.x-ex,dy=t.y-ey,dz=t.z-ez,d=Math.hypot(dx,dy,dz);if(d>32||d<0.8)continue;
+    const dot=(dx*fx+dy*fy+dz*fz)/d,ang=Math.acos(Math.min(1,dot));if(ang>bs)continue;
+    if(blocked(P.x,P.z,t.x,t.z,Math.min(1.5,Math.max(0.5,t.y-P.level*ROOF_Y)),P.level))continue;
+    bs=ang;best={dx,dy,dz,d,ang};
+  }
+  return best;
+}
+function aimAssist(dt){
+  if(IN.src==="kbm"||!P.masked||state!=="playing")return 1;
+  const gunUp=P.aimT>0.3;
+  const t=aimTarget(gunUp?0.2:0.1);if(!t)return 1;
+  // pull: gently toward the target while aiming; a stronger snap right after you start aiming
+  if(gunUp){
+    const wantYaw=Math.atan2(-t.dx,-t.dz),wantPitch=Math.atan2(t.dy,Math.hypot(t.dx,t.dz));
+    const k=Math.min(1,dt*(IN.assistT>0?9:2.4));
+    P.yaw+=wrap(wantYaw-P.yaw)*k;P.pitch+=(wantPitch-P.pitch)*k;
+  }
+  // sticky: look input slows down while the crosshair is on a target
+  return t.ang<0.07?0.5:0.75;
+}
+function inputLook(dt){
+  if(state!=="playing")return;
+  if(IN.assistT>0)IN.assistT-=dt;
+  const stick=aimAssist(dt);
+  if(IN.lookX||IN.lookY){const s=0.0052*(1-0.4*P.aimT)*stick;P.yaw-=IN.lookX*s;P.pitch=clamp(P.pitch-IN.lookY*s,-1.45,1.45);IN.lookX=IN.lookY=0;}
+  if(IN.src==="pad"&&(IN.padLookX||IN.padLookY)){P.yaw-=IN.padLookX*dt*stick;P.pitch=clamp(P.pitch-IN.padLookY*dt*stick,-1.45,1.45);}
+}
+
+/* ---------- phones: lighter graphics, landscape, full screen ---------- */
+function phoneSetup(){
+  if(!TOUCH_DEV)return;
+  setSrc("touch");
+  renderer.shadowMap.enabled=false;
+  AQ.level=2;aqApply();LM.K.p=Math.min(LM.K.p,9);LM.K.s=Math.min(LM.K.s,5);LM.K.sh=0;
+}
+function goFullscreen(){
+  if(!TOUCH_DEV)return;
+  try{const el=document.documentElement;if(!document.fullscreenElement&&el.requestFullscreen)el.requestFullscreen({navigationUI:"hide"}).then(()=>{try{screen.orientation.lock("landscape").catch(()=>{});}catch(e){}}).catch(()=>{});}catch(e){}
+}
+function rotateCheck(){const r=$("rotate");if(!r)return;r.hidden=!(IN.src==="touch"&&TOUCH_DEV&&innerHeight>innerWidth);}
+addEventListener("resize",rotateCheck);
+function initInput(){initTouch();phoneSetup();rotateCheck();}
+function inputFrame(dt){padFrame(dt);touchHUD();if(state!=="playing"){document.querySelectorAll("#kpKeys span.sel").forEach(s=>s.classList.remove("sel"));}}
+
 function frame(now){
   requestAnimationFrame(frame);
   const raw=(now-last)/1000,dt=Math.min(0.05,raw);last=now;
+  inputFrame(dt);
   if(state==="playing")stepGame(dt);
   else if(state==="menu")stepMenu(dt);
   animate(dt);
@@ -7268,6 +7556,7 @@ function frame(now){
   sbCheck();
   if(state==="playing"||state==="paused"){renderer.clearDepth();renderer.render(vmScene,vmCam);}
 }
+initInput();
 buildMap(selectedMap);
 document.querySelectorAll(".job").forEach(b=>b.setAttribute("aria-checked",String(b.dataset.map===selectedMap)));jobDetail();
 resetGame();
