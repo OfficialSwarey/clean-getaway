@@ -192,6 +192,7 @@ details.help .keys{margin-bottom:14px}
 .tb[data-act="reload"]{right:calc(196px + env(safe-area-inset-right,0px));bottom:calc(162px + env(safe-area-inset-bottom,0px))}
 #tPause{left:calc(12px + env(safe-area-inset-left,0px));top:calc(10px + env(safe-area-inset-top,0px));width:44px;height:44px;border-radius:10px;font-size:14px}
 #tObj{left:calc(12px + env(safe-area-inset-left,0px));top:calc(62px + env(safe-area-inset-top,0px));width:44px;height:44px;border-radius:10px;font-size:9px}
+#tGhost{left:calc(12px + env(safe-area-inset-left,0px));top:calc(114px + env(safe-area-inset-top,0px));width:44px;height:44px;border-radius:10px;font-size:8px;letter-spacing:.02em}
 #obj.mini .lbl,#obj.mini #objText,#obj.mini #bagsRow{display:none}
 #tNum{position:absolute;left:50%;top:calc(50% + 100px);transform:translateX(-50%);display:flex;gap:8px;pointer-events:auto}
 #tNum button{width:46px;height:46px;border:1px solid var(--line);background:rgba(10,14,20,.8);color:var(--fg);font-family:var(--f-mono);font-size:18px}
@@ -235,6 +236,7 @@ body.coop-guest .job{pointer-events:none}body.coop-guest .job:not([aria-checked=
 .diffs button[data-diff="easy"][aria-selected="true"]{background:var(--secure)}.diffs button[data-diff="hard"][aria-selected="true"]{background:var(--alarm);color:#fff}
 .diffs button:focus-visible{outline:2px solid var(--fg);outline-offset:2px}
 body.coop-guest .diffs{pointer-events:none;opacity:.6}
+.dev-touch{display:none}body.touch .dev-touch,body.pad .dev-touch{display:block}body.touch .dev-kbm,body.pad .dev-kbm{display:none}
 .job-detail .jd-diff{font-size:13px;color:var(--dim);line-height:1.4}
 /* ---------- career: the safehouse ---------- */
 .menu-top{display:flex;flex-wrap:wrap;gap:12px;align-items:center;justify-content:space-between}
@@ -306,6 +308,7 @@ body.coop-guest .diffs{pointer-events:none;opacity:.6}
   #startBtn{grid-column:3;grid-row:1/3;font-size:18px;padding:10px 16px;white-space:nowrap}
   .job-detail .coop{display:none;border-top:0;padding-top:6px}
   .job-detail.coop-open .coop{display:grid}
+  .job-detail.coop-open .dev{display:flex}
   #coopToggle[aria-expanded="true"]{border-color:var(--sodium);color:var(--sodium)}
   #careerPanel{grid-template-columns:minmax(0,1fr) auto;gap:10px}#careerPanel>*{grid-column:1/-1}
   #careerPanel>.cr-top{grid-column:1;grid-template-columns:auto minmax(80px,1fr) auto auto;padding:6px 12px;gap:4px 12px;align-items:center}.cr-stat b{font-size:19px}.cr-xp .lbl{font-size:9px}
@@ -314,7 +317,6 @@ body.coop-guest .diffs{pointer-events:none;opacity:.6}
 }
 @media (max-width:480px){#jdName{font-size:19px}#startBtn{font-size:16px;padding:9px 12px}#coopToggle{padding:7px 10px}}
 @media (max-height:520px){.card.menu .menu-head h1{display:none}}
-body.touch .dev{display:none}
 </style>
 </head>
 <body>
@@ -342,6 +344,7 @@ body.touch .dev{display:none}
   <div id="tStick" hidden><div id="tKnob"></div></div>
   <button type="button" class="tb" id="tPause" data-act="pause" aria-label="Pause">II</button>
   <button type="button" class="tb" id="tObj" data-act="obj" aria-label="Show or hide the objective">OBJ</button>
+  <button type="button" class="tb" id="tGhost" data-act="ghost" aria-label="Noclip on or off" hidden>GHOST</button>
   <div id="tNum" hidden></div>
   <button type="button" class="tb big" data-act="use">USE</button>
   <button type="button" class="tb mid" data-act="f">ACTION</button>
@@ -475,8 +478,8 @@ body.touch .dev{display:none}
         <div class="job-best" id="jdBest"></div>
         <p class="jd-diff" id="jdDiff"></p>
         <button class="btn" id="startBtn">Start the job</button>
-        <button type="button" class="btn ghost small" id="coopToggle" aria-expanded="false">Co-op</button>
-        <label class="dev" for="devToggle"><input type="checkbox" id="devToggle"><span>Dev mode<small>Press V during a job for noclip: fly through walls, unseen by guards and cameras. SPACE up, CTRL or C down, SHIFT faster.</small></span></label>
+        <button type="button" class="btn ghost small" id="coopToggle" aria-expanded="false" aria-label="Co-op and dev mode">Co-op · Dev</button>
+        <label class="dev" for="devToggle"><input type="checkbox" id="devToggle"><span>Dev mode<small class="dev-kbm">Press V during a job for noclip: fly through walls, unseen by guards and cameras. SPACE up, CTRL or C down, SHIFT faster.</small><small class="dev-touch">Tap GHOST (left side, under OBJ) during a job for noclip: fly through walls, unseen by guards and cameras. JUMP up, CROUCH down. On a controller: BACK.</small></span></label>
       </aside>
     </div>
     <p class="lbl" id="note"></p>
@@ -562,7 +565,7 @@ body.touch .dev{display:none}
 // Co-op: the same code runs for every player by swapping who P is. CTX.cur is the player whose turn it is (null = you);
 // HUD writes during another player's turn go to that player's copy of the HUD, which is sent to them.
 const CTX={cur:null,kind:null,pl:null};
-const GAME_VERSION="0.32.0";
+const GAME_VERSION="0.32.1";
 const NET={on:false,host:false,guest:false,send:null,close:null,code:"",busy:false,waiting:false,started:false,acc:0,remote:null,ending:false};
 const $=id=>(CTX.cur&&CTX.cur.dom&&CTX.cur.dom[id])||document.getElementById(id);
 // a timer started during another player's turn runs as that player
@@ -6226,7 +6229,7 @@ addEventListener("keydown",e=>asLocal(()=>{
   if(e.code==="KeyT"&&!e.repeat)throwCoin();
   if(e.code==="KeyG"&&!e.repeat&&!P.masked)SFX.mask();
   if(e.code==="KeyM"&&!e.repeat){setMuted(!A.muted);toast(A.muted?"Sound off":"Sound on","",1200);}
-  if(e.code==="KeyV"&&!e.repeat&&DEV.on){DEV.ghost=!DEV.ghost;if(!DEV.ghost)settleAfterGhost();toast(DEV.ghost?"Noclip on: fly through anything · SPACE up · CTRL or C down · SHIFT faster · nobody can see or hear you":"Noclip off","warn",2600);}
+  if(e.code==="KeyV"&&!e.repeat&&DEV.on)toggleGhost();
   if(["ControlLeft","ControlRight"].includes(e.code)&&DEV.ghost)e.preventDefault();
   if(e.code==="Escape"&&!locked)setState("paused");
 }));
@@ -6415,7 +6418,7 @@ function updatePlayer(dt){
   if(DEV.ghost){
     // noclip: fly where you look, through anything
     if(P.ladder)P.ladder=null;
-    const sp=(keys.ShiftLeft||keys.ShiftRight?20:9)*dt,cp=Math.cos(P.pitch);
+    const sp=(keys.ShiftLeft||keys.ShiftRight||IN.sprint?20:9)*dt,cp=Math.cos(P.pitch);
     const fx=-Math.sin(P.yaw)*cp,fy=Math.sin(P.pitch),fz=-Math.cos(P.yaw)*cp,rx=Math.cos(P.yaw),rz=-Math.sin(P.yaw);
     let vx=0,vy=0,vz=0;
     if(keys.KeyW){vx+=fx;vy+=fy;vz+=fz;}if(keys.KeyS){vx-=fx;vy-=fy;vz-=fz;}if(IN.mag>0.1){vx+=fx*IN.fwd;vy+=fy*IN.fwd;vz+=fz*IN.fwd;}
@@ -6522,6 +6525,12 @@ function updatePlayer(dt){
   const r=restricted(P.x,P.z);
   if(r&&!P.wasRestricted&&!P.masked&&!G.alarm&&!DEV.ghost)toast(LV.def.trespassMsg?LV.def.trespassMsg():onRoof()?"You're on the roof. Don't let anyone see you up here":LV.day?"Staff only. Don't let anyone see you back here":`${LV.def.place} is closed. Don't let anyone see you inside`,"warn",2400);
   P.wasRestricted=r;
+}
+function toggleGhost(){
+  if(!DEV.on||NET.on)return;
+  DEV.ghost=!DEV.ghost;if(!DEV.ghost)settleAfterGhost();
+  const how=IN.src==="touch"?"stick to fly where you look · JUMP up · CROUCH down · push the stick all the way to go faster":IN.src==="pad"?"left stick to fly where you look · A up · B down · click the stick to go faster":"SPACE up · CTRL or C down · SHIFT faster";
+  toast(DEV.ghost?`Noclip on: fly through anything · ${how} · nobody can see or hear you`:"Noclip off","warn",2600);
 }
 function settleAfterGhost(){
   // drop to the floor below you (or the ground) and step out of any wall
@@ -7394,7 +7403,7 @@ function updateHUD(){
   if(P.masked){const t=P.reload>0?"RELOADING":`PISTOL ${P.mag} / ${P.reserve}`;if(am.textContent!==t)am.textContent=t;am.className=P.mag===0&&P.reload<=0?"chip bad":"chip";}
   $("crosshair").hidden=!P.masked||P.aimT>0.6;
   const dc=$("devChip");dc.hidden=!DEV.on;
-  if(DEV.on){const t=`DEV · GHOST ${DEV.ghost?"ON":"OFF"} · V`;if(dc.textContent!==t)dc.textContent=t;dc.className=DEV.ghost?"chip warn":"chip";}
+  if(DEV.on){const t=`DEV · GHOST ${DEV.ghost?"ON":"OFF"}${IN.src==="touch"?"":IN.src==="pad"?" · BACK":" · V"}`;if(dc.textContent!==t)dc.textContent=t;dc.className=DEV.ghost?"chip warn":"chip";}
   const pc2=$("posChip");pc2.hidden=!DEV.on;
   if(DEV.on)pc2.textContent=`${P.x.toFixed(1)}, ${P.z.toFixed(1)}, ${P.y.toFixed(1)} · ${LV.def.multi?"LEVEL "+P.level:P.level?"ROOF":"GROUND"}`;
 }
@@ -8151,7 +8160,7 @@ function coopUI(msg){
   sb.disabled=!!NET.guest||!ok;
   sb.textContent=NET.guest?"The host starts the job":NET.host?(ok?"Start the co-op job":"Solo only for now"):"Start the job";
   const mt=document.querySelector(".modes");if(mt)mt.hidden=!!NET.on;
-  {const t=$("coopToggle");if(t)t.textContent=NET.on?"Co-op ✓":NET.waiting?"Co-op …":"Co-op";}
+  {const t=$("coopToggle");if(t)t.textContent=NET.on?"Co-op ✓":NET.waiting?"Co-op …":"Co-op · Dev";}
 }
 function coopStartRun(){
   const seed=(Math.random()*4294967296)>>>0;
@@ -8221,7 +8230,8 @@ function touchAct0(act,down){
     case "use":keys.KeyE=down;if(down)pressedE=true;if(down&&G.keypad)closeKeypad();break;
     case "f":if(down)pressF();break;
     case "jump":keys.Space=down;if(down)tryJump();break;
-    case "crouch":if(down&&!DEV.ghost)P.crouch=!P.crouch;break;
+    case "crouch":if(DEV.ghost)keys.KeyC=down;else if(down)P.crouch=!P.crouch;break;
+    case "ghost":if(down)toggleGhost();break;
     case "mask":keys.KeyG=down;if(down&&!P.masked)SFX.mask();break;
     case "fire":if(down)shoot();break;
     case "aim":if(down){P.aim=!P.aim;if(P.aim)IN.assistT=0.35;}break;
@@ -8270,6 +8280,7 @@ function touchHUD(){
   vis("drop",!!P.carry);vis("coin",G.coins>0);vis("jam",P.masked&&P.jammers>0);
   const cnt=(act,lbl,n)=>{const b=document.querySelector(`.tb[data-act="${act}"]`),h=`${lbl}<small>${n}</small>`;if(b.innerHTML!==h)b.innerHTML=h;};
   cnt("coin","COIN",G.coins);cnt("jam","JAM",P.jammers);
+  {const gb=$("tGhost");const show=DEV.on&&!NET.on;if(gb.hidden!==!show)gb.hidden=!show;gb.classList.toggle("on",!!DEV.ghost);}
   const f=document.querySelector('.tb[data-act="f"]'),tl=takedownTarget()?"TAKE DOWN":windowAhead()?"SMASH":civs.length&&P.masked?"SHOUT":"ACTION";if(f.textContent!==tl)f.textContent=tl;
   document.querySelector('.tb[data-act="use"]').classList.toggle("ready",!$("prompt").hidden);
   document.querySelector('.tb[data-act="crouch"]').classList.toggle("on",P.crouch);
@@ -8314,6 +8325,8 @@ function padFrame0(dt){
         if(np){const n=+$("tNum").dataset.n;if(hit("LEFT"))IN.numSel=(IN.numSel+n)%(n+1);if(hit("RIGHT"))IN.numSel=(IN.numSel+1)%(n+1);if(hit("UP"))pressDigit(IN.numSel);}
         if(hit("A"))tryJump();keys.Space=now.A;
         if(hit("B")&&!DEV.ghost)P.crouch=!P.crouch;
+        if(DEV.ghost){keys.Space=now.A;keys.KeyC=now.B;}
+        if(hit("BACK"))toggleGhost();
         if(hit("X"))pressedE=true;keys.KeyE=now.X;
         if(hit("Y"))pressF();
         if(hit("RT"))shoot();

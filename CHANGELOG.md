@@ -5,6 +5,11 @@ feature round bumps MINOR, a bug-fix-only update bumps PATCH, and 1.0.0 is
 the first "finished" release. Up to 0.30.0, MINOR is the version number the
 claude.ai artifact had. Releases are tagged `v0.30.0` and so on.
 
+## 0.32.1 — dev mode on phones
+- Phones and tablets: dev mode is back. Tap **Co-op · Dev** next to Start in the job menu (the button used to say "More") and tick Dev mode.
+- In a job, a **GHOST** button under the pause and OBJ buttons turns noclip on and off. JUMP flies up, CROUCH flies down, and pushing the stick all the way goes faster.
+- Controllers: BACK turns noclip on and off; A flies up, B down, click the stick to go faster.
+
 ## 0.32.0 — difficulty
 - Three difficulties, picked at the top of the job menu (it applies to career and free play, and in co-op the host's choice counts):
   - **Easy:** a third of the patrol guards stay home (never the camera operator or anyone the job needs), guards and cameras are slower to spot you, radios and police take longer, one extra pager excuse. Pay −25%.
