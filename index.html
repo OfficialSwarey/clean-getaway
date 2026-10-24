@@ -157,6 +157,48 @@ details.help summary{cursor:pointer;font-family:var(--f-mono);font-size:12px;let
 details.help[open] summary{margin-bottom:12px}
 details.help .keys{margin-bottom:14px}
 @media (max-width:560px){.jobs{grid-template-columns:1fr}}
+/* ---------- career: the safehouse ---------- */
+.menu-top{display:flex;flex-wrap:wrap;gap:12px;align-items:center;justify-content:space-between}
+.modes,.cr-tabs{display:flex;gap:0;border:1px solid var(--line)}
+.modes button,.cr-tabs button{background:transparent;border:0;color:var(--dim);font-family:var(--f-mono);font-size:12px;letter-spacing:.16em;text-transform:uppercase;padding:8px 14px}
+.modes button[aria-selected="true"],.cr-tabs button[aria-selected="true"]{background:var(--sodium);color:var(--ink)}
+.modes button:focus-visible,.cr-tabs button:focus-visible{outline:2px solid var(--fg);outline-offset:2px}
+.cr-tabs{justify-self:start;width:max-content}
+#careerPanel{display:grid;gap:16px}
+.cr-top{display:grid;grid-template-columns:auto minmax(160px,1fr) auto auto;gap:18px;align-items:end;padding:14px 16px;border:1px solid var(--line);background:rgba(255,255,255,.03)}
+.cr-stat{display:grid;gap:2px}.cr-stat b{font-family:var(--f-mono);font-size:24px;line-height:1.1;font-variant-numeric:tabular-nums}
+#crCash{color:var(--secure)}#crPts.hot{color:var(--sodium)}
+.cr-xp{display:grid;gap:6px;align-self:center}.cr-xpbar{height:8px;background:rgba(255,255,255,.08);border:1px solid var(--line)}.cr-xpbar i{display:block;height:100%;background:var(--sodium);width:0}
+.offers{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:10px}
+.offer{display:flex;flex-direction:column;gap:8px;padding:14px;border:1px solid var(--line);background:rgba(255,255,255,.02);min-width:0}
+.offer h3{margin:0}.offer-stars{font-size:13px;letter-spacing:.12em;color:var(--sodium)}
+.twists{list-style:none;margin:0;padding:0;display:grid;gap:6px}
+.twists li{display:grid;gap:1px;padding:6px 8px;border-left:2px solid var(--sodium);background:rgba(244,171,61,.06)}
+.twists b{font-size:14px}.twists span{font-size:13px;color:#c7d0d3;line-height:1.35}
+.offer-pay{display:flex;gap:12px;font-family:var(--f-mono);font-size:12px;letter-spacing:.08em;color:var(--secure);margin-top:auto}
+.offer .btn{font-size:19px;padding:8px 14px}
+.btn.small{font-size:16px;padding:7px 14px}
+.cr-row{display:flex;flex-wrap:wrap;gap:10px 16px;align-items:center;justify-content:space-between}
+.cr-note{font-size:15px}
+.shop{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:10px}
+.item{display:flex;flex-direction:column;gap:6px;padding:12px 14px;border:1px solid var(--line);background:rgba(255,255,255,.02)}
+.item h3{margin:0;font-family:var(--f-display);font-weight:400;font-size:22px;line-height:1}.item p{font-size:14px;margin:0 0 auto}
+.item.owned{border-color:rgba(120,216,163,.4)}.item .btn{align-self:flex-start}
+.trees{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+.tree{display:grid;gap:8px;align-content:start}.tree header{display:grid;gap:2px;padding-bottom:6px;border-bottom:1px solid var(--line)}
+.tree h3{margin:0;font-family:var(--f-display);font-weight:400;font-size:26px;line-height:1}
+.node{display:grid;gap:3px;text-align:left;padding:9px 10px;border:1px solid var(--line);background:rgba(255,255,255,.02);color:var(--fg)}
+.node-top{display:flex;justify-content:space-between;gap:8px}.node-top b{font-size:15px}.cost{font-family:var(--f-mono);font-size:11px;color:var(--dim);white-space:nowrap}
+.node-fx{font-size:13px;color:#c7d0d3;line-height:1.35}.node-lock{font-family:var(--f-mono);font-size:10px;letter-spacing:.08em;color:var(--dim)}
+.node.owned{border-color:var(--secure);background:rgba(120,216,163,.08)}.node.owned .cost{color:var(--secure)}
+.node.avail{border-color:var(--sodium);cursor:pointer}.node.avail:hover{background:rgba(244,171,61,.1)}.node.avail .cost{color:var(--sodium)}
+.node.locked,.node.poor{opacity:.55;cursor:default}.node.cap{box-shadow:inset 3px 0 0 currentColor}
+.cr-foot{border-top:1px solid var(--line);padding-top:12px}
+#endCareer{display:grid;grid-template-columns:1fr auto;gap:4px 16px;padding:10px 12px;border:1px solid var(--line);background:rgba(255,255,255,.03);font-family:var(--f-mono);font-size:13px}
+#endCareer dt{color:var(--dim)}#endCareer dd{margin:0;text-align:right;font-weight:700}
+#endCareer .lvl{grid-column:1/-1;color:var(--sodium);letter-spacing:.12em}
+@media (max-width:760px){.trees{grid-template-columns:1fr}.cr-top{grid-template-columns:1fr 1fr}.cr-xp{grid-column:1/-1}}
+
 @media (max-width:640px){#obj{max-width:calc(100vw - 150px)}#objText{font-size:15px}}
 @media (max-height:640px){#objText{font-size:14px;line-height:1.25}#objTip{font-size:12px}#obj{max-width:min(380px,calc(100vw - 190px))}}
 @media (prefers-reduced-motion:reduce){#alarmEdge{animation:none;opacity:.45}#toast{transition:none}}
@@ -173,7 +215,7 @@ details.help .keys{margin-bottom:14px}
   <div id="detect"><div class="lbl" id="detectLbl">Detection</div><div class="bar"><i id="detectFill"></i></div></div>
   <div id="clock"><span class="lbl" id="clockLbl">Elapsed</span><span id="clockVal">00:00</span></div>
   <div id="obj"><div class="lbl">Objective</div><div id="objText">Get into the bank unseen.</div><div id="objTip" hidden></div><div id="bagsRow"><span id="bagsLbl">Bags in the van</span> <b id="bagsVal">0/3</b> · Take <b id="takeVal">$0</b></div></div>
-  <div id="status"><span class="chip" id="devChip" hidden>DEV · GHOST OFF · V</span><span class="chip" id="posChip" hidden></span><span class="chip" id="ammo" hidden>PISTOL 12 / 36</span><span class="chip" id="pagerChip" hidden>PAGERS 0/3</span><span class="chip" id="tieChip" hidden>ZIP TIES 6</span><span class="chip" id="loopChip" hidden></span><span class="chip" id="jamChip" hidden>JAMMERS 2 · J</span><span class="chip ok" id="cardChip" hidden>KEYCARD</span><span class="chip ok" id="codeChip" hidden></span><span class="chip" id="maskChip">UNMASKED · OUTSIDE</span><span class="chip" id="carry" hidden>CARRYING BAG · SLOWED</span><span class="chip" id="stance">STANDING</span><span class="chip" id="sound">SOUND ON · M</span></div>
+  <div id="status"><span class="chip warn" id="ctChip" hidden></span><span class="chip" id="devChip" hidden>DEV · GHOST OFF · V</span><span class="chip" id="posChip" hidden></span><span class="chip" id="ammo" hidden>PISTOL 12 / 36</span><span class="chip" id="pagerChip" hidden>PAGERS 0/3</span><span class="chip" id="tieChip" hidden>ZIP TIES 6</span><span class="chip" id="loopChip" hidden></span><span class="chip" id="jamChip" hidden>JAMMERS 2 · J</span><span class="chip" id="coinChip" hidden>COINS 3 · T</span><span class="chip ok" id="cardChip" hidden>KEYCARD</span><span class="chip ok" id="codeChip" hidden></span><span class="chip" id="maskChip">UNMASKED · OUTSIDE</span><span class="chip" id="carry" hidden>CARRYING BAG · SLOWED</span><span class="chip" id="stance">STANDING</span><span class="chip" id="sound">SOUND ON · M</span></div>
   <div id="crosshair"></div>
   <div id="prompt" hidden><span id="promptText"></span><div class="pbar" id="pbar" hidden><i id="pfill"></i></div></div>
   <div id="keypad" hidden><span class="lbl" id="kpTitle">SAFE KEYPAD</span><div id="kpScreen">_ _ _ _</div>
@@ -186,11 +228,23 @@ details.help .keys{margin-bottom:14px}
 <div id="menu" class="overlay">
   <div class="card menu">
     <header class="menu-head">
-      <span class="stamp">CHOOSE A JOB</span>
+      <div class="menu-top"><span class="stamp" id="menuStamp">THE SAFEHOUSE</span>
+        <div class="modes" role="tablist" aria-label="Mode"><button type="button" role="tab" data-mode="career" aria-selected="true">Career</button><button type="button" role="tab" data-mode="free" aria-selected="false">Free play</button></div></div>
       <h1>Clean Getaway</h1>
-      <p>Case the place, slip in and get the money to the getaway before anyone knows you were there. Every bag and every stack of loose cash adds to your take, and you can leave whenever you like. Never set off the alarm: +30%. On jobs with civilians, nobody hurt: another +15%. Once the alarm goes, the police are 60 seconds out.</p>
+      <p id="menuIntro">Case the place, slip in and get the money to the getaway before anyone knows you were there.</p>
     </header>
-    <div class="menu-body">
+    <div id="careerPanel">
+      <div class="cr-top">
+        <div class="cr-stat"><span class="lbl">Level</span><b id="crLevel">1</b></div>
+        <div class="cr-xp"><div class="cr-xpbar"><i id="crXpFill"></i></div><span class="lbl" id="crXpTxt"></span></div>
+        <div class="cr-stat"><span class="lbl">Cash</span><b id="crCash">$0</b></div>
+        <div class="cr-stat"><span class="lbl">Skill points</span><b id="crPts">0</b></div>
+      </div>
+      <div class="cr-tabs" role="tablist"><button type="button" role="tab" data-tab="jobs">Jobs</button><button type="button" role="tab" data-tab="shop">Shop</button><button type="button" role="tab" data-tab="skills" id="crTabSkills">Skills</button></div>
+      <div id="crJobs"></div><div id="crShop" hidden></div><div id="crSkills" hidden></div>
+      <div class="cr-row cr-foot"><span class="lbl" id="crStats"></span><button type="button" class="btn ghost small" id="crNew">New career</button></div>
+    </div>
+    <div class="menu-body" id="freePanel">
       <div class="jobs" role="radiogroup" aria-label="Job">
         <div class="job-group" role="presentation">Short jobs</div>
         <button class="job" type="button" role="radio" aria-checked="false" data-map="harbor" data-len="Short">
@@ -305,6 +359,7 @@ details.help .keys{margin-bottom:14px}
         <dt>0–9</dt><dd>Type a code on a keypad (Backspace erases). In an elevator or on a gondola: pick the floor</dd>
         <dt>HOLD E</dt><dd>At the van, with nothing in your hands: drive off with whatever you've got</dd>
         <dt>Q</dt><dd>Drop what you're carrying</dd>
+        <dt>T</dt><dd>Throw a coin where you're looking. A guard who hears it and can walk there goes to look; if he can't, he turns to look (3 per job)</dd>
         <dt>J</dt><dd>Put down a jammer: for 15 seconds no radio, phone or pager can raise the alarm, and any call already under way starts over (2 per job)</dd>
         <dt>CLICK</dt><dd>Fire the silenced pistol</dd>
         <dt>R-CLICK</dt><dd>Aim down the sights (click again to lower)</dd>
@@ -345,6 +400,7 @@ details.help .keys{margin-bottom:14px}
     <h2 id="endTitle">Clean job</h2>
     <div id="endTake"><span class="lbl" id="endTakeLbl">TAKE</span><b id="endTakeVal">$0</b><dl id="endBreak"></dl><span id="endBest"></span></div>
     <p id="endReason"></p>
+    <div id="endCareer" hidden></div>
     <dl class="stats" id="endStats"></dl>
     <div class="row"><button class="btn" id="againBtn">Play again</button><button class="btn ghost" id="menuBtn">Back to jobs</button></div>
   </div>
@@ -860,7 +916,9 @@ class Guard{
         if(d<0.5&&!seeing){this.chase=false;this.wp=this.nearestWaypoint();}
         else if(d>0.01)this.walk(dx/d,dz/d,3.3,dt,true);
       }else this.patrol(dt,1.9,true);
-      if(!DEV.ghost&&this.level===P.level&&Math.hypot(P.x-this.x,P.z-this.z)<1.15)endGame(false,"A guard caught you.");
+      if(!DEV.ghost&&this.level===P.level&&Math.hypot(P.x-this.x,P.z-this.z)<1.15){
+        if(SK.iron&&!G.ironUsed){G.ironUsed=true;this.knockDown(false);G.takedowns++;SFX.takedown(this.x,this.z);toast("Iron grip: you broke free and floored him","good",2400);return;}
+        endGame(false,"A guard caught you.");}
     }else{
       if(seeing){
         if(!this.wasSeeing)SFX.spot(this.x,this.z,this.level);
@@ -968,7 +1026,7 @@ class Civilian extends Guard{
     if(this.dead||this.state==="tied")return null;
     if(this.state==="asleep")this.body.rotation.x=0;
     const was=this.state;
-    Object.assign(this,{state:"ground",downT:DOWN_TIME,callT:0,flee:0,seated:false,sus:0,speedNow:0});
+    Object.assign(this,{state:"ground",downT:DOWN_TIME*SK.down,callT:0,flee:0,seated:false,sus:0,speedNow:0});
     this.phone.visible=false;this.sprite.visible=false;
     return was;
   }
@@ -5052,6 +5110,7 @@ function buildMap(id){
   LV={group:new THREE.Group(),def,id:def.id,day:!!def.day,sunny:!!def.day&&!def.night,fx:null};scene.add(LV.group);
   setSky(LV.sunny);
   def.build();
+  guards.forEach(g=>g.route0=g.route);THROWN=[];
   buildEnv(def.id||id);
   secGuard=guards.find(g=>g.security)||null;
   BAG_SPOTS=def.bagSpots.map(s=>Array.isArray(s)?{x:s[0],z:s[1],y:s[2],ry:s[3]}:s);
@@ -5370,7 +5429,7 @@ function canSee(ox,oz,yaw,half,range,lvl){
   if(DEV.ghost||!exposed())return -1;
   if((lvl||0)!==P.level)return -1;
   const dx=P.x-ox,dz=P.z-oz,d=Math.hypot(dx,dz);
-  if(d>range*(LV.def.visMul?LV.def.visMul(ox,oz,lvl):1))return -1;
+  if(d>range*(G.visMul||1)*(LV.def.visMul?LV.def.visMul(ox,oz,lvl):1))return -1;
   if(Math.abs(wrap(Math.atan2(dx,dz)-yaw))>half)return -1;
   if(blocked(ox,oz,P.x,P.z,(P.crouch?1.0:1.6)+P.jh,P.level))return -1;
   return d;
@@ -5704,6 +5763,226 @@ let state="menu",locked=false,everLocked=false,fallback=false,pendingStart=false
 const keys={};
 const DRILL_TIME=20,ALARM_TIME=60;
 
+/* ================= CAREER: money, experience, skills, gear, the job board =================
+   Career mode keeps one save in localStorage. Jobs come off a board of offers, each a map plus one or two twists that change
+   how it plays and what it pays. Money buys gear (permanent); experience gives levels, and every level a skill point.
+   Free play is the old job list: no twists, no skills, no gear. */
+const SKILL_TREES=[
+  {id:"ghost",name:"Ghost",blurb:"Stealth",skills:[
+    {id:"softstep",t:1,cost:1,name:"Soft step",fx:"Crouch-walk 40% faster"},
+    {id:"shadow",t:1,cost:1,name:"Shadow",fx:"The detection meter fills 25% slower"},
+    {id:"talker",t:2,cost:2,name:"Smooth talker",fx:"One extra pager answer per job, and 50% longer to pick up"},
+    {id:"quickchange",t:2,cost:2,name:"Quick change",fx:"Your mask goes on in less than half the time"},
+    {id:"lightload",t:3,cost:3,name:"Light load",fx:"Bag bodies twice as fast and carry them faster"},
+    {id:"vanish",t:4,cost:4,name:"Vanish",fx:"Once per job: the first guard or camera that would raise the alarm on you loses you instead",cap:true}]},
+  {id:"tech",name:"Technician",blurb:"Tools",skills:[
+    {id:"fingers",t:1,cost:1,name:"Nimble fingers",fx:"Pick locks, latches and safes 30% faster"},
+    {id:"signal",t:1,cost:1,name:"Signal tech",fx:"+1 jammer per job, and each one runs 7 s longer"},
+    {id:"drilltune",t:2,cost:2,name:"Drill tuner",fx:"The drill works 35% faster"},
+    {id:"loop",t:2,cost:2,name:"Loop master",fx:"Camera loops last 40 s instead of 25"},
+    {id:"coolhead",t:3,cost:3,name:"Cool head",fx:"One extra wrong code on keypads before the alarm"},
+    {id:"masterkey",t:4,cost:4,name:"Master key",fx:"Once per job: a locked door opens the moment you start picking it",cap:true}]},
+  {id:"enf",name:"Enforcer",blurb:"Bodies and people",skills:[
+    {id:"stash",t:1,cost:1,name:"Zip-tie stash",fx:"+2 zip ties per job"},
+    {id:"aim",t:1,cost:1,name:"Steady aim",fx:"Half the pistol spread"},
+    {id:"hands",t:2,cost:2,name:"Quick hands",fx:"Knock guards out from the side, and from a step further away"},
+    {id:"voice",t:2,cost:2,name:"Commanding voice",fx:"Your shout reaches further and civilians stay down twice as long"},
+    {id:"heavy",t:3,cost:3,name:"Heavy lifter",fx:"Sprint and jump with gold, and carry loot faster"},
+    {id:"iron",t:4,cost:4,name:"Iron grip",fx:"Once per job: when a guard grabs you, break free and floor him",cap:true}]}
+];
+const TIER_REQ={1:0,2:2,3:4,4:7};
+const GEAR=[
+  {id:"picks",name:"Pro lockpicks",fx:"Locks, latches and safes open 20% faster",price:18000},
+  {id:"shoes",name:"Soft-soled shoes",fx:"Your footsteps carry a third less far",price:22000},
+  {id:"silencer",name:"Better silencer",fx:"Gunshots carry half as far",price:30000},
+  {id:"jammer",name:"Spare jammer",fx:"+1 jammer on every job",price:26000},
+  {id:"mag",name:"Extended magazine",fx:"+6 rounds in every magazine",price:14000},
+  {id:"bit",name:"Thermal drill bit",fx:"The drill works 25% faster",price:34000},
+  {id:"bandolier",name:"Zip-tie bandolier",fx:"+3 zip ties on every job",price:9000},
+  {id:"coins",name:"Roll of coins",fx:"+3 coins to throw on every job",price:6000},
+  {id:"badge",name:"Fake staff badge",fx:"Unmasked in a staff area, you take 25% longer to get noticed",price:24000}
+];
+const TWISTS={
+  tight:{name:"Tight schedule",desc:c=>`Out within ${c.mins} minutes, or someone tips off the police`,pay:1.3,xp:1.25,hard:true},
+  jumpy:{name:"Jumpy dispatch",desc:()=>"Only one pager answer before dispatch sends units",pay:1.25,xp:1.2,hard:true},
+  cams:{name:"New cameras",desc:()=>"The cameras see 35% further",pay:1.2,xp:1.15},
+  sharp:{name:"Alert guards",desc:()=>"Guards see 25% further and notice you faster",pay:1.35,xp:1.3,hard:true},
+  ghost:{name:"Ghost contract",desc:()=>"+50% if the alarm never goes off. An alarm halves the pay",pay:1,xp:1.2},
+  nokill:{name:"Nobody dies",desc:()=>"Any death cuts the pay in half",pay:1.15,xp:1.1},
+  light:{name:"Light kit",desc:()=>"No jammers, and only the magazine in the gun",pay:1.2,xp:1.15},
+  fat:{name:"Fat vault",desc:()=>"Every bag is worth 40% more",pay:1,xp:1},
+  quiet:{name:"Quiet night",desc:()=>"Guards see 20% less. Easy money, smaller cut",pay:0.85,xp:0.85}
+};
+const CAREER_KEY="cg-career-v1",LEN_STARS={Short:1,Medium:2,Long:3},LEN_LEVEL={Short:1,Medium:2,Long:4},LEN_MINS={Short:6,Medium:9,Long:13};
+const REFRESH_COST=3000,RESPEC_COST=25000,BUST_FEE=0.15,MAX_LEVEL=30;
+let CAREER=null,MODE="career";
+function newCareer(){return {v:1,cash:5000,xp:0,skills:{},gear:{},board:[],active:null,stats:{jobs:0,clean:0,busts:0,earned:0,best:0}};}
+function saveCareer(){try{localStorage.setItem(CAREER_KEY,JSON.stringify(CAREER));}catch(e){}}
+function loadCareer(){
+  try{const s=localStorage.getItem(CAREER_KEY);CAREER=s?Object.assign(newCareer(),JSON.parse(s)):newCareer();}catch(e){CAREER=newCareer();}
+  CAREER.board=(CAREER.board||[]).filter(c=>MAPS[c.map]);fillBoard();
+  try{const m=localStorage.getItem("cg-mode");if(m==="free"||m==="career")MODE=m;}catch(e){}
+}
+const XP_FOR=n=>400+120*n;   // experience from level n to n+1
+function levelInfo(xp){let L=1,x=xp;while(L<MAX_LEVEL&&x>=XP_FOR(L)){x-=XP_FOR(L);L++;}return {level:L,into:x,need:L>=MAX_LEVEL?0:XP_FOR(L)};}
+const treeSpent=t=>t.skills.reduce((a,k)=>a+(CAREER.skills[k.id]?k.cost:0),0);
+const skillSpent=()=>SKILL_TREES.reduce((s,t)=>s+treeSpent(t),0);
+const pointsFree=()=>levelInfo(CAREER.xp).level-1-skillSpent();
+function skillState(t,k){
+  if(CAREER.skills[k.id])return "owned";
+  if(treeSpent(t)<TIER_REQ[k.t])return "locked";
+  return pointsFree()>=k.cost?"avail":"poor";
+}
+
+// what your skills and gear add up to on the job (free play: nothing)
+const SK0={coins:0,pick:1,drill:1,jammers:0,jamT:0,loop:1,kp:0,mask:1,bag:1,body:0.5,crouch:1,shadow:1,pagers:0,pagerWin:1,heavy:false,hands:false,voice:false,down:1,aim:1,ties:0,mag:0,shot:1,step:1,unmasked:1,vanish:false,masterKey:false,iron:false};
+let SK=Object.assign({},SK0);
+function computeSK(){
+  const s=Object.assign({},SK0);if(MODE!=="career"||!CAREER)return s;
+  const k=CAREER.skills,g=CAREER.gear;
+  if(k.softstep)s.crouch=1.4;if(k.shadow)s.shadow=0.75;if(k.talker){s.pagers=1;s.pagerWin=1.5;}if(k.quickchange)s.mask=0.4;
+  if(k.lightload){s.bag=0.5;s.body=0.7;}if(k.vanish)s.vanish=true;
+  if(k.fingers)s.pick*=1.3;if(k.signal){s.jammers+=1;s.jamT=7;}if(k.drilltune)s.drill*=1.35;if(k.loop)s.loop=40/25;if(k.coolhead)s.kp=1;if(k.masterkey)s.masterKey=true;
+  if(k.stash)s.ties+=2;if(k.aim)s.aim=0.5;if(k.hands)s.hands=true;if(k.voice){s.voice=true;s.down=2;}if(k.heavy)s.heavy=true;if(k.iron)s.iron=true;
+  if(g.picks)s.pick*=1.2;if(g.shoes)s.step=0.65;if(g.silencer)s.shot=0.5;if(g.jammer)s.jammers+=1;if(g.mag)s.mag=6;if(g.bit)s.drill*=1.25;if(g.bandolier)s.ties+=3;if(g.badge)s.unmasked=0.75;if(g.coins)s.coins=3;
+  return s;
+}
+const magSize=()=>MAG+(SK.mag||0);
+const maxPagers=()=>(G.tw&&G.tw.jumpy?1:MAX_PAGERS)+(SK.pagers||0);
+
+// the job board
+function jobInfo(id){const b=document.querySelector(`.job[data-map="${id}"]`);if(!b)return null;
+  return {id,name:b.querySelector(".job-name").textContent,place:b.querySelector(".job-place").textContent,len:b.dataset.len,tags:b.querySelector(".job-tags").innerHTML,stats:b.querySelector(".job-stats").textContent};}
+function makeContract(avoid){
+  const L=levelInfo(CAREER.xp).level;
+  let pool=Object.keys(MAPS).map(jobInfo).filter(j=>j&&L>=LEN_LEVEL[j.len]);
+  const fresh=pool.filter(j=>!(avoid||[]).includes(j.id));if(fresh.length)pool=fresh;
+  const j=pool[Math.random()*pool.length|0];
+  const ids=Object.keys(TWISTS),n=L<3?1:Math.random()<(L<8?0.4:0.65)?2:1,tw=[];
+  let guard=0;
+  while(tw.length<n&&guard++<50){const t=ids[Math.random()*ids.length|0];if(tw.includes(t))continue;
+    if((t==="quiet"&&tw.includes("sharp"))||(t==="sharp"&&tw.includes("quiet"))||(t==="nokill"&&tw.includes("ghost"))||(t==="ghost"&&tw.includes("nokill")))continue;tw.push(t);}
+  let pay=1,xp=1,stars=LEN_STARS[j.len];for(const t of tw){pay*=TWISTS[t].pay;xp*=TWISTS[t].xp;if(TWISTS[t].hard)stars++;}
+  return {id:Math.random().toString(36).slice(2,9),map:j.id,tw,pay:+pay.toFixed(2),xp:+xp.toFixed(2),stars:Math.min(5,stars),mins:LEN_MINS[j.len]};
+}
+function fillBoard(){while(CAREER.board.length<4)CAREER.board.push(makeContract(CAREER.board.map(c=>c.map)));saveCareer();}
+function activeContract(){return MODE==="career"&&CAREER&&CAREER.active?CAREER.board.find(c=>c.id===CAREER.active)||null:null;}
+
+// on every (re)start of a job
+function careerOnReset(){
+  SK=computeSK();
+  const c=activeContract();G.contract=c;G.tw={};if(c)for(const t of c.tw)G.tw[t]=true;
+  G.visMul=G.tw.sharp?1.25:G.tw.quiet?0.8:1;G.camMul=G.tw.cams?1.35:1;G.detMul=G.tw.sharp?1.2:1;
+  G.deadline=G.tw.tight?c.mins*60:0;G.deadWarn=0;
+  G.vanishUsed=false;G.masterUsed=false;G.ironUsed=false;G.coins=COINS+SK.coins;
+  P.ties+=SK.ties;P.jammers=G.tw.light?0:P.jammers+SK.jammers;P.mag=magSize();P.reserve=G.tw.light?0:magSize()*3;
+  if(G.tw.fat)bags.forEach(b=>{b.value=Math.round(b.value*1.4/100)*100;});
+}
+// every frame: the deadline
+function careerTick(dt){
+  if(!G.deadline||G.alarm)return;
+  const left=G.deadline-G.time;
+  if(left<=60&&G.deadWarn<1){G.deadWarn=1;toast("One minute left on the clock. Get to the getaway","warn",2600);}
+  if(left<=0)triggerAlarm("You took too long. Someone tipped off the police!");
+}
+function careerChip(){
+  if(!G.contract&&!SK.vanish&&!SK.masterKey&&!SK.iron)return "";
+  const s=[];
+  if(G.deadline&&!G.alarm)s.push("CLOCK "+fmt(Math.max(0,G.deadline-G.time)));
+  if(G.tw.ghost)s.push(G.everAlarm?"GHOST BROKEN":"GHOST");
+  if(G.tw.nokill)s.push((G.kills||0)+(G.civKills||0)?"SOMEONE DIED":"NOBODY DIES");
+  if(SK.vanish&&!G.vanishUsed)s.push("VANISH");if(SK.masterKey&&!G.masterUsed)s.push("MASTER KEY");if(SK.iron&&!G.ironUsed)s.push("IRON GRIP");
+  return s.join(" · ");
+}
+// at the end of a career job: pay, experience, a fresh offer on the board
+function careerOnEnd(won,score,stealth){
+  const c=G.contract;if(MODE!=="career"||!c||!CAREER)return null;
+  const L0=levelInfo(CAREER.xp).level,notes=[];
+  CAREER.board=CAREER.board.filter(b=>b.id!==c.id);CAREER.active=null;G.contract=null;
+  let pay=0,fee=0,mult=c.pay;const deaths=(G.kills||0)+(G.civKills||0);
+  if(won){
+    if(c.tw.includes("ghost")){mult*=stealth?1.5:0.5;notes.push(stealth?"Ghost contract kept · ×1.5":"Ghost contract broken · ×0.5");}
+    if(c.tw.includes("nokill")&&deaths){mult*=0.5;notes.push("Somebody died · ×0.5");}
+    pay=Math.round(score*mult/10)*10;CAREER.cash+=pay;CAREER.stats.jobs++;if(stealth&&score>0)CAREER.stats.clean++;CAREER.stats.earned+=pay;CAREER.stats.best=Math.max(CAREER.stats.best,pay);
+  }else{fee=Math.round(CAREER.cash*BUST_FEE/10)*10;CAREER.cash-=fee;CAREER.stats.busts++;}
+  const xp=Math.round(won?(150*c.stars+(stealth&&score>0?200:0)+score/500)*c.xp:60*c.stars);
+  CAREER.xp+=xp;const L1=levelInfo(CAREER.xp).level;
+  fillBoard();saveCareer();
+  return {pay,fee,xp,L0,L1,notes,mult:+mult.toFixed(2)};
+}
+
+/* ---------- the safehouse (career menu) ---------- */
+let crTab="jobs",crConfirmNew=false;
+function stars(n){return "★".repeat(n)+"☆".repeat(Math.max(0,5-n));}
+function renderCareer(){
+  if(!CAREER)return;
+  const li=levelInfo(CAREER.xp);
+  $("crLevel").textContent=li.level;$("crCash").textContent=money(CAREER.cash);
+  const pts=pointsFree();$("crPts").textContent=pts;$("crPts").className=pts>0?"hot":"";
+  $("crXpFill").style.width=(li.need?li.into/li.need*100:100).toFixed(1)+"%";
+  $("crXpTxt").textContent=li.need?`${li.into} / ${li.need} XP TO LEVEL ${li.level+1}`:"MAX LEVEL";
+  const st=CAREER.stats;$("crStats").textContent=`${st.jobs} jobs paid · ${st.clean} clean · ${st.busts} busted · ${money(st.earned)} earned`;
+  document.querySelectorAll(".cr-tabs button").forEach(b=>b.setAttribute("aria-selected",String(b.dataset.tab===crTab)));
+  $("crJobs").hidden=crTab!=="jobs";$("crShop").hidden=crTab!=="shop";$("crSkills").hidden=crTab!=="skills";
+  $("crTabSkills").textContent=pts>0?`Skills · ${pts}`:"Skills";
+  if(crTab==="jobs"){
+    const L=li.level,locks=[];if(L<LEN_LEVEL.Medium)locks.push(`medium jobs at level ${LEN_LEVEL.Medium}`);if(L<LEN_LEVEL.Long)locks.push(`long jobs at level ${LEN_LEVEL.Long}`);
+    $("crJobs").innerHTML=`<div class="offers">${CAREER.board.map(c=>{const j=jobInfo(c.map);if(!j)return "";
+      return `<article class="offer">
+        <div class="job-tags">${j.tags}<span class="tag len">${j.len.toUpperCase()}</span></div>
+        <div class="offer-stars" aria-label="${c.stars} of 5">${stars(c.stars)}</div>
+        <h3 class="job-name">${j.name}</h3><div class="job-place">${j.place}</div>
+        <ul class="twists">${c.tw.map(t=>`<li><b>${TWISTS[t].name}</b><span>${TWISTS[t].desc(c)}</span></li>`).join("")}</ul>
+        <div class="offer-pay"><span>PAY ×${c.pay.toFixed(2)}</span><span>XP ×${c.xp.toFixed(2)}</span></div>
+        <div class="job-best">${readBest(c.map)?"YOUR BEST "+money(readBest(c.map)):""}</div>
+        <button class="btn" data-take="${c.id}">Take the job</button></article>`;}).join("")}</div>
+      <div class="cr-row"><button class="btn ghost small" id="crRefresh" ${CAREER.cash<REFRESH_COST?"disabled":""}>New offers · ${money(REFRESH_COST)}</button>
+        <span class="lbl">${locks.length?"Unlocks: "+locks.join(", "):"Every job is open to you"}</span></div>`;
+    $("crJobs").querySelectorAll("[data-take]").forEach(b=>b.onclick=()=>takeContract(b.dataset.take));
+    $("crRefresh").onclick=()=>{if(CAREER.cash<REFRESH_COST)return;CAREER.cash-=REFRESH_COST;CAREER.board=[];fillBoard();renderCareer();};
+  }
+  if(crTab==="shop"){
+    $("crShop").innerHTML=`<p class="cr-note">Gear is yours for the rest of the career: it comes along on every career job.</p><div class="shop">${GEAR.map(g=>{const own=!!CAREER.gear[g.id],can=CAREER.cash>=g.price;
+      return `<article class="item ${own?"owned":""}"><h3>${g.name}</h3><p>${g.fx}</p>
+        ${own?`<span class="lbl good">OWNED</span>`:`<button class="btn ${can?"":"ghost"} small" data-buy="${g.id}" ${can?"":"disabled"}>Buy · ${money(g.price)}</button>`}</article>`;}).join("")}</div>`;
+    $("crShop").querySelectorAll("[data-buy]").forEach(b=>b.onclick=()=>{const g=GEAR.find(x=>x.id===b.dataset.buy);if(!g||CAREER.gear[g.id]||CAREER.cash<g.price)return;CAREER.cash-=g.price;CAREER.gear[g.id]=true;saveCareer();renderCareer();});
+  }
+  if(crTab==="skills"){
+    $("crSkills").innerHTML=`<div class="trees">${SKILL_TREES.map(t=>`<section class="tree"><header><h3>${t.name}</h3><span class="lbl">${t.blurb} · ${treeSpent(t)} points</span></header>
+      ${t.skills.map(k=>{const s=skillState(t,k),need=TIER_REQ[k.t]-treeSpent(t);
+        return `<button class="node ${s}${k.cap?" cap":""}" data-skill="${k.id}" ${s==="avail"?"":"aria-disabled=\"true\""}>
+          <span class="node-top"><b>${k.name}</b><span class="cost">${s==="owned"?"✓":k.cost+" pt"+(k.cost>1?"s":"")}</span></span>
+          <span class="node-fx">${k.fx}</span>${s==="locked"?`<span class="node-lock">${need} more point${need===1?"":"s"} in ${t.name} first</span>`:""}</button>`;}).join("")}</section>`).join("")}</div>
+      <div class="cr-row"><span class="lbl">One skill point per level, up to level ${MAX_LEVEL}. Each tree opens up as you put points into it.</span>
+        <button class="btn ghost small" id="crRespec" ${skillSpent()&&CAREER.cash>=RESPEC_COST?"":"disabled"}>Reset skills · ${money(RESPEC_COST)}</button></div>`;
+    $("crSkills").querySelectorAll("[data-skill]").forEach(b=>b.onclick=()=>{
+      for(const t of SKILL_TREES)for(const k of t.skills)if(k.id===b.dataset.skill&&skillState(t,k)==="avail"){CAREER.skills[k.id]=true;saveCareer();renderCareer();return;}});
+    $("crRespec").onclick=()=>{if(!skillSpent()||CAREER.cash<RESPEC_COST)return;CAREER.cash-=RESPEC_COST;CAREER.skills={};saveCareer();renderCareer();};
+  }
+  $("crNew").textContent=crConfirmNew?"Click again to wipe your career":"New career";
+}
+function takeContract(id){
+  const c=CAREER.board.find(x=>x.id===id);if(!c)return;
+  CAREER.active=c.id;saveCareer();setMode("career");initAudio();
+  pickMap(c.map);resetGame();begin();
+}
+function setMode(m){
+  MODE=m;try{localStorage.setItem("cg-mode",m);}catch(e){}
+  document.querySelectorAll(".modes button").forEach(b=>b.setAttribute("aria-selected",String(b.dataset.mode===m)));
+  $("careerPanel").hidden=m!=="career";$("freePanel").hidden=m!=="free";
+  $("menuStamp").textContent=m==="career"?"THE SAFEHOUSE":"FREE PLAY";
+  $("menuIntro").textContent=m==="career"?"Take jobs off the board. Each one has a twist that changes how it plays and what it pays. Money buys gear for the rest of your career; experience gives levels, and every level a skill point. Get busted and the lawyers take 15% of your cash.":
+    "Any job, as it comes: no twists, no skills, no gear. Every bag and every stack of loose cash adds to your take, and you can leave whenever you like. Never set off the alarm: +30%. On jobs with civilians, nobody hurt: another +15%.";
+  if(m==="career")renderCareer();
+}
+function initCareerUI(){
+  loadCareer();
+  document.querySelectorAll(".modes button").forEach(b=>b.onclick=()=>setMode(b.dataset.mode));
+  document.querySelectorAll(".cr-tabs button").forEach(b=>b.onclick=()=>{crTab=b.dataset.tab;crConfirmNew=false;renderCareer();});
+  $("crNew").onclick=()=>{if(!crConfirmNew){crConfirmNew=true;renderCareer();return;}crConfirmNew=false;CAREER=newCareer();fillBoard();saveCareer();renderCareer();};
+  setMode(MODE);
+}
+
 function resetGame(){
   const sp=LV.def.spawn;
   Object.assign(P,{x:sp.x,z:sp.z,yaw:sp.yaw||0,level:sp.lvl||0,y:(sp.lvl||0)*ROOF_Y,climb:null,ladder:null,onStair:false,jh:0,vy:0,gnd:0,fiddle:0,pitch:0,crouch:false,eye:1.65,bobT:0,carry:null,sprinting:false,kick:0,
@@ -5727,6 +6006,7 @@ function resetGame(){
   if(VAULT.openCol){const i=colliders.indexOf(VAULT.openCol);if(i>=0)colliders.splice(i,1);}if(VAULT.screen)VAULT.screen.color.setHex(0x3aff8a);
   {const n=LV.def.codeLen||4;G.safeCode=String(Math.floor(10**(n-1)+Math.random()*9*10**(n-1)));}G.knowCode=false;G.safeFails=0;G.keypad=false;KP.entry="";$("keypad").hidden=true;placeCodeNote();
   G.hasDiamond=false;G.diamondVal=0;P.ladder=null;P.onStair=false;
+  G.coins=COINS+(SK.coins||0);G.throws=0;THROWN.forEach(f=>LV.group.remove(f.m));THROWN=[];guards.forEach(g=>{if(g.route0)g.route=g.route0;g.invest=null;});
   if(LV.def.reset)LV.def.reset();
   hatches.forEach(h=>{h.open=false;h.t=0;h.piv.rotation.z=0;});
   DEV.ghost=false;
@@ -5735,6 +6015,7 @@ function resetGame(){
   jammerMeshes.forEach(m=>{LV.group.remove(m.g);});jammerMeshes.length=0;
   if(KEYCARD){const sp=KEYCARD.spots[Math.random()*KEYCARD.spots.length|0];KEYCARD.mesh.position.set(sp[0],sp[1],sp[2]);KEYCARD.level=levelOfY(sp[1]);KEYCARD.mesh.rotation.y=Math.random()*3;KEYCARD.mesh.visible=true;}
   $("alarmEdge").hidden=true;
+  careerOnReset();
   hideToast();
 }
 
@@ -5758,6 +6039,7 @@ addEventListener("keydown",e=>{
   if(e.code==="KeyR"&&!e.repeat)startReload();
   if(e.code==="KeyQ"&&!e.repeat)dropCarry();
   if(e.code==="KeyJ"&&!e.repeat)placeJammer();
+  if(e.code==="KeyT"&&!e.repeat)throwCoin();
   if(e.code==="KeyG"&&!e.repeat&&!P.masked)SFX.mask();
   if(e.code==="KeyM"&&!e.repeat){setMuted(!A.muted);toast(A.muted?"Sound off":"Sound on","",1200);}
   if(e.code==="KeyV"&&!e.repeat&&DEV.on){DEV.ghost=!DEV.ghost;if(!DEV.ghost)settleAfterGhost();toast(DEV.ghost?"Noclip on: fly through anything · SPACE up · CTRL or C down · SHIFT faster · nobody can see or hear you":"Noclip off","warn",2600);}
@@ -5801,11 +6083,11 @@ function begin(){
   requestLock();
   setTimeout(()=>{if(pendingStart&&!locked)lockFailed();},1500);
 }
-$("startBtn").onclick=()=>{initAudio();if(LV.id!==selectedMap)buildMap(selectedMap);resetGame();begin();};
+$("startBtn").onclick=()=>{initAudio();setMode("free");if(LV.id!==selectedMap)buildMap(selectedMap);resetGame();begin();};
 $("againBtn").onclick=()=>{initAudio();resetGame();begin();};
 $("resumeBtn").onclick=()=>{initAudio();$("pauseNote").textContent="The guards are frozen until you come back.";begin();};
 $("restartBtn").onclick=()=>{initAudio();resetGame();begin();};
-function toMenu(){if(document.pointerLockElement)document.exitPointerLock();stopVoices();drillOff(true);alarmOff();resetGame();setState("menu");}
+function toMenu(){if(document.pointerLockElement)document.exitPointerLock();stopVoices();drillOff(true);alarmOff();if(CAREER)CAREER.active=null;resetGame();setState("menu");if(MODE==="career")renderCareer();}
 $("menuBtn").onclick=toMenu;$("pauseMenuBtn").onclick=toMenu;
 // job picker
 let selectedMap="harbor";
@@ -5828,11 +6110,13 @@ function pickMap(id){
 document.querySelectorAll(".job").forEach(b=>b.addEventListener("click",()=>pickMap(b.dataset.map)));
 $("devToggle").checked=DEV.on;
 showBests();
+initCareerUI();
 $("devToggle").addEventListener("change",e=>{DEV.on=e.target.checked;DEV.ghost=false;try{localStorage.setItem("cg-dev",DEV.on?"1":"0");}catch(err){}});
 setMuted(A.muted);
 
 function setState(s){
   state=s;
+  if(s==="paused")$("pauseMenuBtn").textContent=G.contract?"Abandon job (it stays on the board)":"Back to jobs";
   $("menu").hidden=s!=="menu";
   $("pause").hidden=s!=="paused";
   $("end").hidden=s!=="ended";
@@ -5959,9 +6243,9 @@ function updatePlayer(dt){
   const len=Math.hypot(mx,mz);
   const shift=keys.ShiftLeft||keys.ShiftRight;
   if(shift&&P.crouch&&len>0)P.crouch=false;
-  P.sprinting=!!(shift&&len>0&&!(P.carry&&P.carry.gold));
-  let speed=P.crouch?1.7:(P.sprinting?5.4:3.1);
-  if(P.carry)speed*=P.carry.kind==="body"?0.5:P.carry.gold?0.45:0.62;
+  P.sprinting=!!(shift&&len>0&&!(P.carry&&P.carry.gold&&!SK.heavy));
+  let speed=P.crouch?1.7*SK.crouch:(P.sprinting?5.4:3.1);
+  if(P.carry)speed*=P.carry.kind==="body"?SK.body:P.carry.gold?(SK.heavy?0.6:0.45):(SK.heavy?0.75:0.62);
   if(len>0){
     mx/=len;mz/=len;
     const p={x:P.x+mx*speed*dt,z:P.z+mz*speed*dt};
@@ -5984,7 +6268,7 @@ function updatePlayer(dt){
       if(P.carry)noiseHit({type:"lowpass",freq:700,dur:.12,vol:.12});
     }
   }
-  G.noise=len>0&&P.jh<=P.gnd+0.02?(P.sprinting?7:P.crouch?0:1.8):0;
+  G.noise=len>0&&P.jh<=P.gnd+0.02?(P.sprinting?7:P.crouch?0:1.8)*SK.step:0;
   if(musicCovers())G.noise*=0.35;
   P.fiddle=Math.max(0,P.fiddle-dt);
   // stairs: follow the ramp; otherwise stand on whatever low thing is under you, fall off edges and through holes
@@ -6055,8 +6339,8 @@ function keypadEnter(){
   }
   G.safeFails++;SFX.kpBad();if(VAULT.screen){VAULT.screen.color.setHex(0xff3a30);setTimeout(()=>{if(!G.vaultOpen)VAULT.screen.color.setHex(0x3aff8a);},700);}
   KP.entry="";drawKeypad("bad","WRONG");KP.busy=true;
-  if(G.safeFails>=3){setTimeout(()=>{closeKeypad();},500);triggerAlarm(VAULT.failMsg||"Three wrong codes. The safe tripped the alarm!");return;}
-  toast(G.safeFails===2?"Wrong code. One more wrong and it trips the alarm":"Wrong code","bad",2000);
+  if(G.safeFails>=3+SK.kp){setTimeout(()=>{closeKeypad();},500);triggerAlarm(VAULT.failMsg||"Three wrong codes. The safe tripped the alarm!");return;}
+  toast(G.safeFails===2+SK.kp?"Wrong code. One more wrong and it trips the alarm":"Wrong code","bad",2000);
   setTimeout(()=>{KP.busy=false;if(G.keypad)drawKeypad();},700);
 }
 function openSafe(){
@@ -6070,13 +6354,13 @@ function tryJump(){
   if(LV.def.forceCrouch&&LV.def.forceCrouch(P.x,P.z,P.level))return;
   if(P.locked||P.climb||DEV.ghost||state!=="playing")return;
   if(P.jh>P.gnd+0.02||P.vy>0)return;
-  if(P.carry&&(P.carry.kind==="body"||P.carry.gold)){toast("Too heavy to jump with","warn",1200);return;}
+  if(P.carry&&(P.carry.kind==="body"||(P.carry.gold&&!SK.heavy))){toast("Too heavy to jump with","warn",1200);return;}
   P.crouch=false;P.vy=P.carry?JUMP_V*0.85:JUMP_V;SFX.jump();
 }
 // lockpicking: hold E, five pins click into place one by one; progress stays if you let go
 function pickTick(o,total,dt){
   if(!G.picking&&o.pickT===0)SFX.pick();
-  const b=Math.floor(o.pickT/total*PINS);o.pickT=Math.min(total,o.pickT+dt);const a=Math.floor(o.pickT/total*PINS);
+  const b=Math.floor(o.pickT/total*PINS);o.pickT=Math.min(total,o.pickT+dt*SK.pick);const a=Math.floor(o.pickT/total*PINS);
   if(a>b&&a<PINS)SFX.pin();
   G.pickScr-=dt;if(G.pickScr<=0){SFX.pick();G.pickScr=0.1+Math.random()*0.22;}
   P.fiddle=0.3;G.picking=true;
@@ -6087,14 +6371,14 @@ const pinTxt=(o,total)=>`Picking the lock… pin ${Math.min(PINS,Math.floor(o.pi
 function takedownTarget(){
   const fx=-Math.sin(P.yaw),fz=-Math.cos(P.yaw);let best=null,bd=1e9;
   for(const g of guards){if(g.down||g.level!==P.level)continue;const dx=g.x-P.x,dz=g.z-P.z,d=Math.hypot(dx,dz);
-    if(d<2.0&&(dx*fx+dz*fz)/d>0.45&&d<bd){best=g;bd=d;}}
+    if(d<(SK.hands?2.5:2.0)&&(dx*fx+dz*fz)/d>0.45&&d<bd){best=g;bd=d;}}
   return best;
 }
 function shoutTarget(){
   const fx=-Math.sin(P.yaw),fz=-Math.cos(P.yaw);let best=null,bs=-1;
   for(const c of civs){
     if(c.dead||c.state==="tied"||c.level!==P.level)continue;
-    const dx=c.x-P.x,dz=c.z-P.z,d=Math.hypot(dx,dz);if(d>15||d<0.01)continue;
+    const dx=c.x-P.x,dz=c.z-P.z,d=Math.hypot(dx,dz);if(d>(SK.voice?20:15)||d<0.01)continue;
     const dot=(dx*fx+dz*fz)/d;if(dot<0.85)continue;
     if(blocked(P.x,P.z,c.x,c.z,1.0,P.level))continue;
     const score=dot-d*0.01;if(score>bs){bs=score;best=c;}
@@ -6124,7 +6408,7 @@ function shout(target){
   for(const c of civs){
     if(c.dead||c.state==="tied"||c.level!==P.level)continue;
     const d=Math.hypot(c.x-P.x,c.z-P.z);
-    if(!(c===target||(d<9&&!blocked(P.x,P.z,c.x,c.z,1.6,P.level))))continue;
+    if(!(c===target||(d<(SK.voice?13:9)&&!blocked(P.x,P.z,c.x,c.z,1.6,P.level))))continue;
     const was=c.intimidate();if(was==null)continue;
     n++;if(was==="calling")stopped=true;
   }
@@ -6133,6 +6417,58 @@ function shout(target){
   toast(stopped?"Call stopped. They're on the floor":n>1?`${n} people on the floor`:"On the floor","good",1500);
 }
 function jamming(){return G.jamT>0||!!(LV&&LV.id==="whiteout"&&G.w&&G.w.relayDown);}
+
+/* ---------- throwable distractions: T throws a coin; a guard who hears it and can walk there goes to look ---------- */
+const COINS=3,coinGeo=new THREE.CylinderGeometry(0.03,0.03,0.006,10),coinMat=phong(0xd9b24a,{shininess:90,specular:0x886622});
+let THROWN=[];
+function throwCoin(){
+  if(P.locked||P.climb||P.ladder||state!=="playing"||G.keypad)return;
+  if(G.coins<=0){toast("No coins left","bad",1200);return;}
+  G.coins--;G.throws++;P.kick=Math.max(P.kick,0.35);
+  const cp=Math.cos(P.pitch),fx=-Math.sin(P.yaw)*cp,fz=-Math.cos(P.yaw)*cp,fy=Math.sin(P.pitch);
+  const m=new THREE.Mesh(coinGeo,coinMat);m.position.set(P.x+fx*0.35,P.y+P.eye-0.15,P.z+fz*0.35);m.userData.noHit=true;lvAdd(m);
+  THROWN.push({m,vx:fx*10,vy:fy*10+2.4,vz:fz*10,lvl:P.level,t:0,done:false});
+  SFX.whiff();
+}
+function updateThrows(dt){
+  for(const f of THROWN){
+    if(f.done)continue;
+    f.t+=dt;const p=f.m.position,base=f.lvl*ROOF_Y;
+    const nx=p.x+f.vx*dt,nz=p.z+f.vz*dt;f.vy-=15*dt;let ny=p.y+f.vy*dt;
+    if(blocked(p.x,p.z,nx,nz,Math.max(0.05,p.y-base),f.lvl)){f.vx*=-0.2;f.vz*=-0.2;if(!f.hit){f.hit=true;coinClink(p.x,p.z,f.lvl,0.5);}}else{p.x=nx;p.z=nz;}
+    const c=LV.def.ceil?LV.def.ceil(p.x,p.z,f.lvl):null;if(c!=null&&ny>base+c){ny=base+c;f.vy=-Math.abs(f.vy)*0.3;}
+    if(ny<=base+0.02||f.t>3){ny=base+0.02;f.done=true;f.m.rotation.set(0,Math.random()*3,0);coinClink(p.x,p.z,f.lvl,1);distract(p.x,p.z,f.lvl);}
+    else f.m.rotation.x+=dt*25;
+    p.y=ny;
+  }
+}
+function coinClink(x,z,lvl,v){const s=spatial(x,z,24,lvl)||{vol:.15,pan:0};tone({type:"square",f0:2600,f1:2300,dur:.05,vol:.08*s.vol*v+.01,pan:s.pan,lp:s.lp||6000});tone({type:"sine",f0:3800,dur:.12,vol:.05*s.vol*v,pan:s.pan,delay:.04});}
+function distract(x,z,lvl){
+  if(G.alarm)return;
+  let walkers=0,lookers=0;
+  for(const g of guards){
+    if(g.down||(g.level||0)!==lvl||g.reportT>0||g.wounded>0||g.seeDist>=0||(g.security&&g.seated))continue;
+    const d=Math.hypot(g.x-x,g.z-z);if(d>11)continue;
+    SFX.hear(g.x,g.z,g.level);
+    if(d>0.9&&!blocked(g.x,g.z,x,z,0.6,lvl)){
+      if(!g.invest)g.invest={saved:g.route,wp:g.wp};
+      Object.assign(g.invest,{x,z,t:0,arrive:0});g.route=[[x,z,null,0],[x,z,null,0]];g.wp=0;g.wait=0;g.heard={x,z};g.sus=0;walkers++;
+    }else{g.heard={x,z};g.sus=3.5;lookers++;}
+  }
+  if(walkers)toast(walkers===1?"A guard heard it and is going to look":"Guards heard it and are going to look","good",1600);
+  else if(lookers)toast("Someone heard it and turned to look","good",1400);
+}
+function endInvestigation(g){const iv=g.invest;if(!iv)return;g.route=iv.saved;g.wp=Math.min(iv.wp,g.route.length-1);g.invest=null;g.heard=null;g.wait=0;if(g.route.length>1)g.wp=g.nearestWaypoint();}
+function updateInvestigations(dt){
+  for(const g of guards){
+    const iv=g.invest;if(!iv)continue;
+    if(g.down||G.alarm||g.seeDist>=0||g.reportT>0||g.wounded>0){endInvestigation(g);continue;}
+    iv.t+=dt;
+    if(Math.hypot(g.x-iv.x,g.z-iv.z)<0.7){iv.arrive+=dt;g.route=[[iv.x,iv.z,null,0]];g.face=g.yaw+Math.sin(iv.arrive*1.4)*1.2;
+      if(iv.arrive>4.5)endInvestigation(g);}
+    else if(iv.t>16)endInvestigation(g);
+  }
+}
 function placeJammer(){
   if(P.locked||P.climb)return;
   if(!P.masked){toast("Put on your mask first. Hold G","warn");return;}
@@ -6143,14 +6479,14 @@ function placeJammer(){
   if(blocked(P.x,P.z,p.x,p.z,0.3,P.level))p={x:P.x,z:P.z};
   resolve(p,0.2,P.level);
   makeJammer(p.x,p.z,P.onStair?P.y:P.level*ROOF_Y+supportAt(p.x,p.z,0.12,P.level,P.gnd),P.yaw);
-  P.jammers--;G.jamsUsed++;G.jamT=JAM_TIME;G.jamBeep=0;SFX.jamOn();
+  P.jammers--;G.jamsUsed++;G.jamT=JAM_TIME+SK.jamT;G.jamBeep=0;SFX.jamOn();
   // every countdown the jammer catches starts over: when it burns out, they begin again from the top
   for(const g of guards){if(g.down)continue;if(g.wounded>0)g.wounded=2.0;if(g.reportT>0)g.reportT=REPORT_TIME;}
-  for(const g of guards){const pg=g.pager;if(!pg)continue;if(pg.state==="pending")pg.t=PAGER_DELAY;else if(pg.state==="ringing")pg.t=PAGER_WINDOW;}
+  for(const g of guards){const pg=g.pager;if(!pg)continue;if(pg.state==="pending")pg.t=PAGER_DELAY;else if(pg.state==="ringing")pg.t=PAGER_WINDOW*SK.pagerWin;}
   for(const c of civs)if(c.state==="calling")c.callT=CALL_TIME;
   if(G.secAlert>0)G.secAlert=G.secAlertFull||REPORT_TIME;
   if(civs.some(c=>c.state==="calling")){speak(1.1,VOICE_CIV);showSub("C","Hello? Hello?! …I've got no signal!",2400,"CIVILIAN · ON THE PHONE");}
-  toast("Jammer on: no radios, phones or pagers for 15 s. Any call in progress starts over","good",2600);
+  toast(`Jammer on: no radios, phones or pagers for ${JAM_TIME+SK.jamT} s. Any call in progress starts over`,"good",2600);
 }
 function updateJammer(dt){
   const j=jammerMeshes[jammerMeshes.length-1];
@@ -6164,12 +6500,12 @@ function tryTakedown(){
   const fx=-Math.sin(P.yaw),fz=-Math.cos(P.yaw);
   let best=null,bd=1e9;
   for(const g of guards){if(g.down||g.level!==P.level)continue;const dx=g.x-P.x,dz=g.z-P.z,d=Math.hypot(dx,dz);
-    if(d<2.0&&(dx*fx+dz*fz)/d>0.45&&d<bd){best=g;bd=d;}}
+    if(d<(SK.hands?2.5:2.0)&&(dx*fx+dz*fz)/d>0.45&&d<bd){best=g;bd=d;}}
   P.kick=1;
   if(!best){SFX.whiff();return;}
   const tx=(P.x-best.x)/bd,tz=(P.z-best.z)/bd;
   const facing=Math.sin(best.yaw)*tx+Math.cos(best.yaw)*tz;
-  if(facing<-0.15&&!blocked(P.x,P.z,best.x,best.z,0.9,P.level)){
+  if(facing<(SK.hands?0.3:-0.15)&&!blocked(P.x,P.z,best.x,best.z,0.9,P.level)){
     best.knockDown(false);G.takedowns++;
     SFX.takedown(best.x,best.z);
     toast("Guard knocked out","good");
@@ -6185,12 +6521,12 @@ function shoot(){
   if(P.raise<0.9||P.reload>0||P.fireCD>0)return;
   if(P.mag<=0){SFX.dry();P.fireCD=0.25;if(P.reserve>0)startReload();else toast("Out of ammo","bad");return;}
   P.mag--;P.fireCD=0.3;P.recoil=1;G.shots++;
-  G.shotNoise=musicCovers()?2.5:4.5;G.loud=Math.max(G.loud,musicCovers()?3.5:6); // suppressed, but still audible up close
+  G.shotNoise=(musicCovers()?2.5:4.5)*SK.shot;G.loud=Math.max(G.loud,(musicCovers()?3.5:6)*SK.shot); // suppressed, but still audible up close
   SFX.shot();
   flash.visible=true;flash.rotation.z=Math.random()*3;muzzleLight.intensity=2.2;setTimeout(()=>{flash.visible=false;muzzleLight.intensity=0;},45);
   // spread: tight when aiming and still, wider from the hip or on the move
   const moving=keys.KeyW||keys.KeyA||keys.KeyS||keys.KeyD;
-  const spread=(P.aimT>0.8?0.002:0.016)+(moving?0.012:0)+(P.sprinting?0.03:0);
+  const spread=((P.aimT>0.8?0.002:0.016)+(moving?0.012:0)+(P.sprinting?0.03:0))*SK.aim;
   const ndc=1/Math.tan(THREE.MathUtils.degToRad(camera.fov/2)); // radians -> NDC
   _v2.set((Math.random()-.5)*2*spread*ndc/camera.aspect,(Math.random()-.5)*2*spread*ndc);
   scene.updateMatrixWorld(); // hitboxes must match where guards are right now
@@ -6244,7 +6580,7 @@ function dropCarry(){
   if(it.kind==="body")toast("A body bag in the open is still suspicious","warn",2000);
 }
 function startReload(){
-  if(!P.masked||P.reload>0||P.mag>=MAG||P.reserve<=0)return;
+  if(!P.masked||P.reload>0||P.mag>=magSize()||P.reserve<=0)return;
   P.reload=RELOAD_TIME;SFX.reload();
 }
 function updateWeapon(dt){
@@ -6252,7 +6588,7 @@ function updateWeapon(dt){
   if(!P.masked){
     if(keys.KeyG){
       P.maskT+=dt;
-      if(P.maskT>=MASK_TIME){
+      if(P.maskT>=MASK_TIME*SK.mask){
         P.masked=true;P.maskT=0;SFX.maskOn();$("maskEdge").hidden=false;
         toast("Mask on. Everyone who sees you is a threat now","bad",2600);
       }
@@ -6261,7 +6597,7 @@ function updateWeapon(dt){
   P.fireCD=Math.max(0,P.fireCD-dt);
   if(P.reload>0){
     P.reload-=dt;
-    if(P.reload<=0){P.reload=0;const n=Math.min(MAG-P.mag,P.reserve);P.mag+=n;P.reserve-=n;}
+    if(P.reload<=0){P.reload=0;const n=Math.min(magSize()-P.mag,P.reserve);P.mag+=n;P.reserve-=n;}
   }
   P.shoutCD=Math.max(0,P.shoutCD-dt);
   if(P.aim&&(P.sprinting||P.carry||!P.masked||P.climb))P.aim=false;
@@ -6304,7 +6640,7 @@ function updateCams(dt,simOnly){
       continue;
     }
     c.led.material.color.setHex(0xff3030);
-    c.seeDist=simOnly?-1:canSee(c.x,c.z,c.yaw,c.half,c.range,c.level);
+    c.seeDist=simOnly?-1:canSee(c.x,c.z,c.yaw,c.half,c.range*(G.camMul||1),c.level);
     if(c.seeDist>=0&&c.seeDist<1.3)c.seeDist=-1; // blind spot right under the camera
     if(!simOnly&&civs.length&&!G.alarm)for(const v of civs){
       if(v.state!=="calling"||v.level!==c.level)continue;
@@ -6329,8 +6665,8 @@ function updateDetection(dt){
     if(o.seeDist>=0){
       let r=o.base*(1+2.2*(1-o.seeDist/range));
       if(P.sprinting)r*=1.7;if(P.crouch)r*=0.65;
-      if(!P.masked)r*=0.6; // a lost customer gets a little benefit of the doubt
-      gain+=r;spotter=o;
+      if(!P.masked)r*=0.6*SK.unmasked; // a lost customer gets a little benefit of the doubt
+      gain+=r*SK.shadow*(G.detMul||1);spotter=o;
     }
     if(o.bodyDist>=0){bodyGain+=0.45*(1+1.5*(1-o.bodyDist/range));bodySpotter=o;G.bodyHost=!!o.bodyHost;}
     if(o.civDist>=0){civGain+=0.5*(1+1.5*(1-o.civDist/range));civSpotter=o;}
@@ -6355,6 +6691,9 @@ function updateDetection(dt){
 }
 // someone saw enough: they need REPORT_TIME seconds on the radio before the alarm goes off
 function startReport(o,msg,at){
+  if(SK.vanish&&!G.vanishUsed&&G.lastCause==="player"&&o&&(o.kind==="guard"||o.kind==="camera")){
+    G.vanishUsed=true;G.susp=0.15;if(o.kind==="guard"){o.sus=0;o.heard=null;o.yaw+=Math.PI*0.8;}
+    toast(`Vanish: ${o.kind==="guard"?o.name:"the camera"} lost you. That was your one`,"good",2800);return;}
   if(o&&o.kind==="guard"&&!o.down){
     if(o.reportT>0||o.wounded>0)return;
     o.reportT=REPORT_TIME;o.reportMsg=msg;o.reportAt=at;SFX.squelch();
@@ -6471,13 +6810,13 @@ function updateInteraction(dt){
         if(keys.KeyE){
           if(G.bagT===0)SFX.zip();
           G.bagT+=dt;prompt="Bagging the body…";
-          if(G.bagT>=BAG_TIME){
+          if(G.bagT>=BAG_TIME*SK.bag){
             G.bagT=0;bagTarget.bagged=true;bagTarget.root.visible=false;
             const it=bagTarget.item;it.state="carried";it.level=bagTarget.level;P.carry=it;showCarry();SFX.pickup();
             toast("Body bagged. Dump it in a bin","warn",2200);
           }
         }
-        prog=G.bagT/BAG_TIME;
+        prog=G.bagT/(BAG_TIME*SK.bag);
       }
     }
   }
@@ -6577,11 +6916,11 @@ function updateInteraction(dt){
       const c=loopCam;
       if(P.carry)prompt="Drop what you're carrying to loop the camera. <kbd>Q</kbd>";
       else{
-        prompt=c.loopT>0?`Hold <kbd>E</kbd> to restart the loop · ${Math.ceil(c.loopT)} s left`:`Hold <kbd>E</kbd> to loop the camera for ${LOOP_TIME} s`;
+        prompt=c.loopT>0?`Hold <kbd>E</kbd> to restart the loop · ${Math.ceil(c.loopT)} s left`:`Hold <kbd>E</kbd> to loop the camera for ${Math.round(LOOP_TIME*SK.loop)} s`;
         if(keys.KeyE){
           if(G.loopHold===0)SFX.loopStart();
           G.loopHold+=dt;P.fiddle=0.3;prompt="Splicing in a loop…";prog=G.loopHold/LOOP_HOLD;
-          if(G.loopHold>=LOOP_HOLD){G.loopHold=0;c.loopT=LOOP_TIME;G.loops++;SFX.loopDone();toast(`Camera looped for ${LOOP_TIME} s`,"good",1600);}
+          if(G.loopHold>=LOOP_HOLD){G.loopHold=0;c.loopT=LOOP_TIME*SK.loop;G.loops++;SFX.loopDone();toast(`Camera looped for ${Math.round(LOOP_TIME*SK.loop)} s`,"good",1600);}
         }
       }
     }
@@ -6615,6 +6954,7 @@ function updateInteraction(dt){
         prompt=`Locked · Hold <kbd>E</kbd> to pick the ${door.name}`;
         if(keys.KeyE){
           prompt=pinTxt(door,PICK_DOOR);
+          if(SK.masterKey&&!G.masterUsed){G.masterUsed=true;door.pickT=PICK_DOOR;toast("Master key: the lock gives straight away","good",2000);}
           if(pickTick(door,PICK_DOOR,dt)){door.locked=false;G.picks++;SFX.unlock();toast("Lock picked","good",1200);}
         }
         if(door.pickT>0&&door.locked)prog=door.pickT/PICK_DOOR;
@@ -6657,13 +6997,13 @@ function updateInteraction(dt){
   }
   if(P.climb||G.keypad)prompt=null;
   if(wasPicking&&!G.picking)G.pickScr=0;
-  if(!P.masked&&P.maskT>0){prompt="Putting on your mask…";prog=P.maskT/MASK_TIME;}
+  if(!P.masked&&P.maskT>0){prompt="Putting on your mask…";prog=P.maskT/(MASK_TIME*SK.mask);}
   else if(P.reload>0&&!prompt){prompt="Reloading…";prog=1-P.reload/RELOAD_TIME;}
   setPrompt(prompt,prog);
 }
 function updateDrill(dt){
   if(!G.drilling){VAULT.drillLight.intensity=0;return;}
-  G.drill=Math.min(1,G.drill+dt/DRILL_TIME);
+  G.drill=Math.min(1,G.drill+dt*SK.drill/DRILL_TIME);
   VAULT.drillBit.rotation.y+=dt*40;VAULT.drillLight.intensity=0.8+Math.random()*0.8;
   drillOn();
   if(G.drill>=1){
@@ -6687,7 +7027,7 @@ const FAIL_CALL=[["D","{n}? That's the fourth weird check-in tonight."],["Y","Uh
 let callDeck=[];
 function nextCall(){if(!callDeck.length)callDeck=CALLS.map((c,i)=>i).sort(()=>Math.random()-0.5);return CALLS[callDeck.pop()];}
 function startPager(g){
-  const pg=g.pager,fail=G.pagersUsed>=MAX_PAGERS;
+  const pg=g.pager,fail=G.pagersUsed>=maxPagers();
   const script=(fail?FAIL_CALL:nextCall()).map(([w,t])=>[w,t.replace("{n}",g.name)]);
   let t=0.35;const lines=[];
   for(const [w,txt] of script){const dur=0.6+txt.length*0.045;lines.push({who:w,txt,start:t,dur});t+=dur+0.22;}
@@ -6699,7 +7039,7 @@ function updatePagers(dt){
     const pg=g.pager;if(!pg||pg.state==="done"||G.alarm)continue;
     if(pg.state==="pending"){
       if(!jamming())pg.t-=dt;
-      if(pg.t<=0){pg.state="ringing";pg.t=PAGER_WINDOW;pg.beepT=0;toast(`${g.name}'s pager is going off!`,"bad",2200);}
+      if(pg.t<=0){pg.state="ringing";pg.t=PAGER_WINDOW*SK.pagerWin;pg.beepT=0;toast(`${g.name}'s pager is going off!`,"bad",2200);}
     }
     if(pg.state==="ringing"||pg.state==="answering"){
       // pager icon over the body, visible through walls
@@ -6730,7 +7070,7 @@ function updatePagers(dt){
       if(pg.elapsed>=pg.total){
         pg.state="done";g.sprite.visible=false;P.locked=false;SFX.squelch();G.pagersUsed++;
         if(pg.fail){triggerAlarm("Dispatch didn't buy it. Alarm!");return;}
-        toast(`Pager answered · ${G.pagersUsed}/${MAX_PAGERS}`,"good",1800);
+        toast(`Pager answered · ${G.pagersUsed}/${maxPagers()}`,"good",1800);
       }
     }
   }
@@ -6794,6 +7134,8 @@ function updateHUD(){
   else if(r){mc.textContent=onRoof()?"UNMASKED · ON THE ROOF":LV.day?"UNMASKED · STAFF AREA":"UNMASKED · TRESPASSING";mc.className="chip warn";}
   else{mc.textContent=LV.day&&inside()?"UNMASKED · BLENDING IN":"UNMASKED · OUTSIDE";mc.className="chip ok";}
   if(!P.masked&&LV.def.maskLabel){const l=LV.def.maskLabel(r);if(l){mc.textContent=l[0];mc.className="chip "+l[1];}}
+  {const c2=$("coinChip"),t=`COINS ${G.coins} · T`;c2.hidden=false;if(c2.textContent!==t)c2.textContent=t;c2.className=G.coins?"chip":"chip bad";}
+  {const cc=$("ctChip"),t=careerChip();cc.hidden=!t;if(cc.textContent!==t)cc.textContent=t;}
   const jc=$("jamChip"),jamOn=G.jamT>0;jc.hidden=!P.masked&&!jamOn;
   if(!jc.hidden){const t=jamOn?`JAMMER ON · ${Math.ceil(G.jamT)} s`:`JAMMERS ${P.jammers} · J`;if(jc.textContent!==t)jc.textContent=t;jc.className=jamOn?"chip warn":P.jammers?"chip":"chip bad";}
   $("cardChip").hidden=!P.hasCard;
@@ -6804,7 +7146,7 @@ function updateHUD(){
   if(!tc.hidden){const nf=civs.filter(c=>c.follow&&!c.dead).length;const t=`ZIP TIES ${P.ties}`+(nf?` · ${nf} FOLLOWING`:"");if(tc.textContent!==t)tc.textContent=t;tc.className=P.ties===0?"chip bad":"chip";}
   $("obj").hidden=!$("subs").hidden; // subtitles take the bottom of the screen during a call
   const pc=$("pagerChip");pc.hidden=!P.masked;
-  {const t=`PAGERS ${G.pagersUsed}/${MAX_PAGERS}`;if(pc.textContent!==t)pc.textContent=t;pc.className=G.pagersUsed>=MAX_PAGERS?"chip bad":G.pagersUsed>0?"chip warn":"chip";}
+  {const t=`PAGERS ${G.pagersUsed}/${maxPagers()}`;if(pc.textContent!==t)pc.textContent=t;pc.className=G.pagersUsed>=maxPagers()?"chip bad":G.pagersUsed>0?"chip warn":"chip";}
   const am=$("ammo");am.hidden=!P.masked;
   if(P.masked){const t=P.reload>0?"RELOADING":`PISTOL ${P.mag} / ${P.reserve}`;if(am.textContent!==t)am.textContent=t;am.className=P.mag===0&&P.reload<=0?"chip bad":"chip";}
   $("crosshair").hidden=!P.masked||P.aimT>0.6;
@@ -6835,6 +7177,13 @@ function endGame(won,reason){
   const bStealth=won&&take>0&&stealth?Math.round(take*STEALTH_BONUS):0;
   const hasCivs=civs.length>0,bCivs=won&&take>0&&hasCivs&&!G.civKills?Math.round(take*CIV_BONUS):0;
   const score=take+bStealth+bCivs;
+  const cr=careerOnEnd(won,score,stealth),ec=$("endCareer");ec.hidden=!cr;
+  if(cr){const li=levelInfo(CAREER.xp);
+    ec.innerHTML=(won?`<dt>Your cut (contract ×${cr.mult.toFixed(2)})</dt><dd class="good">+${money(cr.pay)}</dd>`:`<dt>Lawyers' fees (15% of your cash)</dt><dd class="bad">−${money(cr.fee)}</dd>`)
+      +cr.notes.map(n=>`<dt>${n}</dt><dd></dd>`).join("")
+      +`<dt>Experience</dt><dd>+${cr.xp} XP</dd><dt>Cash in the safehouse</dt><dd>${money(CAREER.cash)}</dd>`
+      +(cr.L1>cr.L0?`<span class="lvl">LEVEL ${cr.L1}! +${cr.L1-cr.L0} SKILL POINT${cr.L1-cr.L0>1?"S":""}</span>`:`<span class="lvl" style="color:var(--dim)">LEVEL ${li.level} · ${li.need?li.need-li.into+" XP TO THE NEXT":"MAX"}</span>`);}
+  $("againBtn").hidden=!!cr;$("menuBtn").textContent=cr?"Back to the safehouse":"Back to jobs";$("menuBtn").className=cr?"btn":"btn ghost";
   const tv=$("endTakeVal");tv.textContent=money(score);tv.className=score?"":"zero";
   $("endTakeLbl").textContent=won?"SCORE":"SCORE · TAKE LOST";
   const br=G.diamondVal&&won?[[LV.def.needDiamond.replace(/^the /,"The "),money(G.diamondVal),""],["Bags and cash",money(G.vanTake+G.pocket),""]]:[["Take",money(take),take?"":"lost"]];
@@ -6848,7 +7197,7 @@ function endGame(won,reason){
   else{eb.textContent=prev?`BEST ON THIS JOB ${money(prev)}`:"";eb.className="";}
   showBests();
   $("endStamp").textContent=(won?"JOB REPORT · PAID":"JOB REPORT · FAILED")+" · "+LV.def.job.toUpperCase();
-  const rows=[["Time",fmtUp(G.time)],[`Bags in the ${LV.def.getaway||"van"}`,`${G.secured}/${bags.length} · ${money(G.vanTake)}`],["Stealth",stealth?"Kept":"Broken"],["Loose cash",`${G.cashTaken}/${CASH.length} · ${money(G.pocket)}`],["Guards knocked out",String(G.takedowns)],["Guards shot",String(G.kills)],["Bodies hidden",String(G.binned)],["Pagers answered",`${G.pagersUsed}/${MAX_PAGERS}`],["Cameras shot",String(G.camsShot)],["Jammers used",String(G.jamsUsed)],["Shots fired",String(G.shots)]];
+  const rows=[["Time",fmtUp(G.time)],[`Bags in the ${LV.def.getaway||"van"}`,`${G.secured}/${bags.length} · ${money(G.vanTake)}`],["Stealth",stealth?"Kept":"Broken"],["Loose cash",`${G.cashTaken}/${CASH.length} · ${money(G.pocket)}`],["Guards knocked out",String(G.takedowns)],["Guards shot",String(G.kills)],["Bodies hidden",String(G.binned)],["Pagers answered",`${G.pagersUsed}/${maxPagers()}`],["Cameras shot",String(G.camsShot)],["Jammers used",String(G.jamsUsed)],["Shots fired",String(G.shots)]];
   if(civs.length)rows.splice(6,0,["Civilians tied up",String(G.tied)],["Civilians killed",String(G.civKills)]);
   $("endStats").innerHTML=rows.map(([a,b],i)=>`<dt>${a}</dt><dd class="${i===2?(stealth?"good":"bad"):""}">${b}</dd>`).join("");
 }
@@ -6861,6 +7210,7 @@ function stepGame(dt){
   updateDoors(dt,false);
   updateDrill(dt);
   updateJammer(dt);
+  updateThrows(dt);
   updateWindows(dt);
   updatePagers(dt);
   if(state!=="playing")return;
@@ -6870,6 +7220,8 @@ function stepGame(dt){
     if(G.secAlert<=0){G.secAlert=0;triggerAlarm(G.secMsg||"The security guard raised the alarm.");}
   }
   if(LV.def.tick)LV.def.tick(dt);
+  careerTick(dt);if(state!=="playing")return;
+  updateInvestigations(dt);
   updateCams(dt,false);
   for(const g of guards){g.update(dt,false);if(state!=="playing")return;}
   for(const c of civs){c.update(dt,false);if(state!=="playing")return;}
