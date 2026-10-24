@@ -216,6 +216,14 @@ body.touch #coinChip,body.touch #jamChip,body.touch #maskChip{display:none}
 body.touch #clockVal{font-size:20px}
 body.pad #kpHint b,body.touch #kpHint b{color:var(--sodium)}
 .modes button:focus,.cr-tabs button:focus,.btn:focus,.job:focus,.node:focus{outline:2px solid var(--fg);outline-offset:2px}
+/* ---------- co-op lobby ---------- */
+.coop{display:grid;gap:8px;padding-top:12px;border-top:1px solid var(--line)}
+.coop-row{display:flex;gap:8px;align-items:stretch}
+.coop-row input{flex:1;min-width:0;font-family:var(--f-mono);font-size:16px;letter-spacing:.2em;text-transform:uppercase;background:rgba(0,0,0,.25);color:var(--fg);border:1px solid var(--line);padding:6px 10px}
+.coop-row input:focus-visible{outline:2px solid var(--fg);outline-offset:1px}
+.coop-code{font-family:var(--f-mono);font-size:13px;color:var(--dim)}.coop-code b{font-size:22px;letter-spacing:.2em;color:var(--sodium);margin:0 4px}
+.coop-status{font-size:14px;color:var(--secure)}
+body.coop-guest .job{pointer-events:none}body.coop-guest .job:not([aria-checked="true"]){opacity:.45}
 /* ---------- career: the safehouse ---------- */
 .menu-top{display:flex;flex-wrap:wrap;gap:12px;align-items:center;justify-content:space-between}
 .modes,.cr-tabs{display:flex;gap:0;border:1px solid var(--line)}
@@ -274,7 +282,7 @@ body.pad #kpHint b,body.touch #kpHint b{color:var(--sodium)}
   <div id="detect"><div class="lbl" id="detectLbl">Detection</div><div class="bar"><i id="detectFill"></i></div></div>
   <div id="clock"><span class="lbl" id="clockLbl">Elapsed</span><span id="clockVal">00:00</span></div>
   <div id="obj"><div class="lbl">Objective</div><div id="objText">Get into the bank unseen.</div><div id="objTip" hidden></div><div id="bagsRow"><span id="bagsLbl">Bags in the van</span> <b id="bagsVal">0/3</b> · Take <b id="takeVal">$0</b></div></div>
-  <div id="status"><span class="chip warn" id="ctChip" hidden></span><span class="chip" id="devChip" hidden>DEV · GHOST OFF · V</span><span class="chip" id="posChip" hidden></span><span class="chip" id="ammo" hidden>PISTOL 12 / 36</span><span class="chip" id="pagerChip" hidden>PAGERS 0/3</span><span class="chip" id="tieChip" hidden>ZIP TIES 6</span><span class="chip" id="loopChip" hidden></span><span class="chip" id="jamChip" hidden>JAMMERS 2 · J</span><span class="chip" id="coinChip" hidden>COINS 3 · T</span><span class="chip ok" id="cardChip" hidden>KEYCARD</span><span class="chip ok" id="codeChip" hidden></span><span class="chip" id="maskChip">UNMASKED · OUTSIDE</span><span class="chip" id="carry" hidden>CARRYING BAG · SLOWED</span><span class="chip" id="stance">STANDING</span><span class="chip" id="sound">SOUND ON · M</span></div>
+  <div id="status"><span class="chip warn" id="ctChip" hidden></span><span class="chip" id="mateChip" hidden></span><span class="chip" id="devChip" hidden>DEV · GHOST OFF · V</span><span class="chip" id="posChip" hidden></span><span class="chip" id="ammo" hidden>PISTOL 12 / 36</span><span class="chip" id="pagerChip" hidden>PAGERS 0/3</span><span class="chip" id="tieChip" hidden>ZIP TIES 6</span><span class="chip" id="loopChip" hidden></span><span class="chip" id="jamChip" hidden>JAMMERS 2 · J</span><span class="chip" id="coinChip" hidden>COINS 3 · T</span><span class="chip ok" id="cardChip" hidden>KEYCARD</span><span class="chip ok" id="codeChip" hidden></span><span class="chip" id="maskChip">UNMASKED · OUTSIDE</span><span class="chip" id="carry" hidden>CARRYING BAG · SLOWED</span><span class="chip" id="stance">STANDING</span><span class="chip" id="sound">SOUND ON · M</span></div>
   <div id="crosshair"></div>
   <div id="prompt" hidden><span id="promptText"></span><div class="pbar" id="pbar" hidden><i id="pfill"></i></div></div>
   <div id="keypad" hidden><span class="lbl" id="kpTitle">SAFE KEYPAD</span><div id="kpScreen">_ _ _ _</div>
@@ -458,6 +466,8 @@ body.pad #kpHint b,body.touch #kpHint b{color:var(--sodium)}
       </dl>
       <p class="lbl">Touch</p>
       <p>Left thumb: the joystick appears where you touch (push past the ring to sprint). Drag anywhere on the right to look. The buttons on the right change with what you can do; USE glows when there's something to use. Tap the keypad keys directly. OBJ (under the pause button) folds the objective away; a new objective still pops up for a few seconds, and urgent warnings always show.</p>
+      <p class="lbl">Co-op</p>
+      <p>Two players, each on their own device. One presses <b>Host</b> and tells the other the code; the other types it and presses <b>Join</b>. The host picks the job and starts it. Guards and cameras notice both of you, and the detection meter, the alarm and the take are shared. If a guard catches one of you, the other can still finish the job. The getaway waits until you're both there. Co-op works on the bank, club and jeweller's jobs for now.</p>
       <ul class="tips">
         <li>Outside without a mask you're just someone on the street. Inside a closed building, in a staff-only area or on a roof, anyone who sees you fills the detection meter, mask or not.</li>
         <li>Day jobs: the public areas are open, so walk in unmasked and look around. Behind counters and staff doors is off limits, and staff and guards notice you back there.</li>
@@ -500,7 +510,14 @@ body.pad #kpHint b,body.touch #kpHint b{color:var(--sodium)}
 <script>
 (function(){
 "use strict";
-const $=id=>document.getElementById(id);
+// Co-op: the same code runs for every player by swapping who P is. CTX.cur is the player whose turn it is (null = you);
+// HUD writes during another player's turn go to that player's copy of the HUD, which is sent to them.
+const CTX={cur:null,kind:null,pl:null};
+const GAME_VERSION="0.31.0";
+const NET={on:false,host:false,guest:false,send:null,close:null,code:"",busy:false,waiting:false,started:false,acc:0,remote:null,ending:false};
+const $=id=>(CTX.cur&&CTX.cur.dom&&CTX.cur.dom[id])||document.getElementById(id);
+// a timer started during another player's turn runs as that player
+const setTimeout=(fn,ms)=>{const pl=CTX.pl,k=CTX.kind;return window.setTimeout(pl&&!pl.local?()=>withPlayer(pl,k,fn):fn,ms);};
 if(typeof THREE==="undefined"){
   $("note").textContent="The 3D engine failed to load. Check your connection and reload the page.";
   $("startBtn").disabled=true; return;
@@ -518,7 +535,7 @@ const canvas=renderer.domElement;
 const scene=new THREE.Scene();
 scene.background=new THREE.Color(0x06090e);
 scene.fog=new THREE.FogExp2(0x06090e,0.03);
-const camera=new THREE.PerspectiveCamera(72,innerWidth/innerHeight,0.1,140);
+let camera=new THREE.PerspectiveCamera(72,innerWidth/innerHeight,0.1,140);
 camera.rotation.order="YXZ";
 scene.add(camera);
 addEventListener("resize",()=>{camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight);});
@@ -743,7 +760,7 @@ function updateDoors(dt,simOnly){
       }
       if(d.open&&d.byGuard&&d.t>=1){
         const guardNear=people.some(g=>!g.down&&g.level===d.level&&Math.hypot(d.x-g.x,d.z-g.z)<2.4);
-        if(!guardNear&&Math.hypot(d.x-P.x,d.z-P.z)>1.3)closeDoor(d);
+        if(!guardNear&&!anyPlayerNear(d.x,d.z,d.level,1.3))closeDoor(d);
       }
     }
     const target=d.open?1:0;
@@ -936,8 +953,7 @@ class Guard{
   }
   hearCheck(){
     const srcs=[];
-    const n=Math.max(G.noise,G.shotNoise);
-    if(n>0&&exposed()&&!DEV.ghost)srcs.push({x:P.x,z:P.z,r:n,lvl:P.level});
+    if(!DEV.ghost)eachPlayer(()=>{const n=Math.max(G.noise,G.shotNoise);if(n>0&&exposed())srcs.push({x:P.x,z:P.z,r:n,lvl:P.level});});
     if(G.drilling)srcs.push({x:DRILL_POS.x,z:DRILL_POS.z,r:DRILL_NOISE,lvl:0}); // a running drill is never innocent
     if(G.bang)srcs.push(G.bang);
     for(const s of srcs){
@@ -1005,7 +1021,7 @@ class Guard{
       }else this.patrol(dt,1.9,true);
       if(!DEV.ghost&&this.level===P.level&&Math.hypot(P.x-this.x,P.z-this.z)<1.15){
         if(SK.iron&&!G.ironUsed){G.ironUsed=true;this.knockDown(false);G.takedowns++;SFX.takedown(this.x,this.z);toast("Iron grip: you broke free and floored him","good",2400);return;}
-        endGame(false,"A guard caught you.");}
+        playerCaught("A guard caught you.");return;}
     }else{
       if(seeing){
         if(!this.wasSeeing)SFX.spot(this.x,this.z,this.level);
@@ -5219,7 +5235,7 @@ const vmKey=new THREE.DirectionalLight(0xffe2b8,0.6);vmKey.position.set(1,2,1);v
 addEventListener("resize",()=>{vmCam.aspect=innerWidth/innerHeight;vmCam.updateProjectionMatrix();});
 const viewBag=makeBag();viewBag.position.set(-0.36,-0.4,-0.62);viewBag.rotation.set(0.3,-0.5,-0.2);viewBag.scale.setScalar(0.8);viewBag.visible=false;vmScene.add(viewBag);
 const viewBody=makeBodyBag();viewBody.position.set(-0.42,-0.3,-0.5);viewBody.rotation.set(0.15,1.25,0.35);viewBody.scale.setScalar(0.55);viewBody.visible=false;vmScene.add(viewBody);
-function showCarry(){viewBag.visible=!!P.carry&&P.carry.kind==="loot";viewBody.visible=!!P.carry&&P.carry.kind==="body";}
+function showCarry(){if(CTX.cur)return;viewBag.visible=!!P.carry&&P.carry.kind==="loot";viewBody.visible=!!P.carry&&P.carry.kind==="body";}
 
 const gunMat=phong(0x1c1e21,{shininess:50,specular:0x2a2a2a}),gunMat2=phong(0x2c2f33,{shininess:30});
 const gun=new THREE.Group();vmScene.add(gun);
@@ -5414,7 +5430,7 @@ function aqTick(raw){
 const sparks=[];
 for(let i=0;i<8;i++){const s=new THREE.Mesh(new THREE.SphereGeometry(0.035,6,4),new THREE.MeshBasicMaterial({color:0xffc86a,transparent:true,blending:THREE.AdditiveBlending,depthWrite:false}));s.visible=false;s.life=0;scene.add(s);sparks.push(s);}
 let sparkI=0;
-function spark(pt,big){const s=sparks[sparkI++%sparks.length];s.position.copy(pt);s.life=big?0.35:0.12;s.scale.setScalar(big?2.2:1);s.visible=true;}
+function spark(pt,big){const s=sparks[sparkI++%sparks.length];s.position.copy(pt);s.life=big?0.35:0.12;s.scale.setScalar(big?2.2:1);s.visible=true;if(NET.host)netEvAll(["spark",r3(pt.x),r3(pt.y),r3(pt.z),big?1:0]);}
 
 /* ================= collision & sight ================= */
 const STAND_MAX=1.25,MANTLE_MAX=1.21; // you can stand on anything up to this height (desks, benches, sills, crates)
@@ -5598,12 +5614,12 @@ function tone(o){
 }
 // position a sound in the world relative to the player: volume falloff, stereo pan, muffled through walls
 function spatial(x,z,maxD,lvl){
-  const dx=x-P.x,dz=z-P.z,d=Math.hypot(dx,dz);if(d>maxD)return null;
-  const rx=Math.cos(P.yaw),rz=-Math.sin(P.yaw);
+  const dx=x-LP.x,dz=z-LP.z,d=Math.hypot(dx,dz);if(d>maxD)return null;
+  const rx=Math.cos(LP.yaw),rz=-Math.sin(LP.yaw);
   const pan=d>0.3?(dx*rx+dz*rz)/d*0.85:0;
   let vol=Math.pow(1-d/maxD,1.6),lp=null;
-  if((lvl||0)!==P.level){vol*=0.35;lp=500;}           // through the roof
-  else if(blocked(P.x,P.z,x,z,2.0,P.level)){vol*=0.4;lp=700;}
+  if((lvl||0)!==LP.level){vol*=0.35;lp=500;}           // through the roof
+  else if(blocked(LP.x,LP.z,x,z,2.0,LP.level)){vol*=0.4;lp=700;}
   return {vol,pan,lp};
 }
 function surface(x,z,lvl){return LV.def.multi?LV.def.surface(x,z,lvl||0):lvl===1?"gravel":LV.def.surface(x,z);}
@@ -5688,6 +5704,7 @@ const VOICE_DISPATCH={f0:215,radio:true,vib:5.5},VOICE_YOU={f0:96,radio:false,vi
 let voices=[];
 function softClip(k){const n=512,c=new Float32Array(n);for(let i=0;i<n;i++){const x=i/(n-1)*2-1;c[i]=Math.tanh(k*x)/Math.tanh(k);}return c;}
 function speak(dur,v){
+  netSpeak(dur,v);
   if(!A.ctx||A.ctx.state!=="running")return;
   const c=A.ctx,t0=c.currentTime+0.02,end=t0+dur;
   const src=c.createOscillator();src.type="sawtooth";
@@ -5729,6 +5746,7 @@ function speak(dur,v){
   setTimeout(()=>{voices=voices.filter(x=>x!==vo);},(dur+0.4)*1000);
 }
 function stopVoices(){
+  netEvAll(["stopVoices"]);
   if(!A.ctx){voices=[];return;}
   const t=A.ctx.currentTime;
   for(const v of voices){v.out.gain.setTargetAtTime(0.0001,t,0.02);v.nodes.forEach(n=>{try{n.stop(t+0.1);}catch(e){}});}
@@ -5840,14 +5858,15 @@ function updateAudio(){
 
 /* ================= game state ================= */
 const MAG=12,MASK_TIME=1.0,RELOAD_TIME=1.4;
-const P={x:2,z:20.5,yaw:0,pitch:0,crouch:false,eye:1.65,bobT:0,carry:null,sprinting:false,kick:0,level:0,y:0,climb:null,jh:0,vy:0,gnd:0,fiddle:0};
+let P={x:2,z:20.5,yaw:0,pitch:0,crouch:false,eye:1.65,bobT:0,carry:null,sprinting:false,kick:0,level:0,y:0,climb:null,jh:0,vy:0,gnd:0,fiddle:0};
+const LP=P; // you: sounds are always heard from here, whoever's turn is running
 const DEV={on:false,ghost:false};
 try{DEV.on=localStorage.getItem("cg-dev")==="1";}catch(e){}
 const G={time:0,world:0,susp:0,unseen:0,alarm:false,alarmT:60,drill:0,drillWas:false,vaultOpen:false,doorAnim:0,secured:0,takedowns:0,everAlarm:false,lastSpotter:"guard",lastCause:"player",noise:0,shotNoise:0,blipT:0,bodies:[],secAlert:0,bagT:0,binned:0};
 const BAG_TIME=2.0,PAGER_DELAY=2.5,PAGER_WINDOW=12,MAX_PAGERS=3,REPORT_TIME=6,JAM_TIME=15,JAMMERS=2;
 const STEALTH_BONUS=0.3,CIV_BONUS=0.15,LEAVE_TIME=1.5,LOOP_TIME=25,LOOP_HOLD=2.0,LOOP_REACH=2.4,PICK_DOOR=5,PICK_WIN=3.5,PINS=5,JUMP_V=5.6,GRAV=17;
 let state="menu",locked=false,everLocked=false,fallback=false,pendingStart=false,pressedE=false;
-const keys={};
+let keys={};
 const DRILL_TIME=20,ALARM_TIME=60;
 
 /* ================= CAREER: money, experience, skills, gear, the job board =================
@@ -6104,10 +6123,11 @@ function resetGame(){
   $("alarmEdge").hidden=true;
   careerOnReset();
   hideToast();
+  if(NET.on)coopReset();
 }
 
 /* ================= input ================= */
-addEventListener("keydown",e=>{
+addEventListener("keydown",e=>asLocal(()=>{
   if(["ArrowUp","ArrowDown","ArrowLeft","ArrowRight","Space"].includes(e.code))e.preventDefault();
   keys[e.code]=true;
   if(state!=="playing")return;
@@ -6118,7 +6138,7 @@ addEventListener("keydown",e=>{
     if(e.code==="KeyE"){if(!e.repeat)closeKeypad();return;}
     if(["KeyW","KeyA","KeyS","KeyD","Space"].includes(e.code))closeKeypad();
   }
-  if(/^(Digit|Numpad)[0-9]$/.test(e.code)&&!e.repeat&&LV.def.onDigit&&LV.def.onDigit(+e.code.slice(-1))){e.preventDefault();return;}
+  if(/^(Digit|Numpad)[0-9]$/.test(e.code)&&!e.repeat&&digitPressed(+e.code.slice(-1))){e.preventDefault();return;}
   if(e.code==="KeyE"&&!e.repeat)pressedE=true;
   if(e.code==="KeyC"&&!e.repeat&&!DEV.ghost)P.crouch=!P.crouch;
   if(e.code==="Space"&&!e.repeat)tryJump();
@@ -6132,7 +6152,7 @@ addEventListener("keydown",e=>{
   if(e.code==="KeyV"&&!e.repeat&&DEV.on){DEV.ghost=!DEV.ghost;if(!DEV.ghost)settleAfterGhost();toast(DEV.ghost?"Noclip on: fly through anything · SPACE up · CTRL or C down · SHIFT faster · nobody can see or hear you":"Noclip off","warn",2600);}
   if(["ControlLeft","ControlRight"].includes(e.code)&&DEV.ghost)e.preventDefault();
   if(e.code==="Escape"&&!locked)setState("paused");
-});
+}));
 addEventListener("keyup",e=>{keys[e.code]=false;});
 document.addEventListener("visibilitychange",()=>{if(document.hidden&&state==="playing")setState("paused");});
 addEventListener("blur",()=>{for(const k in keys)keys[k]=false;if(state==="playing"&&fallback)setState("paused");});
@@ -6142,11 +6162,11 @@ document.addEventListener("mousemove",e=>{
   const sens=0.0022*(1-0.4*P.aimT);
   P.yaw-=(e.movementX||0)*sens;P.pitch=clamp(P.pitch-(e.movementY||0)*sens,-1.45,1.45);
 });
-canvas.addEventListener("mousedown",e=>{
+canvas.addEventListener("mousedown",e=>asLocal(()=>{
   if(state!=="playing")return;
   if(e.button===0)shoot();
   if(e.button===2)P.aim=!P.aim; // toggle, not hold
-});
+}));
 canvas.addEventListener("contextmenu",e=>e.preventDefault());
 
 function requestLock(){
@@ -6176,7 +6196,7 @@ $("startBtn").onclick=()=>{initAudio();setMode("free");if(LV.id!==selectedMap)bu
 $("againBtn").onclick=()=>{initAudio();resetGame();begin();};
 $("resumeBtn").onclick=()=>{initAudio();$("pauseNote").textContent="The guards are frozen until you come back.";begin();};
 $("restartBtn").onclick=()=>{initAudio();resetGame();begin();};
-function toMenu(){if(document.pointerLockElement)document.exitPointerLock();stopVoices();drillOff(true);alarmOff();if(CAREER)CAREER.active=null;resetGame();setState("menu");if(MODE==="career")renderCareer();}
+function toMenu(){if(NET.host&&NET.send)NET.send({t:"menu"});NET.started=false;if(document.pointerLockElement)document.exitPointerLock();stopVoices();drillOff(true);alarmOff();if(CAREER)CAREER.active=null;resetGame();setState("menu");if(MODE==="career")renderCareer();}
 $("menuBtn").onclick=toMenu;$("pauseMenuBtn").onclick=toMenu;
 // job picker
 let selectedMap="harbor";
@@ -6195,6 +6215,8 @@ function pickMap(id){
   document.querySelectorAll(".job").forEach(b=>b.setAttribute("aria-checked",String(b.dataset.map===id)));
   jobDetail();
   if(LV.id!==id){buildMap(id);resetGame();}
+  if(NET.host&&NET.send)NET.send({t:"pick",map:id});
+  if(NET.on)coopUI();
 }
 document.querySelectorAll(".job").forEach(b=>b.addEventListener("click",()=>pickMap(b.dataset.map)));
 $("devToggle").checked=DEV.on;
@@ -6240,8 +6262,8 @@ function keyWords(s){
   return s;
 }
 let toastTimer=0;
-function toast(msg,tone,ms){msg=keyWords(msg);const t=$("toast");t.textContent=msg;t.className="show "+(tone||"")+(msg.length>58?" long":"");clearTimeout(toastTimer);toastTimer=setTimeout(hideToast,ms||2200);}
-function hideToast(){$("toast").className="";}
+function toast(msg,tone,ms){if(netToast(msg,tone,ms))return;msg=keyWords(msg);const t=$("toast");t.textContent=msg;t.className="show "+(tone||"")+(msg.length>58?" long":"");clearTimeout(toastTimer);toastTimer=setTimeout(hideToast,ms||2200);}
+function hideToast(){if(CTX.cur)return;$("toast").className="";}
 let lastPrompt="";
 function setPrompt(html,progress){
   const pr=$("prompt");
@@ -6426,23 +6448,26 @@ function settleAfterGhost(){
   const p={x:P.x,z:P.z};resolve(p,0.35,P.level,P.jh);P.x=p.x;P.z=p.z;
 }
 function musicCovers(){return !!(LV.def.musicLoud&&!G.alarm&&P.level===0&&LV.def.musicLoud(P.x,P.z));}
-const KP={entry:"",busy:false};
+let KP={entry:"",busy:false};
 function drawKeypad(cls,txt){
   const sc=$("kpScreen");sc.className=cls||"";
   const n=G.safeCode.length;sc.style.fontSize=n>4?"22px":"";
   sc.textContent=txt||(KP.entry+"_".repeat(n)).slice(0,n).split("").join(" ");
   const left=3-G.safeFails;$("kpTitle").textContent=`${VAULT.keypadTitle||"SAFE KEYPAD"} · ${left} ${left===1?"TRY":"TRIES"} LEFT`;
 }
-function hitKey(k){const el=document.querySelector(`#kpKeys span[data-k="${k}"]`);if(!el)return;el.classList.add("hit");setTimeout(()=>el.classList.remove("hit"),130);}
+function hitKey(k){if(CTX.cur)return;const el=document.querySelector(`#kpKeys span[data-k="${k}"]`);if(!el)return;el.classList.add("hit");setTimeout(()=>el.classList.remove("hit"),130);}
 function openKeypad(){G.keypad=true;KP.entry="";KP.busy=false;P.locked=true;P.aim=false;$("keypad").hidden=false;drawKeypad();SFX.kpKey(5);}
-function closeKeypad(){if(!G.keypad)return;G.keypad=false;KP.busy=false;P.locked=false;$("keypad").hidden=true;}
+function closeKeypad(){if(!G.keypad)return;if(NET.guest){G.keypad=false;return netAct("closeKeypad");}G.keypad=false;KP.busy=false;P.locked=false;$("keypad").hidden=true;}
 function keypadDigit(d){
+  if(NET.guest)return netAct("keypadDigit",[d]);
   if(KP.busy||KP.entry.length>=G.safeCode.length)return;
   KP.entry+=d;SFX.kpKey(+d);hitKey(d);drawKeypad();
   if(KP.entry.length===G.safeCode.length){KP.busy=true;setTimeout(()=>{KP.busy=false;if(G.keypad&&KP.entry.length===G.safeCode.length)keypadEnter();},260);}
 }
-function keypadBack(){if(KP.busy||!KP.entry)return;KP.entry=KP.entry.slice(0,-1);hitKey("B");SFX.kpKey(0);drawKeypad();}
+function keypadBack(){
+  if(NET.guest)return netAct("keypadBack");if(KP.busy||!KP.entry)return;KP.entry=KP.entry.slice(0,-1);hitKey("B");SFX.kpKey(0);drawKeypad();}
 function keypadEnter(){
+  if(NET.guest)return netAct("keypadEnter");
   if(KP.busy)return;hitKey("OK");
   if(KP.entry.length<G.safeCode.length){SFX.denied();return;}
   if(KP.entry===G.safeCode){
@@ -6462,6 +6487,7 @@ function openSafe(){
   SFX.vault();toast("Safe open. Grab the bags","good",2000);
 }
 function tryJump(){
+  if(NET.guest&&(P.ladder||P.climb)){netAct("tryJump");return;}
   if(P.ladder&&!P.climb){letGoLadder();return;}
   if(LV.def.forceCrouch&&LV.def.forceCrouch(P.x,P.z,P.level))return;
   if(P.locked||P.climb||DEV.ghost||state!=="playing")return;
@@ -6505,6 +6531,7 @@ function windowAhead(){
   return best;
 }
 function pressF(){
+  if(NET.guest)return netAct("pressF");
   if(P.locked||P.climb)return;
   {const w=windowAhead();if(w&&!takedownTarget()){P.kick=1;breakWindow(w);return;}}
   if(!civs.length||takedownTarget()){tryTakedown();return;}
@@ -6534,12 +6561,14 @@ function jamming(){return G.jamT>0||!!(LV&&LV.id==="whiteout"&&G.w&&G.w.relayDow
 const COINS=3,coinGeo=new THREE.CylinderGeometry(0.03,0.03,0.006,10),coinMat=phong(0xd9b24a,{shininess:90,specular:0x886622});
 let THROWN=[];
 function throwCoin(){
+  if(NET.guest)return netAct("throwCoin");
   if(P.locked||P.climb||P.ladder||state!=="playing"||G.keypad)return;
   if(G.coins<=0){toast("No coins left","bad",1200);return;}
   G.coins--;G.throws++;P.kick=Math.max(P.kick,0.35);
   const cp=Math.cos(P.pitch),fx=-Math.sin(P.yaw)*cp,fz=-Math.cos(P.yaw)*cp,fy=Math.sin(P.pitch);
   const m=new THREE.Mesh(coinGeo,coinMat);m.position.set(P.x+fx*0.35,P.y+P.eye-0.15,P.z+fz*0.35);m.userData.noHit=true;lvAdd(m);
   THROWN.push({m,vx:fx*10,vy:fy*10+2.4,vz:fz*10,lvl:P.level,t:0,done:false});
+  if(NET.host)netEvAll(["coin",r3(m.position.x),r3(m.position.y),r3(m.position.z),r3(fx*10),r3(fy*10+2.4),r3(fz*10),P.level]);
   SFX.whiff();
 }
 function updateThrows(dt){
@@ -6549,7 +6578,7 @@ function updateThrows(dt){
     const nx=p.x+f.vx*dt,nz=p.z+f.vz*dt;f.vy-=15*dt;let ny=p.y+f.vy*dt;
     if(blocked(p.x,p.z,nx,nz,Math.max(0.05,p.y-base),f.lvl)){f.vx*=-0.2;f.vz*=-0.2;if(!f.hit){f.hit=true;coinClink(p.x,p.z,f.lvl,0.5);}}else{p.x=nx;p.z=nz;}
     const c=LV.def.ceil?LV.def.ceil(p.x,p.z,f.lvl):null;if(c!=null&&ny>base+c){ny=base+c;f.vy=-Math.abs(f.vy)*0.3;}
-    if(ny<=base+0.02||f.t>3){ny=base+0.02;f.done=true;f.m.rotation.set(0,Math.random()*3,0);coinClink(p.x,p.z,f.lvl,1);distract(p.x,p.z,f.lvl);}
+    if(ny<=base+0.02||f.t>3){ny=base+0.02;f.done=true;f.m.rotation.set(0,Math.random()*3,0);coinClink(p.x,p.z,f.lvl,1);if(!f.ghost)distract(p.x,p.z,f.lvl);}
     else f.m.rotation.x+=dt*25;
     p.y=ny;
   }
@@ -6582,6 +6611,7 @@ function updateInvestigations(dt){
   }
 }
 function placeJammer(){
+  if(NET.guest)return netAct("placeJammer");
   if(P.locked||P.climb)return;
   if(!P.masked){toast("Put on your mask first. Hold G","warn");return;}
   if(G.jamT>0){toast("A jammer is already running","warn",1400);return;}
@@ -6590,7 +6620,7 @@ function placeJammer(){
   let p={x:P.x+fx*0.7,z:P.z+fz*0.7};
   if(blocked(P.x,P.z,p.x,p.z,0.3,P.level))p={x:P.x,z:P.z};
   resolve(p,0.2,P.level);
-  makeJammer(p.x,p.z,P.onStair?P.y:P.level*ROOF_Y+supportAt(p.x,p.z,0.12,P.level,P.gnd),P.yaw);
+  {const jy=P.onStair?P.y:P.level*ROOF_Y+supportAt(p.x,p.z,0.12,P.level,P.gnd);makeJammer(p.x,p.z,jy,P.yaw);if(NET.host)netEvAll(["jam",r3(p.x),r3(p.z),r3(jy),r3(P.yaw)]);}
   P.jammers--;G.jamsUsed++;G.jamT=JAM_TIME+SK.jamT;G.jamBeep=0;SFX.jamOn();
   // every countdown the jammer catches starts over: when it burns out, they begin again from the top
   for(const g of guards){if(g.down)continue;if(g.wounded>0)g.wounded=2.0;if(g.reportT>0)g.reportT=REPORT_TIME;}
@@ -6628,6 +6658,7 @@ function tryTakedown(){
 const CAM_DEAD=phong(0x3a3c3e);
 const _v2=new THREE.Vector2();
 function shoot(){
+  if(NET.guest){guestShoot();return;}
   if(P.locked||P.climb)return;
   if(!P.masked){toast("Put on your mask first. Hold G","warn",1400);return;}
   if(P.raise<0.9||P.reload>0||P.fireCD>0)return;
@@ -6635,13 +6666,13 @@ function shoot(){
   P.mag--;P.fireCD=0.3;P.recoil=1;G.shots++;
   G.shotNoise=(musicCovers()?2.5:4.5)*SK.shot;G.loud=Math.max(G.loud,(musicCovers()?3.5:6)*SK.shot); // suppressed, but still audible up close
   SFX.shot();
-  flash.visible=true;flash.rotation.z=Math.random()*3;muzzleLight.intensity=2.2;setTimeout(()=>{flash.visible=false;muzzleLight.intensity=0;},45);
+  if(!CTX.cur){flash.visible=true;flash.rotation.z=Math.random()*3;muzzleLight.intensity=2.2;setTimeout(()=>{flash.visible=false;muzzleLight.intensity=0;},45);}
   // spread: tight when aiming and still, wider from the hip or on the move
   const moving=keys.KeyW||keys.KeyA||keys.KeyS||keys.KeyD||IN.mag>0.1;
   const spread=((P.aimT>0.8?0.002:0.016)+(moving?0.012:0)+(P.sprinting?0.03:0))*SK.aim;
   const ndc=1/Math.tan(THREE.MathUtils.degToRad(camera.fov/2)); // radians -> NDC
   _v2.set((Math.random()-.5)*2*spread*ndc/camera.aspect,(Math.random()-.5)*2*spread*ndc);
-  scene.updateMatrixWorld(); // hitboxes must match where guards are right now
+  scene.updateMatrixWorld();camera.updateMatrixWorld(); // hitboxes must match where guards are right now
   raycaster.setFromCamera(_v2,camera);
   const shown=o=>{for(;o;o=o.parent)if(!o.visible)return false;return true;};
   const hit=raycaster.intersectObjects(hitList,false).find(h=>shown(h.object));
@@ -6680,6 +6711,7 @@ function shoot(){
   }
 }
 function dropCarry(){
+  if(NET.guest)return netAct("dropCarry");
   if(!P.carry)return;
   const it=P.carry,fx=-Math.sin(P.yaw),fz=-Math.cos(P.yaw);
   let p={x:P.x+fx*0.9,z:P.z+fz*0.9};
@@ -6692,10 +6724,12 @@ function dropCarry(){
   if(it.kind==="body")toast("A body bag in the open is still suspicious","warn",2000);
 }
 function startReload(){
+  if(NET.guest)return netAct("startReload");
   if(!P.masked||P.reload>0||P.mag>=magSize()||P.reserve<=0)return;
   P.reload=RELOAD_TIME;SFX.reload();
 }
 function updateWeapon(dt){
+  if(NET.guest){guestWeapon(dt);return;}
   // mask: hold G
   if(!P.masked){
     if(keys.KeyG){
@@ -6717,6 +6751,7 @@ function updateWeapon(dt){
   P.aimT=clamp(P.aimT+(P.aim&&canAim?dt:-dt)*7,0,1);
   P.raise=clamp(P.raise+(P.masked?dt*2.2:-dt*4),0,1);
   P.recoil=Math.max(0,P.recoil-dt*9);
+  if(CTX.cur)return;
   const fov=72-24*P.aimT;
   if(Math.abs(camera.fov-fov)>0.01){camera.fov=fov;camera.updateProjectionMatrix();}
   gun.visible=P.raise>0.01;
@@ -6752,7 +6787,7 @@ function updateCams(dt,simOnly){
       continue;
     }
     c.led.material.color.setHex(0xff3030);
-    c.seeDist=simOnly?-1:canSee(c.x,c.z,c.yaw,c.half,c.range*(G.camMul||1),c.level);
+    c.seeDist=simOnly?-1:seeAny(c,c.x,c.z,c.yaw,c.half,c.range*(G.camMul||1),c.level);
     if(c.seeDist>=0&&c.seeDist<1.3)c.seeDist=-1; // blind spot right under the camera
     if(!simOnly&&civs.length&&!G.alarm)for(const v of civs){
       if(v.state!=="calling"||v.level!==c.level)continue;
@@ -6775,9 +6810,9 @@ function updateDetection(dt){
   for(const o of obs){
     const range=o.kind==="camera"?o.range:14;
     if(o.seeDist>=0){
-      let r=o.base*(1+2.2*(1-o.seeDist/range));
-      if(P.sprinting)r*=1.7;if(P.crouch)r*=0.65;
-      if(!P.masked)r*=0.6*SK.unmasked; // a lost customer gets a little benefit of the doubt
+      let r=o.base*(1+2.2*(1-o.seeDist/range));const fp=focusP(o);
+      if(fp.sprinting)r*=1.7;if(fp.crouch)r*=0.65;
+      if(!fp.masked)r*=0.6*SK.unmasked; // a lost customer gets a little benefit of the doubt
       gain+=r*SK.shadow*(G.detMul||1);spotter=o;
     }
     if(o.bodyDist>=0){bodyGain+=0.45*(1+1.5*(1-o.bodyDist/range));bodySpotter=o;G.bodyHost=!!o.bodyHost;}
@@ -6794,10 +6829,10 @@ function updateDetection(dt){
   else{G.unseen+=dt;if(G.unseen>0.8)G.susp=Math.max(0,G.susp-0.16*dt);}
   G.bodyWatched=bodyGain>0;G.civWatched=civGain>0;
   if(G.susp>=1){
-    const o=G.lastSpotter,cam=o&&o.kind==="camera",who=cam?"A camera":"A guard";
+    const o=G.lastSpotter,cam=o&&o.kind==="camera",who=cam?"A camera":"A guard",sp=focusP(o);
     const msg=G.lastCause==="civ"?`${who} saw a civilian calling for help. Alarm!`:G.lastCause==="body"?(G.bodyHost?`${who} spotted a hostage. Alarm!`:`${who} found a body. Alarm!`)
-      :P.masked?`${who} spotted you. Alarm!`:!restricted(P.x,P.z)?`${who} caught you breaking in. Alarm!`:LV.day?`${who} caught you in a staff area. Alarm!`:`${who} caught you somewhere you shouldn't be. Alarm!`;
-    startReport(o,msg,G.lastCause==="body"&&o&&o.bodyAt?o.bodyAt:{x:P.x,z:P.z});
+      :sp.masked?`${who} spotted you. Alarm!`:!restricted(sp.x,sp.z,sp.level)?`${who} caught you breaking in. Alarm!`:LV.day?`${who} caught you in a staff area. Alarm!`:`${who} caught you somewhere you shouldn't be. Alarm!`;
+    asFocus(o,()=>startReport(o,msg,G.lastCause==="body"&&o&&o.bodyAt?o.bodyAt:{x:sp.x,z:sp.z}));
     G.susp=0.7;
   }
 }
@@ -6823,7 +6858,7 @@ function triggerAlarm(msg){
   G.alarm=true;G.everAlarm=true;G.alarmT=ALARM_TIME;G.susp=1;
   $("alarmEdge").hidden=false;
   SFX.alarmHit();alarmOn();
-  toast(msg||"Alarm!","bad",3000);
+  toastAll(msg||"Alarm!","bad",3000);
 }
 function updateInteraction(dt){
   const wasPicking=G.picking;G.picking=false;
@@ -6889,7 +6924,7 @@ function updateInteraction(dt){
       if(c.state==="tied"){
         prompt=c.follow?"Press <kbd>E</kbd> to tell them to stay here":"Press <kbd>E</kbd> to tell them to follow you";
         if(pressedE){
-          c.follow=!c.follow;
+          c.follow=!c.follow;c.leader=CTX.pl;
           if(c.follow){c.ti=G.trailBase+Math.max(0,G.trail.length-1);toast("Hostage following you","warn",1400);}
           else toast("Hostage staying put","good",1400);
         }
@@ -6981,7 +7016,8 @@ function updateInteraction(dt){
     else if(!prompt&&dv<2.6){
       const take=G.vanTake+G.pocket+G.diamondVal,all=G.secured>=bags.length;
       const vb=gwy.verb||LV.def.leaveVerb||"drive off",gw=gwy.name||LV.def.getaway||"van";prompt=all?`Hold <kbd>E</kbd> to ${vb} · every bag is in the ${gw} · ${money(take)}`:`Hold <kbd>E</kbd> to ${vb} with ${money(take)} · ${G.secured}/${bags.length} bags`;
-      if(keys.KeyE&&!G.leaveBlock){
+      const away=partnerAway(gwy);if(away){prompt=away;G.leaveT=0;}
+      else if(keys.KeyE&&!G.leaveBlock){
         if(G.leaveT===0)SFX.engine();
         G.leaveT+=dt;prompt="Starting the engine…";prog=G.leaveT/LEAVE_TIME;
         if(G.leaveT>=LEAVE_TIME){endGame(true);return;}
@@ -7143,7 +7179,7 @@ function startPager(g){
   const script=(fail?FAIL_CALL:nextCall()).map(([w,t])=>[w,t.replace("{n}",g.name)]);
   let t=0.35;const lines=[];
   for(const [w,txt] of script){const dur=0.6+txt.length*0.045;lines.push({who:w,txt,start:t,dur});t+=dur+0.22;}
-  Object.assign(pg,{state:"answering",lines,idx:0,elapsed:0,total:t+0.15,fail,grace:0});
+  Object.assign(pg,{state:"answering",lines,idx:0,elapsed:0,total:t+0.15,fail,grace:0,by:CTX.pl||ME});
   P.locked=true;P.aim=false;SFX.squelch();
 }
 function updatePagers(dt){
@@ -7151,7 +7187,7 @@ function updatePagers(dt){
     const pg=g.pager;if(!pg||pg.state==="done"||G.alarm)continue;
     if(pg.state==="pending"){
       if(!jamming())pg.t-=dt;
-      if(pg.t<=0){pg.state="ringing";pg.t=PAGER_WINDOW*SK.pagerWin;pg.beepT=0;toast(`${g.name}'s pager is going off!`,"bad",2200);}
+      if(pg.t<=0){pg.state="ringing";pg.t=PAGER_WINDOW*SK.pagerWin;pg.beepT=0;toastAll(`${g.name}'s pager is going off!`,"bad",2200);}
     }
     if(pg.state==="ringing"||pg.state==="answering"){
       // pager icon over the body, visible through walls
@@ -7167,12 +7203,17 @@ function updatePagers(dt){
         triggerAlarm("Nobody answered the pager. Alarm!");return;
       }
     }else if(pg.state==="answering"){
+      if(withPlayer(pg.by,"act",()=>pagerAnswer(g,pg,dt)))return;
+    }
+  }
+}
+function pagerAnswer(g,pg,dt){
       if(!keys.KeyE){
         if(pg.grace>0)pg.grace-=dt;
         else{
           pg.state="done";g.sprite.visible=false;P.locked=false;stopVoices();SFX.squelch();
           showSub("D",`Hello? ${g.name}?! …Sending units.`,3500);
-          triggerAlarm("You let go of the pager. Alarm!");return;
+          triggerAlarm("You let go of the pager. Alarm!");return true;
         }
       }else pg.grace=0;
       pg.elapsed+=dt;
@@ -7181,14 +7222,14 @@ function updatePagers(dt){
       }
       if(pg.elapsed>=pg.total){
         pg.state="done";g.sprite.visible=false;P.locked=false;SFX.squelch();G.pagersUsed++;
-        if(pg.fail){triggerAlarm("Dispatch didn't buy it. Alarm!");return;}
+        if(pg.fail){triggerAlarm("Dispatch didn't buy it. Alarm!");return true;}
         toast(`Pager answered · ${G.pagersUsed}/${maxPagers()}`,"good",1800);
       }
-    }
-  }
+  return false;
 }
 let subTimer=0;
 function showSub(who,txt,ms,label){
+  if(netSub(who,txt,ms,label))return;
   const el=$("subs");el.hidden=false;el.classList.remove("fade");
   const w=$("subWho");w.textContent=label||(who==="D"?"DISPATCH · RADIO":"YOU · PAGER");w.className=who==="Y"?"you":"dispatch";
   $("subLine").textContent=txt;
@@ -7241,6 +7282,9 @@ function updateHUD(){
   $("stance").textContent=DEV.ghost?"NOCLIP":P.ladder?"ON A LADDER":(P.jh>P.gnd+0.05?"JUMPING":P.crouch?"CROUCHED · SILENT":P.sprinting?"SPRINTING · LOUD":P.gnd>0.1?"STANDING ON SOMETHING":"STANDING")+(musicCovers()&&!P.crouch?" · MUSIC COVERS YOU":"");
   const cc=$("carry");cc.hidden=!P.carry;
   if(P.carry){const t=P.carry.kind==="body"?"CARRYING BODY · Q DROP":`CARRYING ${P.carry.gold?"GOLD":"LOOT"} ${money(P.carry.value)} · Q DROP`;if(cc.textContent!==t)cc.textContent=t;}
+  {const el=$("mateChip"),me=CTX.pl||ME,mate=NET.host?PLAYERS.find(q=>q!==me):null;el.hidden=!mate;
+    if(mate){const q=mate.P,d=Math.round(Math.hypot(q.x-P.x,q.z-P.z));const t=mate.out?"PARTNER · CAUGHT":`PARTNER · ${q.carry?"CARRYING":q.masked?"MASKED":"UNMASKED"} · ${d} M${q.level!==P.level?(q.level>P.level?" ↑":" ↓"):""}`;
+      if(el.textContent!==t)el.textContent=t;el.className="chip "+(mate.out?"bad":q.masked?"warn":"");}}
   const mc=$("maskChip"),r=restricted(P.x,P.z);
   if(P.masked){mc.textContent="MASKED";mc.className="chip bad";}
   else if(r){mc.textContent=onRoof()?"UNMASKED · ON THE ROOF":LV.day?"UNMASKED · STAFF AREA":"UNMASKED · TRESPASSING";mc.className="chip warn";}
@@ -7275,6 +7319,7 @@ function updateHUD(){
 /* ================= end ================= */
 function endGame(won,reason){
   if(state==="ended")return;
+  if(NET.guest&&!NET.ending)return; // the host decides when the job is over
   setState("ended");setPrompt(null);hideToast();
   drillOff(true);alarmOff();stopVoices();P.locked=false;$("subs").hidden=true;if(won)SFX.win();else SFX.lose();
   if(document.pointerLockElement)document.exitPointerLock();
@@ -7316,39 +7361,42 @@ function endGame(won,reason){
   const rows=[["Time",fmtUp(G.time)],[`Bags in the ${LV.def.getaway||"van"}`,`${G.secured}/${bags.length} · ${money(G.vanTake)}`],["Stealth",stealth?"Kept":"Broken"],["Loose cash",`${G.cashTaken}/${CASH.length} · ${money(G.pocket)}`],["Guards knocked out",String(G.takedowns)],["Guards shot",String(G.kills)],["Bodies hidden",String(G.binned)],["Pagers answered",`${G.pagersUsed}/${maxPagers()}`],["Cameras shot",String(G.camsShot)],["Jammers used",String(G.jamsUsed)],["Shots fired",String(G.shots)]];
   if(civs.length)rows.splice(6,0,["Civilians tied up",String(G.tied)],["Civilians killed",String(G.civKills)]);
   $("endStats").innerHTML=rows.map(([a,b],i)=>`<dt>${a}</dt><dd class="${i===2?(stealth?"good":"bad"):""}">${b}</dd>`).join("");
+  if(NET.on)netEndScreen(won);
 }
 
 /* ================= main loop ================= */
 function stepGame(dt){
   G.time+=dt;G.world+=dt;
   inputLook(dt);
-  updatePlayer(dt);
-  updateWeapon(dt);
+  asLocal(()=>{updatePlayer(dt);updateWeapon(dt);});
+  if(NET.host)hostPlayers(dt);
   updateDoors(dt,false);
   updateDrill(dt);
   updateJammer(dt);
   updateThrows(dt);
   updateWindows(dt);
   updatePagers(dt);
-  if(state!=="playing")return;
+  if(!running())return;
   G.bodies=collectBodies();
   if(G.secAlert>0&&!G.alarm){
     if(!jamming())G.secAlert-=dt;
     if(G.secAlert<=0){G.secAlert=0;triggerAlarm(G.secMsg||"The security guard raised the alarm.");}
   }
-  if(LV.def.tick)LV.def.tick(dt);
-  careerTick(dt);if(state!=="playing")return;
+  if(LV.def.tick)tickMap(dt);
+  careerTick(dt);if(!running())return;
   updateInvestigations(dt);
   updateCams(dt,false);
-  for(const g of guards){g.update(dt,false);if(state!=="playing")return;}
-  for(const c of civs){c.update(dt,false);if(state!=="playing")return;}
+  for(const g of guards){npcUpdate(g,dt);if(!running())return;}
+  for(const c of civs){npcUpdate(c,dt);if(!running())return;}
   updateDetection(dt);
-  updateInteraction(dt);
-  if(state!=="playing")return;
+  if(!ME.out)asLocal(()=>updateInteraction(dt));else setPrompt(null);
+  if(NET.host)hostInteract(dt);
+  if(!running())return;
   updateAlarm(dt);
   updateAudio();
   updateHUD();
   pressedE=false;G.shotNoise=0;G.loud=0;G.bang=null;
+  if(NET.host)hostEndFrame(dt);
 }
 function stepMenu(dt){
   G.world+=dt;
@@ -7373,6 +7421,689 @@ function animate(dt){
 }
 renderer.autoClear=false;
 let last=performance.now();
+/* ================= co-op (2 players online) =================
+   The host's game runs everything: guards, civilians, cameras, the map, and what both players do. The guest moves on
+   their own device (so walking feels instant) and sends where they are, which keys they hold and what they press;
+   the host runs the guest's actions as the guest (P is swapped for the guest's state while their turn runs) and sends
+   back how the world moved, the guest's HUD, sounds and messages. Both build the same map from the same random seed,
+   so every object can be referred to by its place in the scene. */
+const COOP_MAPS=new Set(["harbor","harborDay","meridian","meridianDay","club","jewel","jewelDay"]);
+const NET_HZ=20,PEER_PREFIX="cleangetaway-v1-";
+const SWAP_G=["noise","shotNoise","loud","keypad","picking","pickScr","ladderTip","coins","leaveT","tieT","loopHold","bagT","leaveBlock","trail","trailBase"];
+const SWAP_IN=["fwd","right","mag","sprint","src","objHide","objPeek","objKey"];
+const ME={id:0,local:true,P:LP,keys:null,pressedE:false,KP:null,cam:camera,g:{},in:{},out:false};
+const PLAYERS=[ME];
+function running(){return state==="playing"||(NET.on&&state==="paused");}
+
+/* ---------- whose turn is it ---------- */
+function withPlayer(pl,kind,fn){
+  pl=pl||ME;const cur=CTX.pl||ME;
+  if(pl===cur){const k=CTX.kind;CTX.kind=kind;try{return fn();}finally{CTX.kind=k;}}
+  const pk=CTX.kind;
+  saveTurn(cur);loadTurn(pl);CTX.pl=pl;CTX.cur=pl.local?null:pl;CTX.kind=kind;
+  try{return fn();}
+  finally{saveTurn(pl);loadTurn(cur);CTX.pl=cur===ME?null:cur;CTX.cur=cur.local?null:cur;CTX.kind=pk;}
+}
+function saveTurn(pl){pl.P=P;pl.keys=keys;pl.pressedE=pressedE;pl.KP=KP;pl.cam=camera;for(const f of SWAP_G)pl.g[f]=G[f];for(const f of SWAP_IN)pl.in[f]=IN[f];}
+function loadTurn(pl){P=pl.P;keys=pl.keys;pressedE=pl.pressedE;KP=pl.KP;camera=pl.cam;for(const f of SWAP_G)G[f]=pl.g[f];for(const f of SWAP_IN)IN[f]=pl.in[f];}
+function others(){return PLAYERS.filter(p=>!p.local);}
+function active(){return PLAYERS.filter(p=>!p.out);}
+function eachPlayer(fn){if(!NET.host||PLAYERS.length<2){fn();return;}for(const pl of active())withPlayer(pl,"sim",fn);}
+function anyPlayerNear(x,z,lvl,r){if(!NET.host)return P.level===lvl&&Math.hypot(x-P.x,z-P.z)<r;return active().some(pl=>pl.P.level===lvl&&Math.hypot(x-pl.P.x,z-pl.P.z)<r);}
+function focusP(o){return NET.host&&o&&o.focus&&o.focus.P?o.focus.P:P;}
+function asFocus(o,fn){return NET.host&&o&&o.focus?withPlayer(o.focus,"sim",fn):fn();}
+// which player is a guard, civilian or camera paying attention to: the one it can see (nearest), else the last one, else the nearest
+function npcFocus(o,half,range){
+  if(PLAYERS.length<2)return ME;
+  let best=null,bd=1e9;
+  for(const pl of active()){const d=withPlayer(pl,"sim",()=>canSee(o.x,o.z,o.yaw,half,range,o.level));if(d>=0&&d<bd){bd=d;best=pl;}}
+  if(best){o.focus=best;o.focusT=G.world;return best;}
+  if(o.focus&&!o.focus.out&&G.world-o.focusT<4)return o.focus;
+  let nb=ME,nd=1e9;
+  for(const pl of active()){const p=pl.P,d=Math.hypot(p.x-o.x,p.z-o.z)+(p.level!==o.level?60:0);if(d<nd){nd=d;nb=pl;}}
+  o.focus=nb;return nb;
+}
+function npcUpdate(g,dt){
+  if(!NET.host||PLAYERS.length<2){g.update(dt,false);return;}
+  const civ=g.kind==="civ";
+  const pl=civ&&g.follow&&g.leader&&!g.leader.out?g.leader:npcFocus(g,G.alarm&&!civ?1.05:civ?1.0:0.85,G.alarm&&!civ?18:civ?15:14);
+  withPlayer(pl,"sim",()=>g.update(dt,false));
+}
+function seeAny(o,x,z,yaw,half,range,lvl){
+  if(!NET.host||PLAYERS.length<2)return canSee(x,z,yaw,half,range,lvl);
+  let bd=-1;
+  for(const pl of active()){const d=withPlayer(pl,"sim",()=>canSee(x,z,yaw,half,range,lvl));if(d>=0&&(bd<0||d<bd)){bd=d;o.focus=pl;}}
+  return bd;
+}
+// the map runs once per frame; in co-op it runs half a frame as each player so its checks (lasers, sensors, ...) see both
+function tickMap(dt){
+  if(!NET.host||PLAYERS.length<2){LV.def.tick(dt);return;}
+  for(const pl of others())if(!pl.out)withPlayer(pl,"sim",()=>LV.def.tick(dt/2));
+  LV.def.tick(dt/2);
+}
+function playerCaught(msg){
+  if(!NET.on||PLAYERS.length<2){endGame(false,msg);return;}
+  const pl=CTX.pl||ME;if(pl.out)return;
+  pl.out=true;P.locked=true;P.carry=null;
+  if(active().length===0){endGame(false,"Both of you were caught.");return;}
+  if(pl.local){netEvAll(["toast","Your partner got caught. Finish the job alone","bad",3200]);asLocal(()=>{toast("You got caught. Your partner can still finish the job","bad",4000);});}
+  else{netEv(pl,["toast","You got caught. Your partner can still finish the job","bad",4000]);asLocal(()=>toast("Your partner got caught. Finish the job alone","bad",3200));}
+  if(pl.avatar)pl.avatar.root.visible=false;
+}
+// leaving: the getaway waits for your partner
+function partnerAway(gw){
+  if(!NET.host||PLAYERS.length<2)return null;
+  const me=CTX.pl||ME;
+  for(const pl of active()){if(pl===me)continue;const p=pl.P;if(p.level!==(gw.lvl||0)||Math.hypot(p.x-gw.x,p.z-gw.z)>7)return `Wait for your partner at the ${gw.name||LV.def.getaway||"van"}`;}
+  return null;
+}
+function asLocal(fn){return withPlayer(ME,"act",fn);}
+
+/* ---------- host: run the guest's turn ---------- */
+function newRemote(id){
+  const cam=new THREE.PerspectiveCamera(72,16/9,0.1,140);cam.rotation.order="YXZ";
+  const pl={id,local:false,P:Object.assign({},P),keys:{},pressedE:false,KP:{entry:"",busy:false},cam,g:{},in:{fwd:0,right:0,mag:0,sprint:false,src:"kbm",objHide:false,objPeek:0,objKey:""},
+    out:false,hd:false,hdSeq:0,dom:null,hudLast:{},ev:[],speed:0,lx:0,lz:0,ready:false};
+  for(const f of SWAP_G)pl.g[f]=G[f];pl.g.trail=[];pl.g.trailBase=0;pl.g.keypad=false;pl.g.coins=COINS;
+  pl.dom=hudClone();
+  return pl;
+}
+function hudClone(){
+  const map={};
+  for(const id of ["hud","alarmEdge","maskEdge","seenEdge"]){const c=document.getElementById(id).cloneNode(true);map[id]=c;c.querySelectorAll("[id]").forEach(e=>map[e.id]=e);}
+  return map;
+}
+function resetRemote(pl,i){
+  const sp=LV.def.spawn,a=(sp.yaw||0)+Math.PI/2,off=1.3*i;
+  const p={x:sp.x+Math.cos(a)*off*-1,z:sp.z+Math.sin(a)*off};resolve(p,0.35,sp.lvl||0);
+  Object.assign(pl.P,{x:p.x,z:p.z,yaw:sp.yaw||0,level:sp.lvl||0,y:(sp.lvl||0)*ROOF_Y,climb:null,ladder:null,onStair:false,jh:0,vy:0,gnd:0,fiddle:0,pitch:0,crouch:false,eye:1.65,bobT:0,carry:null,sprinting:false,kick:0,
+    masked:false,maskT:0,mag:MAG,reserve:MAG*3,reload:0,fireCD:0,aim:false,aimT:0,recoil:0,raise:0,wasRestricted:false,ties:LV.def.zipTies||0,shoutCD:0,jammers:JAMMERS,hasCard:false,locked:false});
+  Object.assign(pl.g,{noise:0,shotNoise:0,loud:0,keypad:false,picking:false,pickScr:0,ladderTip:false,coins:COINS+(SK.coins||0),leaveT:0,tieT:0,loopHold:0,bagT:0,leaveBlock:false,trail:[],trailBase:0});
+  pl.KP={entry:"",busy:false};pl.out=false;pl.hd=false;pl.hdSeq++;pl.keys={};pl.pressedE=false;pl.hudLast={};pl.dom=hudClone();pl.lx=p.x;pl.lz=p.z;
+  if(pl.avatar)pl.avatar.root.visible=true;
+}
+function coopReset(){
+  ME.out=false;
+  if(NET.host)others().forEach((pl,i)=>resetRemote(pl,i+1));
+  if(NET.guest){const pl={P:P,g:{}};resetSelfAsGuest();}
+  for(const a of AVATARS.values())a.root.visible=true;
+}
+function resetSelfAsGuest(){
+  const sp=LV.def.spawn,a=(sp.yaw||0)+Math.PI/2,off=1.3;
+  const p={x:sp.x-Math.cos(a)*off,z:sp.z+Math.sin(a)*off};resolve(p,0.35,sp.lvl||0);P.x=p.x;P.z=p.z;
+  GS.hd=false;GS.hdSeq=0;P.out=false;
+}
+function hostPlayers(dt){
+  for(const pl of others()){
+    if(pl.out)continue;
+    withPlayer(pl,"act",()=>{
+      // paths and ladders are driven here, the rest of the walking happens on the guest's device
+      const hd=!!(P.climb||P.ladder);
+      if(hd){updatePlayer(dt);if(!pl.hd)pl.hdSeq++;}
+      else if(pl.hd)pl.hdSeq++;
+      pl.hd=hd;
+      updateWeapon(dt);
+      camera.position.set(P.x,P.y+P.eye,P.z);camera.rotation.set(P.pitch,P.yaw,0);camera.fov=72-24*P.aimT;camera.updateProjectionMatrix();
+    });
+  }
+}
+function hostInteract(dt){
+  for(const pl of others()){
+    if(pl.out||!pl.ready)continue;
+    withPlayer(pl,"act",()=>updateInteraction(dt));
+    pl.pressedE=false;
+  }
+}
+function hostEndFrame(dt){
+  for(const pl of others()){
+    if(!pl.ready)continue;
+    withPlayer(pl,"sim",()=>updateHUD());
+    pl.g.shotNoise=0;pl.g.loud=0;
+  }
+}
+// an action the guest pressed, run as the guest
+function hostAction(pl,a,args,pose){
+  if(state==="ended"||state==="menu"||pl.out)return;
+  withPlayer(pl,"act",()=>{
+    if(pose){P.yaw=pose[0];P.pitch=pose[1];camera.position.set(P.x,P.y+P.eye,P.z);camera.rotation.set(P.pitch,P.yaw,0);camera.updateMatrixWorld();}
+    switch(a){
+      case "E":pressedE=true;pl.pressedE=true;break;
+      case "pressF":pressF();break;
+      case "shoot":pl.mute="shot";try{shoot();}finally{pl.mute=null;}break;
+      case "dropCarry":dropCarry();break;
+      case "startReload":startReload();break;
+      case "throwCoin":throwCoin();break;
+      case "placeJammer":placeJammer();break;
+      case "keypadDigit":keypadDigit(args[0]);break;
+      case "keypadBack":keypadBack();break;
+      case "keypadEnter":keypadEnter();break;
+      case "closeKeypad":closeKeypad();break;
+      case "digit":if(LV.def.onDigit)LV.def.onDigit(args[0]);break;
+      case "tryJump":tryJump();break;
+    }
+  });
+}
+
+/* ---------- routing sounds, messages and voices ---------- */
+const GLOBAL_SFX=new Set(["blip","vault","alarmHit","squelch","jamOn","jamOff","engine","win","lose"]);
+const SFX0=Object.assign({},SFX);
+for(const k of Object.keys(SFX0)){
+  SFX[k]=(...a)=>{
+    if(!NET.host)return SFX0[k](...a);
+    const pos=typeof a[0]==="number"||(a[0]&&typeof a[0].x==="number");
+    const owner=CTX.kind==="act"?(CTX.pl||ME):null;
+    if(pos||GLOBAL_SFX.has(k)||!owner){SFX0[k](...a);netEvAll(["sfx",k,a]);return;}
+    if(owner.local){SFX0[k](...a);if(k==="shot")netEvAll(["pshot",P.x,P.z,P.level]);return;}
+    if(owner.mute!==k)netEv(owner,["sfx",k,a]);
+    if(k==="shot")partnerShot(P.x,P.z,P.level);
+  };
+}
+function partnerShot(x,z,lvl){const s=spatial(x,z,40,lvl);if(!s)return;noiseHit({type:"bandpass",freq:1400,dur:.09,vol:.35*s.vol,pan:s.pan});tone({type:"square",f0:180,f1:60,dur:.08,vol:.08*s.vol,pan:s.pan,lp:s.lp||2200});}
+// a message during someone's turn is theirs; a message from the world (nobody's turn) is for everyone
+function netToast(msg,tone,ms){
+  if(!NET.host)return false;
+  if(CTX.cur){netEv(CTX.cur,["toast",msg,tone,ms]);return true;}
+  if(CTX.kind==null)netEvAll(["toast",msg,tone,ms]);
+  return false;
+}
+function toastAll(msg,tone,ms){asLocal(()=>toast(msg,tone,ms));if(NET.host)netEvAll(["toast",msg,tone,ms]);}
+function netSub(who,txt,ms,label){
+  if(!NET.host||netSub.inner)return false;
+  const owner=CTX.kind==="act"?(CTX.pl||ME):null;
+  for(const pl of others())netEv(pl,["sub",who,txt,ms,who==="Y"&&owner!==pl?"YOUR PARTNER":label]);
+  netSub.inner=true;try{asLocal(()=>showSub(who,txt,ms,who==="Y"&&owner&&!owner.local?"YOUR PARTNER":label));}finally{netSub.inner=false;}
+  return true;
+}
+const VOICES={VOICE_DISPATCH,VOICE_YOU,VOICE_SHOUT,VOICE_CIV,VOICE_VANE};
+function netSpeak(dur,v){if(!NET.host)return;const k=Object.keys(VOICES).find(n=>VOICES[n]===v);if(k)netEvAll(["speak",dur,k]);}
+function netEv(pl,e){if(NET.host&&pl&&!pl.local&&pl.ready)pl.ev.push(e);}
+function netEvAll(e){if(NET.host)for(const pl of others())netEv(pl,e);}
+
+/* ---------- the world as numbers: every object in the map, by its place in the scene ---------- */
+const SYNC={objs:[],last:[],mats:[],matLast:[],lights:[],texs:[],cols:[],colKey:"",doorLast:[],npcLast:[],built:false};
+function syncBuild(){
+  const chunks=new Set(SB.chunks.map(c=>c.mesh));
+  SYNC.objs=[];LV.group.traverse(o=>{if(o!==LV.group&&!chunks.has(o)&&!o.userData.local)SYNC.objs.push(o);});
+  SYNC.last=SYNC.objs.map(objState);
+  const mats=new Set(),texs=new Set([TEX_AMBER,TEX_RED,TEX_HEAR,TEX_SLEEP,TEX_PHONE,TEX_PAGER]);
+  for(const o of SYNC.objs){const m=o.material;if(m&&!Array.isArray(m)){mats.add(m);if(m.map)texs.add(m.map);}}
+  [CAM_DEAD,M.camBody].forEach(m=>mats.add(m));
+  SYNC.texs=[...texs];SYNC.texIndex=new Map(SYNC.texs.map((t,i)=>[t,i]));
+  SYNC.mats=[...mats];SYNC.matIndex=new Map(SYNC.mats.map((m,i)=>[m,i]));SYNC.matLast=SYNC.mats.map(matState);
+  SYNC.objMat=SYNC.objs.map(o=>o.material&&!Array.isArray(o.material)?SYNC.matIndex.get(o.material):-1);
+  const cs=new Set(colliders);doors.forEach(d=>cs.add(d.col));if(VAULT&&VAULT.openCol)cs.add(VAULT.openCol);if(VAULT&&VAULT.col)cs.add(VAULT.col);
+  SYNC.cols=[...cs];SYNC.colIndex=new Map(SYNC.cols.map((c,i)=>[c,i]));SYNC.colKey=colKey();
+  SYNC.doorLast=doors.map(doorState);SYNC.npcLast=npcs().map(npcState);
+  SYNC.target=new Map();SYNC.built=true;
+}
+const r3=v=>Math.round(v*1000)/1000;
+function objState(o){return [r3(o.position.x),r3(o.position.y),r3(o.position.z),r3(o.rotation.x),r3(o.rotation.y),r3(o.rotation.z),r3(o.scale.x),o.isLight?1:(o.visible?1:0),o.isLight?r3(o.intensity):0];}
+function matState(m){return [m.color?m.color.getHex():0,r3(m.opacity),m.map?(SYNC.texIndex?SYNC.texIndex.get(m.map)??-1:-1):-1,m.emissive?m.emissive.getHex():0];}
+function doorState(d){return [d.open?1:0,d.swing,r3(d.t),d.locked?1:0];}
+function npcState(g){return [r3(g.x),r3(g.z),g.level,g.down?1:0,r3(g.yaw),g.state==="tied"?1:0];}
+function colKey(){const a=[];for(const c of colliders){const i=SYNC.colIndex.get(c);if(i!=null)a.push(i);}a.sort((x,y)=>x-y);return a.join(",");}
+const same=(a,b)=>{for(let i=0;i<a.length;i++)if(a[i]!==b[i])return false;return true;};
+function syncDiff(){
+  const o=[],m=[],d=[],n=[];
+  SYNC.objs.forEach((ob,i)=>{
+    const st=objState(ob),mi=ob.material&&!Array.isArray(ob.material)?(SYNC.matIndex.get(ob.material)??-1):-1;
+    if(!same(st,SYNC.last[i])||mi!==SYNC.objMat[i]){SYNC.last[i]=st;SYNC.objMat[i]=mi;o.push([i,...st,mi]);}
+  });
+  SYNC.mats.forEach((mt,i)=>{const st=matState(mt);if(!same(st,SYNC.matLast[i])){SYNC.matLast[i]=st;m.push([i,...st]);}});
+  doors.forEach((dr,i)=>{const st=doorState(dr);if(!same(st,SYNC.doorLast[i])){SYNC.doorLast[i]=st;d.push([i,...st]);}});
+  npcs().forEach((g,i)=>{const st=npcState(g);if(!same(st,SYNC.npcLast[i])){SYNC.npcLast[i]=st;n.push([i,...st]);}});
+  const ck=colKey();let c=null;if(ck!==SYNC.colKey){SYNC.colKey=ck;c=ck;}
+  return {o,m,d,n,c};
+}
+// guest: apply what the host sent. Positions and angles glide to their targets; the rest switches at once.
+function syncApply(s){
+  for(const e of s.o||[]){
+    const ob=SYNC.objs[e[0]];if(!ob)continue;
+    const far=Math.hypot(ob.position.x-e[1],ob.position.y-e[2],ob.position.z-e[3])>2.5;
+    SYNC.target.set(ob,e);
+    if(far||!ob.visible){ob.position.set(e[1],e[2],e[3]);ob.rotation.set(e[4],e[5],e[6]);}
+    ob.scale.setScalar(e[7]);
+    if(ob.isLight)ob.intensity=e[9];else ob.visible=!!e[8];
+    if(e[10]>=0&&SYNC.mats[e[10]]&&ob.material!==SYNC.mats[e[10]])ob.material=SYNC.mats[e[10]];
+  }
+  for(const e of s.m||[]){const mt=SYNC.mats[e[0]];if(!mt)continue;if(mt.color)mt.color.setHex(e[1]);mt.opacity=e[2];if(e[3]>=0&&SYNC.texs[e[3]]&&mt.map!==SYNC.texs[e[3]]){mt.map=SYNC.texs[e[3]];mt.needsUpdate=true;}if(mt.emissive)mt.emissive.setHex(e[4]);}
+  for(const e of s.d||[]){const dr=doors[e[0]];if(!dr)continue;dr.open=!!e[1];dr.swing=e[2];dr.t=e[3];dr.locked=!!e[4];dr.leafCols=dr.open&&dr.t>=1&&!dr.glass?leafBoxes(dr):null;}
+  const list=npcs();
+  for(const e of s.n||[]){const g=list[e[0]];if(!g)continue;g.x=e[1];g.z=e[2];g.level=e[3];g.down=!!e[4];g.yaw=e[5];if(g.kind==="civ")g.state=e[6]?"tied":g.state==="tied"?"idle":g.state;}
+  if(s.c!=null){const keep=new Set(s.c?s.c.split(",").map(Number):[]);
+    colliders.length=0;const reg=new Set(SYNC.cols);
+    SYNC.cols.forEach((c,i)=>{if(keep.has(i))colliders.push(c);});
+    SYNC.colsOther=(SYNC.colsOther||[]);SYNC.colsOther.forEach(c=>{if(!reg.has(c))colliders.push(c);});}
+}
+function syncGlide(dt){
+  const k=Math.min(1,dt*14);
+  for(const [ob,e] of SYNC.target){
+    ob.position.x+=(e[1]-ob.position.x)*k;ob.position.y+=(e[2]-ob.position.y)*k;ob.position.z+=(e[3]-ob.position.z)*k;
+    ob.rotation.x+=wrap(e[4]-ob.rotation.x)*k;ob.rotation.y+=wrap(e[5]-ob.rotation.y)*k;ob.rotation.z+=wrap(e[6]-ob.rotation.z)*k;
+    if(Math.abs(e[1]-ob.position.x)+Math.abs(e[2]-ob.position.y)+Math.abs(e[3]-ob.position.z)<1e-3&&Math.abs(wrap(e[5]-ob.rotation.y))<1e-3)SYNC.target.delete(ob);
+  }
+}
+
+/* ---------- the other player, as you see them ---------- */
+const AVATARS=new Map();
+const avSuit=phong(0x1c1f26),avShirt=phong(0x2c3442),avMask=phong(0xe9e4da),avEye=new THREE.MeshBasicMaterial({color:0x0b0d10}),avSkin=phong(0xc79a7b);
+const TEX_MATE=tex(64,64,(g)=>{g.clearRect(0,0,64,64);g.fillStyle="#78d8a3";g.beginPath();g.moveTo(10,14);g.lineTo(54,14);g.lineTo(32,52);g.closePath();g.fill();});
+function makeAvatar(){
+  const root=new THREE.Group(),body=new THREE.Group();root.add(body);scene.add(root);
+  const part=(geo,mat,x,y,z,parent)=>{const m=new THREE.Mesh(geo,mat);m.position.set(x,y,z);m.castShadow=true;(parent||body).add(m);return m;};
+  const legL=new THREE.Group(),legR=new THREE.Group();legL.position.set(-0.11,0.86,0);legR.position.set(0.11,0.86,0);body.add(legL,legR);
+  part(new THREE.BoxGeometry(0.18,0.86,0.2),avSuit,0,-0.43,0,legL);part(new THREE.BoxGeometry(0.18,0.86,0.2),avSuit,0,-0.43,0,legR);
+  part(new THREE.BoxGeometry(0.5,0.62,0.28),avSuit,0,1.17,0);part(new THREE.BoxGeometry(0.16,0.4,0.02),avShirt,0,1.26,0.145);
+  const armL=new THREE.Group(),armR=new THREE.Group();armL.position.set(-0.32,1.44,0);armR.position.set(0.32,1.44,0);body.add(armL,armR);
+  part(new THREE.BoxGeometry(0.13,0.6,0.14),avSuit,0,-0.3,0,armL);part(new THREE.BoxGeometry(0.13,0.6,0.14),avSuit,0,-0.3,0,armR);
+  const head=part(new THREE.BoxGeometry(0.29,0.3,0.29),avSkin,0,1.63,0);
+  const mask=part(new THREE.BoxGeometry(0.31,0.32,0.06),avMask,0,1.63,0.13);
+  part(new THREE.BoxGeometry(0.06,0.03,0.01),avEye,-0.07,1.67,0.035,mask).position.set(-0.07,0.04,0.035);
+  part(new THREE.BoxGeometry(0.06,0.03,0.01),avEye,0.07,1.67,0.035,mask).position.set(0.07,0.04,0.035);
+  const gun=part(new THREE.BoxGeometry(0.05,0.08,0.26),M.pole,0,-0.6,0.12,armR);
+  const bag=makeBag();bag.scale.setScalar(0.85);bag.position.set(0,1.2,-0.26);body.add(bag);
+  const tag=new THREE.Sprite(new THREE.SpriteMaterial({map:TEX_MATE,depthTest:false,transparent:true}));tag.scale.set(0.3,0.3,0.3);tag.position.y=2.25;tag.renderOrder=9;root.add(tag);
+  root.traverse(o=>o.userData.local=true);
+  return {root,body,legL,legR,armL,armR,head,mask,gun,bag,tag,phase:0,x:0,z:0,y:0,yaw:0,speed:0,init:false};
+}
+function avatarFor(id){let a=AVATARS.get(id);if(!a){a=makeAvatar();AVATARS.set(id,a);}return a;}
+function dropAvatars(){for(const a of AVATARS.values())scene.remove(a.root);AVATARS.clear();}
+// pose: [x,y,z,yaw,level,crouch,masked,carry(0 none,1 loot,2 body),aim,out]
+function poseOf(p,out){return [r3(p.x),r3(p.y),r3(p.z),r3(p.yaw),p.level,p.crouch?1:0,p.masked?1:0,p.carry?(p.carry.kind==="body"?2:1):0,p.aim?1:0,out?1:0];}
+function updateAvatar(a,pose,dt){
+  if(!pose)return;
+  const [x,y,z,yaw,lvl,crouch,masked,carry,aim,out]=pose;
+  a.root.visible=!out;if(out)return;
+  if(!a.init||Math.hypot(x-a.x,z-a.z)>3){a.x=x;a.z=z;a.y=y;a.yaw=yaw;a.init=true;}
+  const k=Math.min(1,dt*12),px=a.x,pz=a.z;
+  a.x+=(x-a.x)*k;a.z+=(z-a.z)*k;a.y+=(y-a.y)*k;a.yaw+=wrap(yaw+Math.PI-a.yaw)*k;
+  const sp=Math.hypot(a.x-px,a.z-pz)/Math.max(dt,1e-4);a.speed+=(sp-a.speed)*Math.min(1,dt*8);
+  a.root.position.set(a.x,a.y,a.z);a.root.rotation.y=a.yaw;
+  a.body.position.y=crouch?-0.45:0;a.mask.visible=!!masked;a.gun.visible=!!masked&&!carry;a.bag.visible=carry===1;
+  a.armR.rotation.x=masked&&!carry?(aim?-1.55:-0.9):0;
+  if(a.speed>0.3){
+    const before=Math.floor(a.phase/Math.PI);a.phase+=a.speed*dt*4.2;
+    if(Math.floor(a.phase/Math.PI)!==before&&!crouch){const s=spatial(a.x,a.z,14,lvl);if(s)stepSound(a.x,a.z,0.45*s.vol*(a.speed>4?1.4:1),s.pan,s.lp,lvl);}
+  }
+  const s=a.speed>0.3?Math.sin(a.phase)*0.55:0;
+  a.legL.rotation.x=s;a.legR.rotation.x=-s;a.armL.rotation.x=-s*0.6;if(!masked||carry)a.armR.rotation.x=s*0.6;
+  const d=Math.hypot(a.x-LP.x,a.z-LP.z);a.tag.visible=d>5||lvl!==LP.level;
+}
+
+/* ---------- transport: PeerJS online, or a BroadcastChannel between tabs (?net=local) ---------- */
+const NETLOCAL=/[?&]net=local/.test(location.search);
+// ?peer=host:port uses your own PeerJS server instead of the public one (tests run one locally)
+const PEER_OPTS=(()=>{const m=/[?&]peer=([^&:]+):(\d+)/.exec(location.search);return m?{host:m[1],port:+m[2],path:"/",secure:false,debug:0,config:{iceServers:[]}}:{debug:0};})();
+function loadPeerJS(){
+  if(window.Peer)return Promise.resolve();
+  const urls=["https://cdn.jsdelivr.net/npm/peerjs@1.5.4/dist/peerjs.min.js","https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"];
+  return new Promise((res,rej)=>{let i=0;const next=()=>{if(i>=urls.length){rej(new Error("load"));return;}const s=document.createElement("script");s.src=urls[i++];s.onload=()=>res();s.onerror=()=>{s.remove();next();};document.head.appendChild(s);};next();});
+}
+function randCode(){const A="ABCDEFGHJKLMNPQRSTUVWXYZ23456789";let s="";for(let i=0;i<5;i++)s+=A[Math.random()*A.length|0];return s;}
+function wire(send,close){NET.send=d=>{NET.lastTx=performance.now();send(d);};NET.close=close;NET.lastRx=performance.now();}
+function netHost(){
+  if(NET.on||NET.busy)return;
+  const code=randCode();NET.code=code;NET.busy=true;coopUI("Opening a room…");
+  if(NETLOCAL){
+    const bc=new BroadcastChannel("cgnet-"+code);NET.bc=bc;
+    bc.onmessage=e=>{const m=e.data;if(m.to!=="h")return;if(!NET.on&&m.d.t==="hello")hostConnected((d)=>bc.postMessage({to:"g",d}),()=>bc.close());if(NET.on)netRecv(m.d);};
+    NET.busy=false;NET.waiting=true;coopUI();return;
+  }
+  loadPeerJS().then(()=>{
+    const peer=new Peer(PEER_PREFIX+code,PEER_OPTS);NET.peer=peer;
+    peer.on("open",()=>{NET.busy=false;NET.waiting=true;coopUI();});
+    peer.on("connection",conn=>{
+      if(NET.on){conn.on("open",()=>{conn.send({t:"full"});setTimeout(()=>conn.close(),500);});return;}
+      conn.on("open",()=>{hostConnected(d=>conn.open&&conn.send(d),()=>conn.close());NET.conn=conn;});
+      conn.on("data",d=>{if(NET.on)netRecv(d);});
+      conn.on("close",()=>netLost());conn.on("error",()=>netLost());
+    });
+    peer.on("error",err=>{NET.busy=false;if(err&&err.type==="unavailable-id"){netReset();netHost();return;}coopUI("Couldn't open a co-op room. Check your connection and try again.");netReset(true);});
+    peer.on("disconnected",()=>{try{peer.reconnect();}catch(e){}});
+  }).catch(()=>{NET.busy=false;coopUI("Couldn't load the co-op connection library. Check your connection.");netReset(true);});
+}
+function netJoin(code){
+  code=(code||"").toUpperCase().replace(/[^A-Z0-9]/g,"");
+  if(NET.on||NET.busy||code.length<4){if(code.length<4)coopUI("Type the host's code first");return;}
+  NET.code=code;NET.busy=true;coopUI("Connecting…");
+  if(NETLOCAL){
+    const bc=new BroadcastChannel("cgnet-"+code);NET.bc=bc;
+    bc.onmessage=e=>{const m=e.data;if(m.to!=="g")return;netRecv(m.d);};
+    guestConnected(d=>bc.postMessage({to:"h",d}),()=>bc.close());return;
+  }
+  loadPeerJS().then(()=>{
+    const peer=new Peer(undefined,PEER_OPTS);NET.peer=peer;
+    peer.on("open",()=>{
+      const conn=peer.connect(PEER_PREFIX+code,{reliable:true,serialization:"json"});NET.conn=conn;
+      const to=setTimeout(()=>{if(!NET.on){coopUI("No game with that code. Check it with the host.");netReset(true);}},12000);
+      conn.on("open",()=>{clearTimeout(to);guestConnected(d=>conn.open&&conn.send(d),()=>conn.close());});
+      conn.on("data",d=>netRecv(d));
+      conn.on("close",()=>netLost());conn.on("error",()=>netLost());
+    });
+    peer.on("error",err=>{NET.busy=false;coopUI(err&&err.type==="peer-unavailable"?"No game with that code. Check it with the host.":"Couldn't connect. Check your connection and try again.");netReset(true);});
+  }).catch(()=>{NET.busy=false;coopUI("Couldn't load the co-op connection library. Check your connection.");netReset(true);});
+}
+function hostConnected(send,close){
+  wire(send,close);NET.on=true;NET.host=true;NET.busy=false;NET.waiting=false;
+  const pl=newRemote(1);PLAYERS.push(pl);NET.remote=pl;
+  setMode("free");NET.send({t:"welcome",v:GAME_VERSION,map:selectedMap});
+  if(DEV.on){DEV.on=false;DEV.ghost=false;$("devToggle").checked=false;}
+  coopUI();toast(state==="menu"?"Your partner joined":"Your partner joined. They'll be in the next job you start","good",2600);
+}
+function guestConnected(send,close){
+  wire(send,close);NET.on=true;NET.guest=true;NET.busy=false;
+  NET.send({t:"hello",v:GAME_VERSION});setMode("free");
+  if(DEV.on){DEV.on=false;DEV.ghost=false;$("devToggle").checked=false;}
+  coopUI("Connected. The host picks the job");
+}
+function netLost(){
+  if(!NET.on)return;
+  const wasGuest=NET.guest;
+  if(NET.host){
+    const pl=NET.remote;const i=PLAYERS.indexOf(pl);if(i>0)PLAYERS.splice(i,1);if(pl)pl.out=true;
+    for(const c of civs)if(c.leader===pl){c.leader=null;c.follow=false;}
+    dropAvatars();netReset(false,true);
+    if(state!=="menu"&&ME.out){ME.out=false;endGame(false,"Your partner left while you were in custody.");}
+    else if(state!=="menu")asLocal(()=>toast("Your partner disconnected. You're on your own","bad",3200));
+    coopUI("Your partner left");
+    return;
+  }
+  netReset();dropAvatars();
+  if(wasGuest){if(state!=="menu"){toMenu();}coopUI("Lost the connection to the host");}
+}
+function netReset(keepMsg,keepPeer){
+  try{if(NET.close)NET.close();}catch(e){}
+  if(!keepPeer){try{if(NET.peer)NET.peer.destroy();}catch(e){}try{if(NET.bc)NET.bc.close();}catch(e){}NET.peer=null;NET.bc=null;}
+  const keepCode=keepPeer?NET.code:"";
+  Object.assign(NET,{on:false,host:false,guest:false,send:null,close:null,conn:null,remote:null,busy:false,waiting:!!keepPeer,code:keepCode,started:false,acc:0});
+  PLAYERS.length=1;
+  if(!keepMsg)coopUI();
+}
+function netLeave(){netReset();dropAvatars();if(state!=="menu")toMenu();coopUI();}
+
+/* ---------- messages ---------- */
+const GS={hd:false,hdSeq:0,pose:null,host:null,lastSend:0,ver:""};
+function netRecv(d){
+  if(!d||!d.t)return;
+  NET.lastRx=performance.now();
+  if(d.t==="ping")return;
+  if(NET.host){
+    const pl=NET.remote;if(!pl)return;
+    switch(d.t){
+      case "hello":if(d.v!==GAME_VERSION)NET.send({t:"warn",msg:"You and the host are on different versions of the game. Reload both pages."});break;
+      case "ready":pl.ready=true;pl.aspect=d.aspect||1.6;if(d.n!==SYNC.objs.length){const w="Your games don't match. Reload both pages and try again.";NET.send({t:"warn",msg:w});asLocal(()=>toast(w,"bad",4000));}break;
+      case "st":hostState(pl,d);break;
+      case "act":hostAction(pl,d.a,d.args||[],d.pose);break;
+      case "bye":netLost();break;
+    }
+    return;
+  }
+  switch(d.t){
+    case "welcome":coopUI("Connected. The host picks the job");if(d.v!==GAME_VERSION)coopUI("You and the host are on different versions. Reload both pages.");if(d.map)guestPick(d.map);break;
+    case "pick":guestPick(d.map);break;
+    case "start":guestStart(d);break;
+    case "snap":guestSnap(d);break;
+    case "end":guestEnd(d);break;
+    case "menu":if(state!=="menu")toMenu();coopUI("Connected. The host picks the job");break;
+    case "warn":toast(d.msg,"bad",4000);coopUI(d.msg);break;
+    case "full":coopUI("That game already has two players");netReset(true);break;
+  }
+}
+function hostState(pl,d){
+  const p=pl.P;
+  pl.in.fwd=d.in[0];pl.in.right=d.in[1];pl.in.mag=d.in[2];pl.in.sprint=!!d.in[3];pl.in.src=d.in[4];pl.in.objHide=!!d.in[5];
+  pl.keys={};for(const k of d.k)pl.keys[k]=true;
+  p.aim=!!d.aim;if(d.aspect){pl.cam.aspect=d.aspect;}
+  p.yaw=d.yaw;p.pitch=d.pitch;
+  if(pl.hd||d.hdSeq<pl.hdSeq||state==="menu")return; // the host is moving them (ladder, path), or this is from before
+  const [x,y,z,level,jh,vy,gnd,crouch,sprinting,onStair,eye,noise]=d.p;
+  Object.assign(p,{x,y,z,level,jh,vy,gnd,crouch:!!crouch,sprinting:!!sprinting,onStair:!!onStair,eye});
+  pl.g.noise=noise;
+  // breadcrumbs for hostages following them
+  const tl=pl.g.trail[pl.g.trail.length-1];
+  if(!tl||Math.hypot(x-tl.x,z-tl.z)>0.35){pl.g.trail.push({x,z});if(pl.g.trail.length>600){pl.g.trail.shift();pl.g.trailBase++;}}
+}
+// [id, send its contents, send hidden]
+const HUD_SYNC=[["hud",0,0],["detect",1,1],["clock",1,1],["obj",1,1],["status",1,1],["prompt",1,1],["keypad",0,1],["kpScreen",1,1],["kpTitle",1,1],["alarmEdge",0,1],["maskEdge",0,1],["seenEdge",0,1]];
+function hudPacket(pl){
+  const out={},L=pl.hudLast;
+  for(const [id,inner,hid] of HUD_SYNC){
+    const e=pl.dom[id];if(!e)continue;
+    const v=[hid?(e.hidden?1:0):-1,e.className,inner?e.innerHTML:null,e.style.cssText];
+    const l=L[id];if(l&&same(v,l))continue;L[id]=v;out[id]=v;
+  }
+  return out;
+}
+function netFrame(dt){
+  NET.acc=(NET.acc||0)+dt;
+  if(state==="playing"&&NET.guest)GS.joined=true;
+  coopPauseText();
+  if(NET.guest)updateAvatar(avatarFor(0),GS.pose,dt);
+  if(NET.host&&NET.remote){const pl=NET.remote;if(pl.P&&pl.ready)updateAvatar(avatarFor(1),poseOf(pl.P,pl.out),dt);}
+  // in custody: watch your partner
+  if(state!=="menu"&&((NET.host&&ME.out)||(NET.guest&&GS.out))){
+    const a=AVATARS.values().next().value;if(a){camera.position.set(a.x,a.y+2.4,a.z);camera.rotation.set(-0.35,a.yaw+Math.PI,0);}
+  }
+  // keep-alive: a ping every 2 s; nothing heard for 20 s means the other side is gone
+  const now=performance.now();
+  if(!NET.lastTx||now-NET.lastTx>2000){NET.lastTx=now;try{NET.send&&NET.send({t:"ping"});}catch(e){}}
+  if(NET.lastRx&&now-NET.lastRx>20000){NET.lastRx=0;netLost();return;}
+  if(NET.acc<1/NET_HZ)return;NET.acc=0;
+  if(NET.host)hostSend();else if(NET.guest)guestSend();
+}
+function hostSend(){
+  const pl=NET.remote;if(!pl||!NET.send)return;
+  if(!NET.started||!pl.ready||state==="menu"){pl.ev.length=0;return;}
+  const p=pl.P;
+  const snap={t:"snap",tm:r3(G.time),s:syncDiff(),
+    g:[G.alarm?1:0,r3(G.alarmT),G.drilling?1:0,G.vaultOpen?1:0,r3(G.susp),r3(G.jamT),pl.g.keypad?1:0,pl.g.coins,state==="paused"?1:0],
+    p:[p.masked?1:0,p.carry?(p.carry.kind==="body"?2:p.carry.gold?3:1):0,p.mag,p.reserve,r3(p.reload),p.ties,p.jammers,p.locked?1:0,p.hasCard?1:0,pl.out?1:0,pl.hd?1:0,pl.hdSeq,
+       r3(p.x),r3(p.y),r3(p.z),p.level,r3(p.jh),p.ladder?LADDERS.indexOf(p.ladder.l):-1,p.ladder?r3(p.ladder.y):0,p.climb?1:0,r3(p.maskT)],
+    a:poseOf(LP,ME.out),h:hudPacket(pl),e:pl.ev.splice(0)};
+  NET.send(snap);
+}
+function guestSend(){
+  if(!NET.send||state==="menu"||!NET.started)return;
+  const k=["KeyW","KeyA","KeyS","KeyD","ShiftLeft","ShiftRight","KeyE","KeyG","Space"].filter(c=>keys[c]);
+  NET.send({t:"st",p:[r3(P.x),r3(P.y),r3(P.z),P.level,r3(P.jh),r3(P.vy),r3(P.gnd),P.crouch?1:0,P.sprinting?1:0,P.onStair?1:0,r3(P.eye),r3(G.noise)],
+    yaw:r3(P.yaw),pitch:r3(P.pitch),k,in:[r3(IN.fwd),r3(IN.right),r3(IN.mag),IN.sprint?1:0,IN.src,IN.objHide?1:0],aim:P.aim?1:0,aspect:r3(innerWidth/innerHeight),hdSeq:GS.hdSeq});
+}
+function netAct(a,args){
+  if(!NET.send||state==="menu")return;
+  NET.send({t:"act",a,args:args||[],pose:[r3(P.yaw),r3(P.pitch)]});
+}
+
+/* ---------- guest ---------- */
+function guestPick(id){
+  if(!MAPS[id])return;selectedMap=id;
+  document.querySelectorAll(".job").forEach(b=>b.setAttribute("aria-checked",String(b.dataset.map===id)));jobDetail();
+}
+function seeded(seed,fn){
+  let a=seed>>>0;const R=Math.random;
+  Math.random=()=>{a=(a+0x6D2B79F5)>>>0;let t=a;t=Math.imul(t^(t>>>15),t|1);t^=t+Math.imul(t^(t>>>7),t|61);return ((t^(t>>>14))>>>0)/4294967296;};
+  try{return fn();}finally{Math.random=R;}
+}
+// Some textures are drawn the first time a map needs them, which uses up random numbers. Build the map once to have them
+// all, then build it again from the shared seed: both games now draw the same random numbers in the same order.
+function coopBuild(id,seed){
+  if(LV.id!==id||!coopBuild.warm.has(id)){buildMap(id);coopBuild.warm.add(id);}
+  seeded(seed,()=>{buildMap(id);resetGame();});
+  syncBuild();
+}
+coopBuild.warm=new Set();
+function guestStart(d){
+  initAudio();guestPick(d.map);
+  if(state!=="menu"){NET.ending=true;try{setState("menu");}finally{NET.ending=false;}}
+  coopBuild(d.map,d.seed);
+  Object.assign(GS,{hd:false,hdSeq:0,out:false,pose:null,joined:false});dropAvatars();
+  NET.started=true;
+  NET.send({t:"ready",n:SYNC.objs.length,aspect:r3(innerWidth/innerHeight)});
+  // a click or tap is needed before the browser lets the game take the mouse and play sound
+  $("pauseNote").textContent=`The host started ${LV.def.job||"the job"}. You're both on the clock.`;
+  $("resumeBtn").textContent="Join the job";
+  NET.ending=true;try{setState("paused");}finally{NET.ending=false;}
+}
+function guestSnap(d){
+  if(!SYNC.built)return;
+  syncApply(d.s);
+  const g=d.g;
+  const wasAlarm=G.alarm;
+  G.alarm=!!g[0];G.alarmT=g[1];G.drilling=!!g[2];G.vaultOpen=!!g[3];G.susp=g[4];G.jamT=g[5];G.keypad=!!g[6];G.coins=g[7];G.time=d.tm;
+  if(G.alarm&&!wasAlarm){G.everAlarm=true;}
+  const p=d.p;
+  P.masked=!!p[0];P.carry=p[1]?{kind:p[1]===2?"body":"loot",gold:p[1]===3}:null;P.mag=p[2];P.reserve=p[3];P.reload=p[4];P.ties=p[5];P.jammers=p[6];P.locked=!!p[7];P.hasCard=!!p[8];
+  P.maskT=p[20];
+  if(!!p[9]!==!!GS.out){GS.out=!!p[9];}
+  const hd=!!p[10];
+  if(hd){
+    // the host is moving you (ladder, hatch, elevator): follow
+    GS.hd=true;P.x=p[12];P.y=p[13];P.z=p[14];P.level=p[15];P.jh=p[16];P.vy=0;
+    P.ladder=p[17]>=0?{l:LADDERS[p[17]],y:p[18]}:null;P.climb=p[19]?{guest:true}:null;
+  }else if(GS.hd){
+    GS.hd=false;P.x=p[12];P.y=p[13];P.z=p[14];P.level=p[15];P.jh=p[16];P.vy=0;P.ladder=null;P.climb=null;
+  }
+  GS.hdSeq=p[11];
+  showCarry();
+  GS.pose=d.a;
+  for(const [id,v] of Object.entries(d.h||{})){const e=document.getElementById(id);if(!e)continue;if(v[0]>=0)e.hidden=!!v[0];e.className=v[1];if(v[2]!=null)e.innerHTML=v[2];e.style.cssText=v[3];}
+  for(const e of d.e||[])guestEvent(e);
+}
+function guestEvent(e){
+  switch(e[0]){
+    case "toast":toast(e[1],e[2],e[3]);break;
+    case "sfx":if(SFX0[e[1]])SFX0[e[1]](...e[2]);break;
+    case "pshot":partnerShot(e[1],e[2],e[3]);break;
+    case "sub":showSub(e[1],e[2],e[3],e[4]);break;
+    case "speak":if(VOICES[e[2]])speak(e[1],VOICES[e[2]]);break;
+    case "stopVoices":stopVoices();break;
+    case "spark":spark({x:e[1],y:e[2],z:e[3]},!!e[4]);break;
+    case "coin":{const m=new THREE.Mesh(coinGeo,coinMat);m.position.set(e[1],e[2],e[3]);m.userData.noHit=true;lvAdd(m);THROWN.push({m,vx:e[4],vy:e[5],vz:e[6],lvl:e[7],t:0,done:false,ghost:true});break;}
+    case "jam":makeJammer(e[1],e[2],e[3],e[4]);break;
+  }
+}
+function guestStep(dt){
+  G.world+=dt;
+  if(!GS.out){
+    inputLook(dt);
+    if(GS.hd){camera.position.set(P.x,P.y+P.eye,P.z);camera.rotation.set(P.pitch,P.yaw,0);}
+    else updatePlayer(dt);
+    updateWeapon(dt);
+    if(pressedE){netAct("E");pressedE=false;}
+  }
+  syncGlide(dt);
+  updateThrows(dt);
+  for(const s of sparks){if(!s.visible)continue;s.life-=dt;s.material.opacity=clamp(s.life*8,0,1);if(s.life<=0)s.visible=false;}
+  // sounds the host's game makes by itself
+  if(G.drilling&&!A.drill)drillOn();else if(!G.drilling&&A.drill)drillOff(true);
+  if(G.alarm&&!A.alarm){alarmOn();}else if(!G.alarm&&A.alarm)alarmOff();
+  updateAudio();
+}
+function guestWeapon(dt){
+  // the host keeps the ammo and the mask; here the gun only moves
+  P.fireCD=Math.max(0,(P.fireCD||0)-dt);
+  if(P.aim&&(P.sprinting||P.carry||!P.masked||P.climb))P.aim=false;
+  const canAim=P.masked&&P.reload<=0&&!P.sprinting&&!P.carry;
+  P.aimT=clamp(P.aimT+(P.aim&&canAim?dt:-dt)*7,0,1);
+  P.raise=clamp(P.raise+(P.masked?dt*2.2:-dt*4),0,1);
+  P.recoil=Math.max(0,P.recoil-dt*9);
+  const fov=72-24*P.aimT;
+  if(Math.abs(camera.fov-fov)>0.01){camera.fov=fov;camera.updateProjectionMatrix();}
+  gun.visible=P.raise>0.01;
+  gun.position.lerpVectors(HIP,ADS,P.aimT);
+  const bobA=1-P.aimT,moving=keys.KeyW||keys.KeyA||keys.KeyS||keys.KeyD||IN.mag>0.1;
+  gun.position.x+=moving?Math.cos(P.bobT*0.5)*0.008*bobA:0;
+  gun.position.y+=(moving?Math.abs(Math.sin(P.bobT*0.5))*0.008:Math.sin(G.world*1.6)*0.002)*bobA-(1-P.raise)*0.3+P.recoil*(0.012-0.006*P.aimT);
+  gun.position.z+=P.recoil*(0.035-0.015*P.aimT);
+  const rl=P.reload>0?Math.sin(Math.PI*(1-P.reload/RELOAD_TIME)):0;
+  gun.rotation.set(P.recoil*0.18+rl*0.5,0,rl*0.5+(P.sprinting?0.3:0)*bobA);
+}
+function guestShoot(){
+  if(P.locked||P.climb||GS.out)return;
+  if(!P.masked){toast("Put on your mask first. Hold G","warn",1400);return;}
+  if(P.raise<0.9||P.reload>0||P.fireCD>0)return;
+  P.fireCD=0.3;
+  if(P.mag>0){P.recoil=1;SFX0.shot();flash.visible=true;flash.rotation.z=Math.random()*3;muzzleLight.intensity=2.2;window.setTimeout(()=>{flash.visible=false;muzzleLight.intensity=0;},45);}
+  netAct("shoot");
+}
+function guestEnd(d){
+  NET.ending=true;
+  try{
+    for(const [id,v] of Object.entries(d.dom)){const e=document.getElementById(id);if(!e)continue;e.innerHTML=v[0];e.className=v[1];e.hidden=!!v[2];}
+    if(document.pointerLockElement)document.exitPointerLock();
+    drillOff(true);alarmOff();stopVoices();setPrompt(null);hideToast();$("subs").hidden=true;
+    if(d.won)SFX0.win();else SFX0.lose();
+    setState("ended");
+  }finally{NET.ending=false;}
+  $("againBtn").hidden=true;$("menuBtn").textContent="Back to the lobby";$("menuBtn").className="btn ghost";
+}
+function netEndScreen(won){
+  if(NET.host&&NET.send){
+    const dom={};for(const id of ["endStamp","endTitle","endTakeVal","endTakeLbl","endBreak","endBest","endReason","endStats"]){const e=document.getElementById(id);dom[id]=[e.innerHTML,e.className,e.hidden?1:0];}
+    dom.endCareer=["","",1];
+    hostSend();NET.send({t:"end",won,dom});
+  }
+}
+
+/* ---------- lobby ---------- */
+function coopUI(msg){
+  const box=$("coopBox");if(!box)return;
+  const st=$("coopStatus");
+  $("coopIdle").hidden=NET.on||NET.waiting||NET.busy;
+  $("coopLeaveBtn").hidden=!(NET.on||NET.waiting||NET.busy);
+  $("coopLeaveBtn").textContent=NET.on?"Leave co-op":"Cancel";
+  let txt=msg||"";
+  if(!msg){
+    if(NET.host)txt="Partner connected · you pick the job";
+    else if(NET.guest)txt="Connected · the host picks the job";
+    else if(NET.waiting)txt="";
+  }
+  st.textContent=txt;st.hidden=!txt;
+  $("coopCodeShow").hidden=!(NET.waiting&&!NET.on);
+  if(NET.waiting&&!NET.on)$("coopCodeShow").innerHTML=`Your code <b>${NET.code}</b> · waiting for your partner`;
+  document.body.classList.toggle("coop-guest",!!NET.guest);
+  const sb=$("startBtn"),ok=!NET.host||COOP_MAPS.has(selectedMap);
+  sb.disabled=!!NET.guest||!ok;
+  sb.textContent=NET.guest?"The host starts the job":NET.host?(ok?"Start the co-op job":"Solo only for now"):"Start the job";
+  const mt=document.querySelector(".modes");if(mt)mt.hidden=!!NET.on;
+}
+function coopStartRun(){
+  const seed=(Math.random()*4294967296)>>>0;
+  NET.started=true;NET.remote.ready=false;NET.remote.ev.length=0;
+  NET.send({t:"start",map:selectedMap,seed});
+  coopBuild(selectedMap,seed);
+}
+function initCoopUI(){
+  const aside=document.querySelector(".job-detail");if(!aside)return;
+  const box=document.createElement("div");box.className="coop";box.id="coopBox";
+  box.innerHTML=`<span class="lbl">Co-op · 2 players online</span>
+    <div class="coop-row" id="coopIdle"><button type="button" class="btn ghost small" id="coopHostBtn">Host</button><input id="coopCode" maxlength="6" placeholder="CODE" autocomplete="off" autocapitalize="characters" spellcheck="false" aria-label="Join code"><button type="button" class="btn ghost small" id="coopJoinBtn">Join</button></div>
+    <div class="coop-code" id="coopCodeShow" hidden></div>
+    <div class="coop-status" id="coopStatus" hidden></div>
+    <button type="button" class="btn ghost small" id="coopLeaveBtn" hidden>Leave co-op</button>`;
+  aside.insertBefore(box,aside.querySelector(".dev"));
+  $("coopHostBtn").onclick=()=>{initAudio();netHost();};
+  $("coopJoinBtn").onclick=()=>{initAudio();netJoin($("coopCode").value);};
+  $("coopCode").addEventListener("keydown",e=>{e.stopPropagation();if(e.key==="Enter")$("coopJoinBtn").click();});
+  $("coopLeaveBtn").onclick=()=>{if(NET.send)try{NET.send({t:"bye"});}catch(e){}netLeave();};
+  // in co-op the host starts every run (a new random seed for both), and the guest can only leave
+  const wrapBtn=(id,fn)=>{const b=$(id),o=b.onclick;b.onclick=e=>{if(fn())return;if(o)o.call(b,e);};};
+  const hostRun=()=>{if(!NET.host)return false;if(!COOP_MAPS.has(selectedMap))return true;initAudio();coopStartRun();begin();return true;};
+  wrapBtn("startBtn",hostRun);wrapBtn("againBtn",hostRun);wrapBtn("restartBtn",hostRun);
+  wrapBtn("pauseMenuBtn",()=>{if(!NET.guest)return false;if(NET.send)try{NET.send({t:"bye"});}catch(e){}netLeave();return true;});
+  wrapBtn("menuBtn",()=>{if(!NET.guest)return false;NET.started=false;if(document.pointerLockElement)document.exitPointerLock();resetGame();setState("menu");coopUI();return true;});
+  wrapBtn("resumeBtn",()=>{if(!NET.on)return false;initAudio();begin();return true;});
+  coopUI();
+}
+// the pause menu in co-op: the job keeps going
+function coopPauseText(){
+  if(!NET.on||state!=="paused")return;
+  if(NET.guest&&$("resumeBtn").textContent==="Join the job"&&!GS.joined)return;
+  $("pauseNote").textContent="Co-op: the job keeps going while you're in this menu.";
+  $("resumeBtn").textContent="Resume";
+  $("restartBtn").hidden=!!NET.guest;
+  $("pauseMenuBtn").textContent=NET.guest?"Leave co-op":"Back to jobs";
+}
+
 /* ================= touch and gamepad input =================
    Both feed the same game: an analog move vector (IN.fwd/IN.right), look deltas, and the same actions the keys trigger.
    IN.src is whatever you used last (kbm / touch / pad): aim assist only ever helps touch and gamepad. */
@@ -7395,7 +8126,8 @@ addEventListener("touchstart",()=>setSrc("touch"),{capture:true,passive:true});
 /* ---------- touch ---------- */
 const TP=new Map(); // pointerId -> {kind:"stick"|"look"|"btn",...}
 const STICK_R=58;
-function touchAct(act,down){
+function touchAct(act,down){return asLocal(()=>touchAct0(act,down));}
+function touchAct0(act,down){
   if(state!=="playing")return;
   switch(act){
     case "use":keys.KeyE=down;if(down)pressedE=true;if(down&&G.keypad)closeKeypad();break;
@@ -7441,7 +8173,8 @@ function initTouch(){
   $("tNum").addEventListener("pointerdown",e=>{const b=e.target.closest("[data-n]");if(!b)return;e.preventDefault();e.stopPropagation();pressDigit(+b.dataset.n);});
   document.addEventListener("pointerdown",e=>{if(G.keypad&&IN.src==="touch"&&!e.target.closest("#keypad"))closeKeypad();});
 }
-function pressDigit(n){if(state==="playing"&&LV.def.onDigit)LV.def.onDigit(n);}
+function pressDigit(n){if(state==="playing")asLocal(()=>digitPressed(n));}
+function digitPressed(n){if(NET.guest){netAct("digit",[n]);return true;}return !!(LV.def.onDigit&&LV.def.onDigit(n));}
 function touchHUD(){
   const on=IN.src==="touch"&&state==="playing"&&!G.keypad;$("touch").hidden=!on;if(!on){if(G.keypad){IN.fwd=IN.right=IN.mag=0;TP.clear();}return;}
   const vis=(act,v)=>{const b=document.querySelector(`.tb[data-act="${act}"]`);if(b&&b.hidden!==!v)b.hidden=!v;};
@@ -7472,7 +8205,8 @@ function padState(){
   if(!p)for(const g of ps)if(g&&g.connected){p=g;break;}
   return p;
 }
-function padFrame(dt){
+function padFrame(dt){return asLocal(()=>padFrame0(dt));}
+function padFrame0(dt){
   const p=padState();if(!p)return;
   const b=i=>!!(p.buttons[i]&&(p.buttons[i].pressed||p.buttons[i].value>0.5));
   const now={};for(const k in PAD_BTN)now[k]=b(PAD_BTN[k]);
@@ -7597,16 +8331,18 @@ function frame(now){
   requestAnimationFrame(frame);
   const raw=(now-last)/1000,dt=Math.min(0.05,raw);last=now;
   inputFrame(dt);
-  if(state==="playing")stepGame(dt);
+  if(NET.guest&&(state==="playing"||state==="paused"))guestStep(dt);
+  else if(running())stepGame(dt);
   else if(state==="menu")stepMenu(dt);
-  animate(dt);
+  if(!NET.guest||state==="menu")animate(dt);
+  if(NET.on)netFrame(dt);
   lmUpdate(dt);aqTick(raw);
   renderer.clear();
   renderer.render(scene,camera);
   sbCheck();
   if(state==="playing"||state==="paused"){renderer.clearDepth();renderer.render(vmScene,vmCam);}
 }
-initInput();
+initInput();initCoopUI();
 buildMap(selectedMap);
 document.querySelectorAll(".job").forEach(b=>b.setAttribute("aria-checked",String(b.dataset.map===selectedMap)));jobDetail();
 resetGame();

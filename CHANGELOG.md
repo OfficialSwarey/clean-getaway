@@ -5,6 +5,13 @@ feature round bumps MINOR, a bug-fix-only update bumps PATCH, and 1.0.0 is
 the first "finished" release. Up to 0.30.0, MINOR is the version number the
 claude.ai artifact had. Releases are tagged `v0.30.0` and so on.
 
+## 0.31.0 — co-op
+- Online co-op for two players in free play: one hosts and shares a five-letter code, the other joins. The host picks the job and starts it; both of you play it on your own device (computer, phone or controller).
+- Guards, civilians and cameras notice both of you. The detection meter, the alarm, the bags and the take are shared; the HUD shows where your partner is and what they're doing.
+- If a guard catches one of you, that player watches from their partner's shoulder while the other finishes the job. The getaway waits until you're both there.
+- Works on the bank, club and jeweller's jobs (seven of twelve). The tower, manor, casino, port and observatory stay solo for now.
+- The connection is peer to peer (PeerJS). `?net=local` connects two tabs on one computer.
+
 ## 0.30.2 — phone HUD
 - The objective, detection meter, status chips and clock no longer overlap on a phone: objective top left, detection meter and status top centre, clock top right, radio and pager subtitles bottom left.
 - OBJ button under pause folds the objective away. A new objective still pops up for a few seconds, and urgent warnings always show.
