@@ -5,6 +5,10 @@ feature round bumps MINOR, a bug-fix-only update bumps PATCH, and 1.0.0 is
 the first "finished" release. Up to 0.30.0, MINOR is the version number the
 claude.ai artifact had. Releases are tagged `v0.30.0` and so on.
 
+## 0.31.1
+- Elevator and gondola: walk around while they move. They're now moving floors you stand on instead of a fixed ride that held you still.
+- Phones: the floor numbers sit just above the crosshair, clear of the buttons, and long prompts wrap before they reach the buttons.
+
 ## 0.31.0 — co-op
 - Online co-op for two players in free play: one hosts and shares a five-letter code, the other joins. The host picks the job and starts it; both of you play it on your own device (computer, phone or controller).
 - Guards, civilians and cameras notice both of you. The detection meter, the alarm, the bags and the take are shared; the HUD shows where your partner is and what they're doing.

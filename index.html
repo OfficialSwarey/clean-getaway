@@ -208,7 +208,9 @@ body.touch #obj{max-width:min(300px,30vw);gap:3px}
 body.touch #obj:has(#objTip:not([hidden])) #objText{-webkit-line-clamp:4}body.touch #objTip{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}body.touch #objTip[hidden]{display:none}
 body.touch #subs{left:calc(64px + env(safe-area-inset-left,0px));top:auto;bottom:calc(14px + env(safe-area-inset-bottom,0px));transform:none;width:min(300px,34vw);padding:6px 10px 8px;font-size:13px}
 body.touch #subLine{font-size:14px}body.touch #subWho{font-size:9px}
-body.touch #prompt{top:calc(50% + 30px)}body.touch #promptText{font-size:14px;padding:5px 10px}body.touch #promptText kbd{font-size:11px}
+body.touch #prompt{top:calc(50% + 30px)}body.touch #promptText{font-size:14px;padding:5px 10px;max-width:max(220px,calc(100vw - 600px - 2*env(safe-area-inset-right,0px)));box-sizing:border-box}
+/* phones: the floor numbers sit just above the crosshair, clear of the buttons on the right */
+body.touch #tNum{top:calc(50% - 38px);gap:6px}body.touch #tNum button{width:42px;height:42px;font-size:17px}body.touch #promptText kbd{font-size:11px}
 body.touch #detect{top:calc(12px + env(safe-area-inset-top,0px));left:calc(95px + min(300px,30vw) + env(safe-area-inset-left,0px));right:calc(170px + env(safe-area-inset-right,0px));width:auto;transform:none;gap:3px}
 body.touch #detectLbl{font-size:9px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}body.touch #detect .bar{height:7px}
 body.touch #coinChip,body.touch #jamChip,body.touch #maskChip{display:none}
@@ -513,7 +515,7 @@ body.coop-guest .job{pointer-events:none}body.coop-guest .job:not([aria-checked=
 // Co-op: the same code runs for every player by swapping who P is. CTX.cur is the player whose turn it is (null = you);
 // HUD writes during another player's turn go to that player's copy of the HUD, which is sent to them.
 const CTX={cur:null,kind:null,pl:null};
-const GAME_VERSION="0.31.0";
+const GAME_VERSION="0.31.1";
 const NET={on:false,host:false,guest:false,send:null,close:null,code:"",busy:false,waiting:false,started:false,acc:0,remote:null,ending:false};
 const $=id=>(CTX.cur&&CTX.cur.dom&&CTX.cur.dom[id])||document.getElementById(id);
 // a timer started during another player's turn runs as that player
@@ -3804,7 +3806,7 @@ const MAP_TOWER={
     return lvl<=6;
   },
   ceil(x,z,lvl){
-    if(lvl<=5&&inR(x,z,TW_CAR))return 2.55;
+    if(lvl<=5&&inR(x,z,TW_CAR))return (this.X&&G.t?this.X.car.position.y-lvl*ROOF_Y:0)+2.55;
     if(lvl===6)return inR(x,z,TW_ENCL)?3.0:null;
     return inR(x,z,TW_B)?3.5:null;
   },
@@ -4227,16 +4229,23 @@ const MAP_TOWER={
     }
     return false;
   },
+  aboard(r,obj){return inR(P.x,P.z,r)&&Math.abs(P.y-obj.position.y)<1.7;},
+  keepAboard(r){P.x=clamp(P.x,r[0]+0.32,r[2]-0.32);P.z=clamp(P.z,r[1]+0.32,r[3]-0.32);},
+  // the car and the gondola are floors that move: stand on them (and walk about) while they ride
+  platform(x,z,lvl,y){
+    const X=this.X;if(!X||!G.t)return null;
+    if(inR(x,z,TW_CAR)&&Math.abs(y-X.car.position.y)<1.7)return X.car.position.y;
+    if(inR(x,z,TW_GON)&&Math.abs(y-X.gon.position.y)<1.7)return X.gon.position.y;
+    return null;
+  },
   ride(d){
-    const t=G.t,e=t.el;e.moving=true;e.riding=true;e.target=d;e.from=P.level;e.pending=0.75;P.locked=true;
+    const t=G.t,e=t.el;e.moving=true;e.target=d;e.from=e.lvl;e.pending=0.75;e.ghostT=0;e.ghostDur=1.0+Math.abs(d-e.from)*1.2;
     toast(`Going to ${TW_FLOOR[d]}…`,"",1400);
     followersStay();
   },
   gonRide(d){
-    const t=G.t,g=t.gon;g.moving=true;g.from=P.level;g.target=d;
+    const t=G.t,g=t.gon;g.moving=true;g.from=g.lvl;g.target=d;g.ghostT=0;g.ghostDur=1.6+Math.abs(d-g.from)*2.0;
     toast(`The gondola winches toward ${TW_FLOOR[d]}`,"warn",1600);followersStay();
-    startPath([[P.x,P.z,P.y],[P.x,P.z,d*ROOF_Y]],d,()=>{g.lvl=d;g.moving=false;});
-    if(P.climb)P.climb.dur=1.6+Math.abs(d-g.from)*2.0;
   },
   gonSend(d){const g=G.t.gon;if(g.moving||g.lvl===d)return;g.moving=true;g.from=g.lvl;g.target=d;g.ghostT=0;g.ghostDur=1.6+Math.abs(d-g.from)*2.0;},
   elCall(l){const e=G.t.el;if(e.moving||e.fire&&l!==0)return;if(e.lvl===l)return;e.moving=true;e.from=e.lvl;e.target=l;e.ghostT=0;e.ghostDur=1.0+Math.abs(l-e.from)*1.2;},
@@ -4259,11 +4268,9 @@ const MAP_TOWER={
     const X=this.X,t=G.t;if(!X||!t)return;
     const Y=ROOF_Y,e=t.el,g=t.gon;
     // elevator car follows you (or drives itself when called)
-    if(e.riding&&e.pending!=null){e.pending-=dt;if(e.pending<=0){e.pending=null;const d=e.target;
-      startPath([[P.x,P.z,P.y],[P.x,P.z,d*Y]],d,()=>{e.lvl=d;e.moving=false;e.riding=false;P.locked=false;tone({type:"sine",f0:1320,dur:.35,vol:.08});});
-      if(P.climb)P.climb.dur=1.0+Math.abs(d-e.from)*1.2;}}
-    if(e.riding&&P.climb)X.car.position.y=P.y;
-    else if(e.moving&&!e.riding&&e.ghostDur){
+    // (pressed from inside: the doors close for a moment first)
+    if(e.moving&&e.pending!=null){e.pending-=dt;if(e.pending<=0)e.pending=null;X.car.position.y=e.from*Y;}
+    else if(e.moving&&e.ghostDur){
       e.ghostT+=dt;const u=clamp(e.ghostT/e.ghostDur,0,1),s=u*u*(3-2*u);X.car.position.y=(e.from+(e.target-e.from)*s)*Y;
       if(u>=1){e.lvl=e.target;e.moving=false;e.ghostDur=0;tone({type:"sine",f0:1320,dur:.35,vol:.05});}
     }else X.car.position.y=e.lvl*Y;
@@ -4273,10 +4280,11 @@ const MAP_TOWER={
       d.a.position.z=-0.85-d.t*0.66;d.b.position.z=-0.15+d.t*0.66;
       const i=colliders.indexOf(d.col);if(d.t>0.85&&i>=0)colliders.splice(i,1);else if(d.t<0.85&&i<0)colliders.push(d.col);});
     // gondola
-    if(g.moving&&P.climb&&inR(P.x,P.z,TW_GON))X.gon.position.y=P.y;
-    else if(g.moving&&g.ghostDur){g.ghostT+=dt;const u=clamp(g.ghostT/g.ghostDur,0,1),s=u*u*(3-2*u);X.gon.position.y=(g.from+(g.target-g.from)*s)*Y;if(u>=1){g.lvl=g.target;g.moving=false;g.ghostDur=0;}}
+    if(g.moving&&g.ghostDur){g.ghostT+=dt;const u=clamp(g.ghostT/g.ghostDur,0,1),s=u*u*(3-2*u);X.gon.position.y=(g.from+(g.target-g.from)*s)*Y;if(u>=1){g.lvl=g.target;g.moving=false;g.ghostDur=0;}}
     else X.gon.position.y=g.lvl*Y;
     X.gonRails.forEach(c=>c.lvl=g.moving||(c.gate&&g.lvl===0)?-9:g.lvl);
+    if(e.moving&&this.aboard(TW_CAR,X.car))this.keepAboard([-4.8,-2.0,-1.8,1.0]);
+    if(g.moving&&this.aboard(TW_GON,X.gon))this.keepAboard(TW_GON);
     {const i=colliders.indexOf(X.gonChain),dock=!g.moving&&g.lvl===6;if(dock&&i>=0)colliders.splice(i,1);else if(!dock&&i<0)colliders.push(X.gonChain);X.chainG.visible=!dock;}
     {const tg=!g.moving&&g.lvl===0?1:0;if(X.gateT!==tg){X.gateT=clamp((X.gateT||0)+(tg?dt:-dt)/0.6,0,1);X.gate.rotation.y=X.gateT*Math.PI/2;}}
     this.cable();
@@ -4345,7 +4353,8 @@ const MAP_TOWER={
       if(e.fire)return {p:"Fire service mode. The elevator is out of order"};
       return {p:`Press <kbd>0</kbd>–<kbd>5</kbd> for a floor${t.exec?"":" · 3, 4 and 5 need an executive card"}`};
     }
-    if(e.moving&&e.riding)return {p:`Going to ${TW_FLOOR[e.target]}…`};
+    if(e.moving&&this.aboard(TW_CAR,this.X.car))return {p:`Going to ${TW_FLOOR[e.target]}…`};
+    if(g.moving&&this.aboard(TW_GON,this.X.gon))return {p:`The gondola is winching to ${TW_FLOOR[g.target]}…`};
     // elevator call button
     if(lv<=5&&facing(-5.3,0.4,1.7)>=0&&P.x<-5){
       if(e.fire)return {p:"The elevator is in fire service mode"};
@@ -6407,7 +6416,12 @@ function updatePlayer(dt){
   P.fiddle=Math.max(0,P.fiddle-dt);
   // stairs: follow the ramp; otherwise stand on whatever low thing is under you, fall off edges and through holes
   let sup;const st=stairAt(P.x,P.z,P.level);
-  if(st){
+  const pf=LV.def.platform&&!P.ladder?LV.def.platform(P.x,P.z,P.level,P.y):null;
+  if(pf!=null){
+    const nl=Math.floor((pf+0.01)/ROOF_Y);if(nl!==P.level){P.jh+=(P.level-nl)*ROOF_Y;P.level=nl;}
+    sup=pf-P.level*ROOF_Y;P.onStair=false;
+    if(P.vy<=0&&P.jh>sup&&P.jh-sup<0.45)P.jh=sup; // a floor going down takes you with it
+  }else if(st){
     const nl=st.t>=0.5?st.s.hi:st.s.lo;if(nl!==P.level){P.jh+=(P.level-nl)*ROOF_Y;P.level=nl;}
     sup=st.y-P.level*ROOF_Y;P.onStair=true;
     if(P.vy<=0&&P.jh>sup&&P.jh-sup<0.6)P.jh=sup;
