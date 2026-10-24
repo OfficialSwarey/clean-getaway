@@ -6,7 +6,7 @@ Case the place, slip in and get the money to the getaway before anyone knows you
 
 ## Play
 
-- **On the web:** https://swarey1337.github.io/clean-getaway/
+- **On the web:** https://officialswarey.github.io/clean-getaway/
 - **On an iPhone:** open that address in Chrome or Safari, turn the phone sideways and tap a job. Add it to the home screen (share → Add to Home Screen) and it opens like an app.
 - **On a computer:** open the link above, or `index.html` in a browser.
 
