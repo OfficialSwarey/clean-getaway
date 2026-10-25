@@ -6743,7 +6743,7 @@ function planNeeds(){
   r.push({id:"coins",n:3,need:false,why:"Lure a guard away"});
   return r;
 }
-const kitMax=(k)=>{const light=PLAN&&PLAN.c.tw.includes("light");if(light&&(k.id==="jammer"||k.id==="mag"))return 0;if(k.id==="mag"&&!PLAN.sel.gun)return 0;if(k.id==="drill")return PLAN&&PLAN.I.drill?1:0;return k.max||1;};
+const kitMax=(k,sel)=>{sel=sel||PLAN.sel;const light=PLAN&&PLAN.c.tw.includes("light");if(light&&(k.id==="jammer"||k.id==="mag"))return 0;if(k.id==="mag"&&!sel.gun)return 0;if(k.id==="drill")return PLAN&&PLAN.I.drill?1:0;return k.max||1;};
 const kitOwned=k=>!!(k.own&&CAREER.gear[k.own]);
 function planFill(){const sel={};PLAN.sel=sel;for(const n of planNeeds()){const k=KIT.find(x=>x.id===n.id);sel[n.id]=k.job?true:Math.min(n.n,kitMax(k));}}
 function planCovered(n){const k=KIT.find(x=>x.id===n.id);if(k.job&&crewGuest())return !!PLAN.hostDriver;return k.job?(kitOwned(k)||!!PLAN.sel[n.id]):(PLAN.sel[n.id]||0)>=n.n;}
@@ -7066,7 +7066,7 @@ function crewStartPlan(){
   if(!PLAN||!NET.host||!NET.remote)return;
   const {c,sel}=PLAN,gp=NET.remote.pid,psel=PLAN.partnerSel;if(!psel||!hasSlot(gp))return;
   const mine=kitCost(sel,c),theirs=asSlot(gp,()=>kitCost(psel,c));if(CAREER.cash<mine+theirs)return;
-  const mk=s=>{const K={map:c.map};for(const k of KIT){if(k.job){K[k.id]=kitOwned(k)||!!s[k.id];continue;}const n=Math.min(s[k.id]||0,kitMax(k));K[k.id]=n;CAREER.stash[k.id]=Math.max(0,(CAREER.stash[k.id]||0)-n);}return K;};
+  const mk=s=>{const K={map:c.map};for(const k of KIT){if(k.job){K[k.id]=kitOwned(k)||!!s[k.id];continue;}const n=Math.min(s[k.id]||0,kitMax(k,s));K[k.id]=n;CAREER.stash[k.id]=Math.max(0,(CAREER.stash[k.id]||0)-n);}return K;};
   CAREER.cash-=mine+theirs;
   CAREER.kit=mk(sel);asSlot(gp,()=>{CAREER.kit=mk(psel);CAREER.kit.driver=false;});
   CREW.job={driver:!!CAREER.kit.driver,drills:(CAREER.kit.drill|0)+(CREW.slots[gp].kit.drill|0)};
