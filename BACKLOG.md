@@ -20,7 +20,8 @@ Move a save between devices with a code you export on one device and import on a
 The silenced pistol and the lockpick set stop being "per job". Like the other kit, you own them and keep them in your stash.
 - **Lockpicks get used up:** one is spent each time you pick a lock.
 - Today: both are bought for one job ($500 and $400). Pro lockpicks (permanent gear) remove the lockpick rental.
-- Open questions: does a pistol you bring come back after a clean job and get lost on a bust, like the rest of the kit? Does a window latch or a safe also use up a pick?
+- **Decided:** the pistol works like the rest of the kit: it comes back to your stash after a clean job, and the police keep it if you're busted.
+- Open question: does a window latch or a safe also use up a pick?
 
 ### 4. Bag the loot yourself
 Money and gold aren't already in bags. You fill a duffel with the cash or gold on the spot, and only then can you carry it out.
@@ -35,8 +36,8 @@ Without a hired driver there's no van on the map at all. You leave by an exit of
 - Every map needs an on-foot exit point.
 
 ### 6. The driver leaves when the police come
-With a driver, when the police arrive he drives off with the loot already in the van. That loot is still paid. You then have to get out the on-foot way (item 5).
-- Open question: is the van loot always paid, even if you're busted after the driver leaves?
+With a driver, when the police arrive he drives off with the loot already in the van. You then have to get out the on-foot way (item 5).
+- **Decided:** the loot in the van is always paid, even if you're busted after the driver leaves.
 
 ## Combat and the police
 
@@ -64,4 +65,5 @@ You can knock a guard down from the front too, even after he has seen you.
 - A career for co-op with its **own save**, separate from the single-player career, and its **own export and import code** (item 2).
 - Each player has their own skills, and buys their own consumables.
 - The getaway driver is shared: only one player buys him.
-- Open questions: is the cash shared or per player? How is the take split? Who chooses the job from the board (the host)?
+- **Decided:** cash is one shared pot that both players earn into and spend from (kit, gear, goals, the driver).
+- Open question: who chooses the job from the board? Only the host, or either player?
