@@ -21,7 +21,7 @@ async function setup(map,viewport,opts){
   const ctx=await b.newContext({viewport:viewport||{width:800,height:450}});
   if(opts.peerjs)await ctx.route('**/peerjs.min.js',r=>r.fulfill({body:fs.readFileSync(opts.peerjs),contentType:'text/javascript'}));
   const errs=[];
-  const open=async name=>{const p=await ctx.newPage();p.on('pageerror',e=>errs.push(name+' PAGEERR '+e.message));await p.goto(url);await p.waitForTimeout(2500);return p;};
+  const open=async name=>{const p=await ctx.newPage();p.on('pageerror',e=>errs.push(name+' PAGEERR '+e.message));await p.goto(url+(opts.pids?'&pid='+name+'dev':''));await p.waitForTimeout(2500);return p;};
   const H=await open('host'),G=await open('guest');
   const T=90000;
   await H.evaluate(()=>document.getElementById('coopHostBtn').click());

@@ -4,7 +4,7 @@
 // on a "new device" claims their slot by name.
 const {setup,wait}=require('./coopH');
 (async()=>{
-const {H,G,errs,close,T,ctx,url}=await setup('harbor',null,{noStart:true});
+const {H,G,errs,close,T,ctx,url}=await setup('harbor',null,{noStart:true,pids:true});
 const out={};
 const click=async(pg,sel)=>{await pg.waitForFunction(s=>!!document.querySelector(s),sel,{timeout:T}).catch(()=>{console.log('missing',sel);});return pg.evaluate(s=>{const e=document.querySelector(s);if(!e)return false;e.click();return true;},sel);};
 process.on('unhandledRejection',e=>{console.log('FAILED',e.message.split('\n')[0]);console.log(JSON.stringify(out,null,1));console.log(errs.join('\n'));process.exit(1);});
@@ -58,12 +58,12 @@ await G.waitForFunction(()=>__qh.state==='ended',null,{timeout:T}).catch(()=>{})
 out.end={host:await H.evaluate(([xp0,cashPre])=>{const C=__qh.CREW;return {cashGain:C.cash-cashPre,xpGain:Object.fromEntries(Object.entries(C.slots).map(([k,s])=>[s.name,s.xp-xp0[k]])),stash:Object.fromEntries(Object.entries(C.slots).map(([k,s])=>[s.name,s.stash])),kits:Object.values(C.slots).map(s=>s.kit),active:C.active,report:document.getElementById('endCareer').textContent.slice(0,90)};},[xp0,cashPre]),
   guest:await G.evaluate(()=>({report:document.getElementById('endCareer').hidden?null:document.getElementById('endCareer').textContent.slice(0,120),cash:__qh.CREW.cash}))};
 // both devices keep the crew
-out.saved={host:await H.evaluate(()=>{const c=JSON.parse(localStorage.getItem('cg-crews-v1'));return Object.values(c.crews).map(x=>[x.cash,Object.keys(x.slots).length,x.at]);}),guest:await G.evaluate(()=>{const c=JSON.parse(localStorage.getItem('cg-crews-v1'));return Object.values(c.crews).map(x=>[x.cash,Object.keys(x.slots).length,x.at]);})};
+out.saved={host:await H.evaluate(()=>{const c=JSON.parse(localStorage.getItem('cg-crews-v1-hostdev'));return Object.values(c.crews).map(x=>[x.cash,Object.keys(x.slots).length,x.at]);}),guest:await G.evaluate(()=>{const c=JSON.parse(localStorage.getItem('cg-crews-v1-guestdev'));return Object.values(c.crews).map(x=>[x.cash,Object.keys(x.slots).length,x.at]);})};
 // back to the lobby; then swap: the guest hosts, the host joins from a "new device" (a new player ID)
 await H.evaluate(()=>document.getElementById('menuBtn').click());await G.evaluate(()=>document.getElementById('menuBtn').click());await wait(500);
 await H.evaluate(()=>document.getElementById('coopLeaveBtn').click());await G.evaluate(()=>document.getElementById('coopLeaveBtn').click());await wait(800);
 out.left={host:await H.evaluate(()=>({crew:!!__qh.CREW,mode:__qh.MODE,career:!!__qh.CAREER&&!__qh.CAREER.crew}))};
-await H.evaluate(()=>localStorage.setItem('cg-player-id','newdevice123'));
+await H.evaluate(()=>__qh.setTestPid('newdevice123'));
 await G.evaluate(()=>document.getElementById('coopHostBtn').click());
 await G.waitForFunction(()=>!!document.querySelector('#coopCodeShow:not([hidden]) b'),null,{timeout:T});
 const code2=await G.evaluate(()=>document.querySelector('#coopCodeShow b').textContent);

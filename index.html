@@ -6900,10 +6900,13 @@ function setStampOnly(){if(MODE==="career")$("menuStamp").textContent=(crewOn()?
    buys their own kit. The host picks the job and hires the one driver. Each device has a player ID that owns a slot
    in the crew; on a new device you claim your slot by name. The crew save is copied to both devices after every
    change, and when you connect the newer copy wins, so either of you can host. */
-const CREWS_KEY="cg-crews-v1",PID_KEY="cg-player-id",CREW_SIZE=2;
+// ?pid=… (tests: two "devices" in one browser) gives this page its own player ID and its own crews
+const PID_URL=(/[?&]pid=([\w-]{3,40})/.exec(location.search)||[])[1]||null;
+let PID_TEST=PID_URL;
+const CREWS_KEY="cg-crews-v1"+(PID_URL?"-"+PID_URL:""),PID_KEY="cg-player-id",CREW_SIZE=2;
 let CREWS=null,CREW=null,SOLO_CAREER=null,CREW_PICK=false,CREW_WAIT=null,PID_MEM=null,CREW_LATER=false;
 const rid=()=>Math.random().toString(36).slice(2,10)+Date.now().toString(36).slice(-4);
-function myPid(){try{let id=localStorage.getItem(PID_KEY);if(!id){id=PID_MEM||rid();localStorage.setItem(PID_KEY,id);}return id;}catch(e){return PID_MEM||(PID_MEM=rid());}}
+function myPid(){if(PID_TEST)return PID_TEST;try{let id=localStorage.getItem(PID_KEY);if(!id){id=PID_MEM||rid();localStorage.setItem(PID_KEY,id);}return id;}catch(e){return PID_MEM||(PID_MEM=rid());}}
 function loadCrews(){if(CREWS)return CREWS;try{CREWS=JSON.parse(localStorage.getItem(CREWS_KEY)||"null");}catch(e){CREWS=null;}if(!CREWS||typeof CREWS!=="object"||!CREWS.crews)CREWS={crews:{},last:null};return CREWS;}
 function storeCrews(){try{localStorage.setItem(CREWS_KEY,JSON.stringify(CREWS));}catch(e){}}
 function newCrew(){return {v:1,kind:"crew",id:rid(),name:"",at:Date.now(),econ:3,cash:8000,goals:{},board:[],active:null,job:null,stats:{jobs:0,clean:0,busts:0,earned:0,best:0},slots:{}};}
