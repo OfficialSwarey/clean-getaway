@@ -8348,7 +8348,7 @@ function stepGame(dt){
   updateAudio();
   updateHUD();
   pressedE=false;G.shotNoise=0;G.loud=0;G.bang=null;
-  if(NET.host)hostEndFrame(dt);
+  if(NET.host){hostEndFrame(dt);histRecord();}
 }
 function stepMenu(dt){
   G.world+=dt;
@@ -8380,7 +8380,9 @@ let last=performance.now();
    back how the world moved, the guest's HUD, sounds and messages. Both build the same map from the same random seed,
    so every object can be referred to by its place in the scene. */
 const COOP_MAPS=new Set(["spin","harbor","harborDay","meridian","meridianDay","club","jewel","jewelDay"]);
-const NET_HZ=20,PEER_PREFIX="cleangetaway-v1-";
+// moving things go 30 times a second on a lossy channel (a late update is useless, so it's never resent or waited for);
+// everything settles over the reliable channel 20 times a second once it stops changing
+const NET_HZ=20,FAST_HZ=30,HOT_T=0.6,SETTLE_T=0.3,PEER_PREFIX="cleangetaway-v1-";
 const SWAP_G=["noise","shotNoise","loud","keypad","picking","pickScr","ladderTip","coins","leaveT","tieT","loopHold","bagT","lootT","leaveBlock","trail","trailBase"];
 const SWAP_IN=["fwd","right","mag","sprint","src","objHide","objPeek","objKey"];
 const ME={id:0,local:true,P:LP,keys:null,pressedE:false,KP:null,cam:camera,g:{},in:{},out:false};
@@ -8521,7 +8523,7 @@ function hostAction(pl,a,args,pose){
     switch(a){
       case "E":pressedE=true;pl.pressedE=true;break;
       case "pressF":pressF();break;
-      case "shoot":pl.mute="shot";try{shoot();}finally{pl.mute=null;}break;
+      case "shoot":pl.mute="shot";try{rewound(args[0],()=>shoot());}finally{pl.mute=null;}break;
       case "dropCarry":dropCarry();break;
       case "startReload":startReload();break;
       case "throwCoin":throwCoin();break;
@@ -8534,6 +8536,22 @@ function hostAction(pl,a,args,pose){
       case "tryJump":tryJump();break;
     }
   });
+}
+
+/* ---------- lag compensation: a short history of where everyone was ---------- */
+const HIST=[];
+function histRecord(){
+  if(!NET.host||PLAYERS.length<2){HIST.length=0;return;}
+  HIST.push({t:G.time,p:npcs().map(g=>[g.root.position.x,g.root.position.z,g.root.rotation.y])});
+  while(HIST.length&&G.time-HIST[0].t>1.2)HIST.shift();
+}
+// run fn with every guard, officer and civilian put back where they were at host time vt (at most 0.35 s ago)
+function rewound(vt,fn){
+  if(vt==null||!HIST.length||!(vt<G.time))return fn();
+  const t=Math.max(vt,G.time-0.35);let h=HIST[0];for(const x of HIST){if(x.t<=t)h=x;else break;}
+  const list=npcs(),saved=[];
+  list.forEach((g,i)=>{const s=h.p[i];if(!s||g.down)return;saved.push([g,g.root.position.x,g.root.position.z,g.root.rotation.y]);g.root.position.x=s[0];g.root.position.z=s[1];g.root.rotation.y=s[2];});
+  try{return fn();}finally{for(const [g,x,z,ry] of saved){g.root.position.x=x;g.root.position.z=z;g.root.rotation.y=ry;}}
 }
 
 /* ---------- routing sounds, messages and voices ---------- */
@@ -8576,16 +8594,17 @@ const SYNC={objs:[],last:[],mats:[],matLast:[],lights:[],texs:[],cols:[],colKey:
 function syncBuild(){
   const chunks=new Set(SB.chunks.map(c=>c.mesh));
   SYNC.objs=[];LV.group.traverse(o=>{if(o!==LV.group&&!chunks.has(o)&&!o.userData.local)SYNC.objs.push(o);});
-  SYNC.last=SYNC.objs.map(objState);
+  SYNC.last=SYNC.objs.map(objState);SYNC.cur=SYNC.last.map(a=>a.slice());SYNC.chg=SYNC.objs.map(()=>-9);SYNC.tm=new Map();SYNC.q=0;
   const mats=new Set(),texs=new Set([TEX_AMBER,TEX_RED,TEX_HEAR,TEX_SLEEP,TEX_PHONE,TEX_PAGER]);
   for(const o of SYNC.objs){const m=o.material;if(m&&!Array.isArray(m)){mats.add(m);if(m.map)texs.add(m.map);}}
   [CAM_DEAD,M.camBody].forEach(m=>mats.add(m));
   SYNC.texs=[...texs];SYNC.texIndex=new Map(SYNC.texs.map((t,i)=>[t,i]));
   SYNC.mats=[...mats];SYNC.matIndex=new Map(SYNC.mats.map((m,i)=>[m,i]));SYNC.matLast=SYNC.mats.map(matState);
-  SYNC.objMat=SYNC.objs.map(o=>o.material&&!Array.isArray(o.material)?SYNC.matIndex.get(o.material):-1);
+  SYNC.objMat=SYNC.objs.map(o=>o.material&&!Array.isArray(o.material)?(SYNC.matIndex.get(o.material)??-1):-1);
+  SYNC.last=SYNC.objs.map((o,i)=>[...objState(o),SYNC.objMat[i]]);SYNC.cur=SYNC.last.map(a=>a.slice());
   const cs=new Set(colliders);doors.forEach(d=>cs.add(d.col));if(VAULT&&VAULT.openCol)cs.add(VAULT.openCol);if(VAULT&&VAULT.col)cs.add(VAULT.col);
   SYNC.cols=[...cs];SYNC.colIndex=new Map(SYNC.cols.map((c,i)=>[c,i]));SYNC.colKey=colKey();
-  SYNC.doorLast=doors.map(doorState);SYNC.npcLast=npcs().map(npcState);
+  SYNC.doorLast=doors.map(doorState);SYNC.npcLast=npcs().map(npcState);SYNC.npcCur=SYNC.npcLast.map(a=>a.slice());SYNC.npcChg=SYNC.npcLast.map(()=>-9);
   SYNC.target=new Map();SYNC.built=true;
 }
 const r3=v=>Math.round(v*1000)/1000;
@@ -8595,22 +8614,42 @@ function doorState(d){return [d.open?1:0,d.swing,r3(d.t),d.locked?1:0];}
 function npcState(g){return [r3(g.x),r3(g.z),g.level,g.down?1:0,r3(g.yaw),g.state==="tied"?1:0];}
 function colKey(){const a=[];for(const c of colliders){const i=SYNC.colIndex.get(c);if(i!=null)a.push(i);}a.sort((x,y)=>x-y);return a.join(",");}
 const same=(a,b)=>{for(let i=0;i<a.length;i++)if(a[i]!==b[i])return false;return true;};
-function syncDiff(){
-  const o=[],m=[],d=[],n=[];
+// host: note what moved and when (run before every send)
+function syncScan(){
+  const now=G.world;
   SYNC.objs.forEach((ob,i)=>{
-    const st=objState(ob),mi=ob.material&&!Array.isArray(ob.material)?(SYNC.matIndex.get(ob.material)??-1):-1;
-    if(!same(st,SYNC.last[i])||mi!==SYNC.objMat[i]){SYNC.last[i]=st;SYNC.objMat[i]=mi;o.push([i,...st,mi]);}
+    const st=objState(ob),mi=ob.material&&!Array.isArray(ob.material)?(SYNC.matIndex.get(ob.material)??-1):-1;st.push(mi);
+    if(!same(st,SYNC.cur[i])){SYNC.cur[i]=st;SYNC.chg[i]=now;}
+  });
+  npcs().forEach((g,i)=>{const st=npcState(g);if(!SYNC.npcCur[i]||!same(st,SYNC.npcCur[i])){SYNC.npcCur[i]=st;SYNC.npcChg[i]=now;}});
+}
+// the lossy packet: everything that is moving right now, in full
+function syncHot(){
+  const now=G.world,o=[],n=[];
+  SYNC.cur.forEach((st,i)=>{if(now-SYNC.chg[i]<HOT_T)o.push([i,...st]);});
+  SYNC.npcCur.forEach((st,i)=>{if(now-SYNC.npcChg[i]<HOT_T)n.push([i,...st]);});
+  return {o,n};
+}
+// the reliable packet: what has settled since it was last sent for sure, plus doors, materials and walls
+function syncDiff(){
+  const o=[],m=[],d=[],n=[],now=G.world;
+  SYNC.cur.forEach((st,i)=>{
+    if(now-SYNC.chg[i]<SETTLE_T)return;
+    const l=SYNC.last[i];if(l.length===st.length&&same(st,l))return;
+    SYNC.last[i]=st;o.push([i,...st]);
   });
   SYNC.mats.forEach((mt,i)=>{const st=matState(mt);if(!same(st,SYNC.matLast[i])){SYNC.matLast[i]=st;m.push([i,...st]);}});
   doors.forEach((dr,i)=>{const st=doorState(dr);if(!same(st,SYNC.doorLast[i])){SYNC.doorLast[i]=st;d.push([i,...st]);}});
-  npcs().forEach((g,i)=>{const st=npcState(g);if(!same(st,SYNC.npcLast[i])){SYNC.npcLast[i]=st;n.push([i,...st]);}});
+  SYNC.npcCur.forEach((st,i)=>{if(now-SYNC.npcChg[i]<SETTLE_T)return;if(!SYNC.npcLast[i]||!same(st,SYNC.npcLast[i])){SYNC.npcLast[i]=st;n.push([i,...st]);}});
   const ck=colKey();let c=null;if(ck!==SYNC.colKey){SYNC.colKey=ck;c=ck;}
   return {o,m,d,n,c};
 }
 // guest: apply what the host sent. Positions and angles glide to their targets; the rest switches at once.
-function syncApply(s){
+function syncApply(s,tm){
+  tm=tm==null?Infinity:tm;
   for(const e of s.o||[]){
     const ob=SYNC.objs[e[0]];if(!ob)continue;
+    if(tm!==Infinity){const t0=SYNC.tm.get(ob);if(t0!=null&&tm<t0)continue;SYNC.tm.set(ob,tm);}
     const far=Math.hypot(ob.position.x-e[1],ob.position.y-e[2],ob.position.z-e[3])>2.5;
     SYNC.target.set(ob,e);
     if(far||!ob.visible){ob.position.set(e[1],e[2],e[3]);ob.rotation.set(e[4],e[5],e[6]);}
@@ -8621,14 +8660,14 @@ function syncApply(s){
   for(const e of s.m||[]){const mt=SYNC.mats[e[0]];if(!mt)continue;if(mt.color)mt.color.setHex(e[1]);mt.opacity=e[2];if(e[3]>=0&&SYNC.texs[e[3]]&&mt.map!==SYNC.texs[e[3]]){mt.map=SYNC.texs[e[3]];mt.needsUpdate=true;}if(mt.emissive)mt.emissive.setHex(e[4]);}
   for(const e of s.d||[]){const dr=doors[e[0]];if(!dr)continue;dr.open=!!e[1];dr.swing=e[2];dr.t=e[3];dr.locked=!!e[4];dr.leafCols=dr.open&&dr.t>=1&&!dr.glass?leafBoxes(dr):null;}
   const list=npcs();
-  for(const e of s.n||[]){const g=list[e[0]];if(!g)continue;g.x=e[1];g.z=e[2];g.level=e[3];g.down=!!e[4];g.yaw=e[5];if(g.kind==="civ")g.state=e[6]?"tied":g.state==="tied"?"idle":g.state;}
+  for(const e of s.n||[]){const g=list[e[0]];if(!g)continue;if(tm!==Infinity){const t0=SYNC.tm.get(g);if(t0!=null&&tm<t0)continue;SYNC.tm.set(g,tm);}g.x=e[1];g.z=e[2];g.level=e[3];g.down=!!e[4];g.yaw=e[5];if(g.kind==="civ")g.state=e[6]?"tied":g.state==="tied"?"idle":g.state;}
   if(s.c!=null){const keep=new Set(s.c?s.c.split(",").map(Number):[]);
     colliders.length=0;const reg=new Set(SYNC.cols);
     SYNC.cols.forEach((c,i)=>{if(keep.has(i))colliders.push(c);});
     SYNC.colsOther=(SYNC.colsOther||[]);SYNC.colsOther.forEach(c=>{if(!reg.has(c))colliders.push(c);});}
 }
 function syncGlide(dt){
-  const k=Math.min(1,dt*14);
+  const k=Math.min(1,dt*16);
   for(const [ob,e] of SYNC.target){
     ob.position.x+=(e[1]-ob.position.x)*k;ob.position.y+=(e[2]-ob.position.y)*k;ob.position.z+=(e[3]-ob.position.z)*k;
     ob.rotation.x+=wrap(e[4]-ob.rotation.x)*k;ob.rotation.y+=wrap(e[5]-ob.rotation.y)*k;ob.rotation.z+=wrap(e[6]-ob.rotation.z)*k;
@@ -8685,14 +8724,33 @@ function updateAvatar(a,pose,dt){
 /* ---------- transport: PeerJS online, or a BroadcastChannel between tabs (?net=local) ---------- */
 const NETLOCAL=/[?&]net=local/.test(location.search);
 // ?peer=host:port uses your own PeerJS server instead of the public one (tests run one locally)
-const PEER_OPTS=(()=>{const m=/[?&]peer=([^&:]+):(\d+)/.exec(location.search);return m?{host:m[1],port:+m[2],path:"/",secure:false,debug:0,config:{iceServers:[]}}:{debug:0};})();
+// Your own relay (TURN) servers, for players whose networks block a direct link. PeerJS's shared public relays are used
+// when this is empty. Example: {urls:"turn:relay.example.com:3478",username:"...",credential:"..."}
+const TURN_SERVERS=[];
+const PEER_OPTS=(()=>{const m=/[?&]peer=([^&:]+):(\d+)/.exec(location.search);if(m)return {host:m[1],port:+m[2],path:"/",secure:false,debug:0,config:{iceServers:[]}};
+  return TURN_SERVERS.length?{debug:0,config:{iceServers:[{urls:"stun:stun.l.google.com:19302"},...TURN_SERVERS]}}:{debug:0};})();
 function loadPeerJS(){
   if(window.Peer)return Promise.resolve();
   const urls=["https://cdn.jsdelivr.net/npm/peerjs@1.5.4/dist/peerjs.min.js","https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"];
   return new Promise((res,rej)=>{let i=0;const next=()=>{if(i>=urls.length){rej(new Error("load"));return;}const s=document.createElement("script");s.src=urls[i++];s.onload=()=>res();s.onerror=()=>{s.remove();next();};document.head.appendChild(s);};next();});
 }
 function randCode(){const A="ABCDEFGHJKLMNPQRSTUVWXYZ23456789";let s="";for(let i=0;i<5;i++)s+=A[Math.random()*A.length|0];return s;}
-function wire(send,close){NET.send=d=>{NET.lastTx=performance.now();send(d);};NET.close=close;NET.lastRx=performance.now();}
+function wire(send,close){NET.send=d=>{NET.lastTx=performance.now();send(d);};NET.close=close;NET.lastRx=performance.now();NET.fast=null;}
+// the lossy channel: unordered and never resent. Both sides open it with the same id on the PeerJS connection.
+// Without it (the tab-to-tab test link, or if it can't open) the fast messages simply go on the reliable channel.
+function openFast(conn){
+  try{
+    const pc=conn&&conn.peerConnection;if(!pc||!pc.createDataChannel)return;
+    const ch=pc.createDataChannel("cg-fast",{negotiated:true,id:9,ordered:false,maxRetransmits:0});
+    ch.onopen=()=>{NET.fast=ch;};ch.onclose=()=>{if(NET.fast===ch)NET.fast=null;};
+    ch.onmessage=e=>{let d;try{d=JSON.parse(e.data);}catch(err){return;}if(NET.on)netRecv(d);};
+  }catch(e){}
+}
+function sendFast(d){
+  if(NET.dropFast&&Math.random()<NET.dropFast)return;   // tests: pretend packets get lost
+  if(NET.fast&&NET.fast.readyState==="open"){try{NET.fast.send(JSON.stringify(d));NET.lastTx=performance.now();return;}catch(e){}}
+  if(NET.send)NET.send(d);
+}
 function netHost(){
   if(NET.on||NET.busy)return;
   const code=randCode();NET.code=code;NET.busy=true;coopUI("Opening a room…");
@@ -8706,7 +8764,7 @@ function netHost(){
     peer.on("open",()=>{NET.busy=false;NET.waiting=true;coopUI();});
     peer.on("connection",conn=>{
       if(NET.on){conn.on("open",()=>{conn.send({t:"full"});setTimeout(()=>conn.close(),500);});return;}
-      conn.on("open",()=>{hostConnected(d=>conn.open&&conn.send(d),()=>conn.close());NET.conn=conn;});
+      conn.on("open",()=>{hostConnected(d=>conn.open&&conn.send(d),()=>conn.close());NET.conn=conn;openFast(conn);});
       conn.on("data",d=>{if(NET.on)netRecv(d);});
       conn.on("close",()=>netLost());conn.on("error",()=>netLost());
     });
@@ -8728,7 +8786,7 @@ function netJoin(code){
     peer.on("open",()=>{
       const conn=peer.connect(PEER_PREFIX+code,{reliable:true,serialization:"json"});NET.conn=conn;
       const to=setTimeout(()=>{if(!NET.on){coopUI("No game with that code. Check it with the host.");netReset(true);}},12000);
-      conn.on("open",()=>{clearTimeout(to);guestConnected(d=>conn.open&&conn.send(d),()=>conn.close());});
+      conn.on("open",()=>{clearTimeout(to);guestConnected(d=>conn.open&&conn.send(d),()=>conn.close());openFast(conn);});
       conn.on("data",d=>netRecv(d));
       conn.on("close",()=>netLost());conn.on("error",()=>netLost());
     });
@@ -8774,7 +8832,7 @@ function netReset(keepMsg,keepPeer){
 function netLeave(){netReset();dropAvatars();if(state!=="menu")toMenu();coopUI();}
 
 /* ---------- messages ---------- */
-const GS={hd:false,hdSeq:0,pose:null,host:null,lastSend:0,ver:""};
+const GS={hd:false,hdSeq:0,pose:null,host:null,lastSend:0,ver:"",sq:0,fq:0,tm:0};
 function netRecv(d){
   if(!d||!d.t)return;
   NET.lastRx=performance.now();
@@ -8784,7 +8842,7 @@ function netRecv(d){
     switch(d.t){
       case "hello":if(d.v!==GAME_VERSION)NET.send({t:"warn",msg:"You and the host are on different versions of the game. Reload both pages."});break;
       case "ready":pl.ready=true;pl.aspect=d.aspect||1.6;if(d.n!==SYNC.objs.length){const w="Your games don't match. Reload both pages and try again.";NET.send({t:"warn",msg:w});asLocal(()=>toast(w,"bad",4000));}break;
-      case "st":hostState(pl,d);break;
+      case "st":if(d.q!=null){if(d.q<=(pl.sq||0))break;pl.sq=d.q;}hostState(pl,d);break;
       case "act":hostAction(pl,d.a,d.args||[],d.pose);break;
       case "bye":netLost();break;
     }
@@ -8796,6 +8854,7 @@ function netRecv(d){
     case "diff":setDifficulty(d.d,false);break;
     case "start":guestStart(d);break;
     case "snap":guestSnap(d);break;
+    case "fast":if(!SYNC.built||d.q<=GS.fq)break;GS.fq=d.q;GS.tm=Math.max(GS.tm,d.tm);syncApply(d.s,d.tm);GS.pose=d.a;break;
     case "end":guestEnd(d);break;
     case "menu":if(state!=="menu")toMenu();coopUI("Connected. The host picks the job");break;
     case "warn":toast(d.msg,"bad",4000);coopUI(d.msg);break;
@@ -8841,13 +8900,22 @@ function netFrame(dt){
   const now=performance.now();
   if(!NET.lastTx||now-NET.lastTx>2000){NET.lastTx=now;try{NET.send&&NET.send({t:"ping"});}catch(e){}}
   if(NET.lastRx&&now-NET.lastRx>20000){NET.lastRx=0;netLost();return;}
+  NET.facc=(NET.facc||0)+dt;
+  if(NET.facc>=1/FAST_HZ){NET.facc=0;if(NET.host)hostFast();else if(NET.guest)guestSend();}
   if(NET.acc<1/NET_HZ)return;NET.acc=0;
-  if(NET.host)hostSend();else if(NET.guest)guestSend();
+  if(NET.host)hostSend();
+}
+// host: what's moving, 30 times a second, on the lossy channel
+function hostFast(){
+  const pl=NET.remote;if(!pl||!NET.send||!NET.started||!pl.ready||state==="menu")return;
+  syncScan();const h=syncHot();
+  sendFast({t:"fast",q:++SYNC.q,tm:r3(G.time),s:h,a:poseOf(LP,ME.out)});
 }
 function hostSend(){
   const pl=NET.remote;if(!pl||!NET.send)return;
   if(!NET.started||!pl.ready||state==="menu"){pl.ev.length=0;return;}
   const p=pl.P;
+  syncScan();
   const snap={t:"snap",tm:r3(G.time),s:syncDiff(),
     g:[G.alarm?1:0,r3(G.alarmT),G.drilling?1:0,G.vaultOpen?1:0,r3(G.susp),r3(G.jamT),pl.g.keypad?1:0,pl.g.coins,state==="paused"?1:0],
     p:[p.masked?1:0,p.carry?(p.carry.kind==="body"?2:p.carry.gold?3:1):0,p.mag,p.reserve,r3(p.reload),p.ties,p.jammers,p.locked?1:0,p.hasCard?1:0,pl.out?1:0,pl.hd?1:0,pl.hdSeq,
@@ -8858,7 +8926,7 @@ function hostSend(){
 function guestSend(){
   if(!NET.send||state==="menu"||!NET.started)return;
   const k=["KeyW","KeyA","KeyS","KeyD","ShiftLeft","ShiftRight","KeyE","KeyG","Space"].filter(c=>keys[c]);
-  NET.send({t:"st",p:[r3(P.x),r3(P.y),r3(P.z),P.level,r3(P.jh),r3(P.vy),r3(P.gnd),P.crouch?1:0,P.sprinting?1:0,P.onStair?1:0,r3(P.eye),r3(G.noise)],
+  sendFast({t:"st",q:++GS.sq,p:[r3(P.x),r3(P.y),r3(P.z),P.level,r3(P.jh),r3(P.vy),r3(P.gnd),P.crouch?1:0,P.sprinting?1:0,P.onStair?1:0,r3(P.eye),r3(G.noise)],
     yaw:r3(P.yaw),pitch:r3(P.pitch),k,in:[r3(IN.fwd),r3(IN.right),r3(IN.mag),IN.sprint?1:0,IN.src,IN.objHide?1:0],aim:P.aim?1:0,aspect:r3(innerWidth/innerHeight),hdSeq:GS.hdSeq});
 }
 function netAct(a,args){
@@ -8889,7 +8957,7 @@ function guestStart(d){
   if(state!=="menu"){NET.ending=true;try{setState("menu");}finally{NET.ending=false;}}
   if(d.diff)setDifficulty(d.diff,false);
   coopBuild(d.map,d.seed);
-  Object.assign(GS,{hd:false,hdSeq:0,out:false,pose:null,joined:false});dropAvatars();
+  Object.assign(GS,{hd:false,hdSeq:0,out:false,pose:null,joined:false,fq:0,tm:0});dropAvatars();
   NET.started=true;
   NET.send({t:"ready",n:SYNC.objs.length,aspect:r3(innerWidth/innerHeight)});
   // a click or tap is needed before the browser lets the game take the mouse and play sound
@@ -8899,7 +8967,7 @@ function guestStart(d){
 }
 function guestSnap(d){
   if(!SYNC.built)return;
-  syncApply(d.s);
+  syncApply(d.s,d.tm);GS.tm=Math.max(GS.tm,d.tm);
   const g=d.g;
   const wasAlarm=G.alarm;
   G.alarm=!!g[0];G.alarmT=g[1];G.drilling=!!g[2];G.vaultOpen=!!g[3];G.susp=g[4];G.jamT=g[5];G.keypad=!!g[6];G.coins=g[7];G.time=d.tm;
@@ -8971,13 +9039,15 @@ function guestWeapon(dt){
   const rl=P.reload>0?Math.sin(Math.PI*(1-P.reload/RELOAD_TIME)):0;
   gun.rotation.set(P.recoil*0.18+rl*0.5,0,rl*0.5+(P.sprinting?0.3:0)*bobA);
 }
+// what the guest sees lags the host by the smoothing (about 0.08 s) on top of the trip over the network
+const VIEW_LAG=0.08;
 function guestShoot(){
   if(P.locked||P.climb||GS.out)return;
   if(!P.masked){toast("Put on your mask first. Hold G","warn",1400);return;}
   if(P.raise<0.9||P.reload>0||P.fireCD>0)return;
   P.fireCD=0.3;
   if(P.mag>0){P.recoil=1;SFX0.shot();flash.visible=true;flash.rotation.z=Math.random()*3;muzzleLight.intensity=2.2;window.setTimeout(()=>{flash.visible=false;muzzleLight.intensity=0;},45);}
-  netAct("shoot");
+  netAct("shoot",[r3(GS.tm-VIEW_LAG)]);
 }
 function guestEnd(d){
   NET.ending=true;
