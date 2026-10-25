@@ -19,7 +19,7 @@ const switchMap=async m=>{
 };
 // guards out of the way so nobody spots anyone while we test
 const clear=()=>H.evaluate(()=>{__qh.guards.forEach(g=>{g.route=[[200,200],[200,201]];g.wp=0;g.x=200;g.z=200;g.level=0;});});
-const put=(x,z,l,extra)=>G.evaluate(([x,z,l,e])=>{const P=__qh.P;P.x=x;P.z=z;P.level=l;P.y=l*ROOF_Y;P.jh=0;P.vy=0;Object.assign(P,e||{});},[x,z,l,extra||{}]);
+const put=(x,z,l,extra)=>G.evaluate(([x,z,l,e])=>{const P=__qh.P;P.x=x;P.z=z;P.level=l;P.y=l*__qh.ROOF_Y;P.jh=0;P.vy=0;Object.assign(P,e||{});},[x,z,l,extra||{}]);
 for(let i=0;i<only.length;i++){
   const m=only[i];if(i>0)await switchMap(m);
   await clear();await wait(500);
@@ -66,12 +66,12 @@ for(let i=0;i<only.length;i++){
   }
   if(m==="whiteout"){
     // the guest walks through fresh snow: prints on both screens
-    const spot=await G.evaluate(()=>{for(let x=-30;x<40;x+=1.5)for(let z=-30;z<40;z+=1.5)if(woOutdoor(x,z,0)&&!woOnPath(x,z)&&woOutdoor(x,z-4,0)&&!woOnPath(x,z-4)&&__qh.colliders.every(c=>(c.lvl||0)!==0||x<c.minX-1||x>c.maxX+1||z<c.minZ-5||z>c.maxZ+1))return [x,z];return null;});
+    const spot=await G.evaluate(()=>{for(let x=-30;x<40;x+=1.5)for(let z=-30;z<40;z+=1.5)if(__qh.woOutdoor(x,z,0)&&!__qh.woOnPath(x,z)&&__qh.woOutdoor(x,z-4,0)&&!__qh.woOnPath(x,z-4)&&__qh.colliders.every(c=>(c.lvl||0)!==0||x<c.minX-1||x>c.maxX+1||z<c.minZ-5||z>c.maxZ+1))return [x,z];return null;});
     r.spot=spot;
     if(spot){
       await put(spot[0],spot[1],0,{yaw:0});const n0=await H.evaluate(()=>__qh.G.w.prints.length);
       await G.keyboard.down('KeyW');await hostWait(1.8);await G.keyboard.up('KeyW');await wait(800);
-      r.prints={host:(await H.evaluate(()=>__qh.G.w.prints.length))-n0,guest:await G.evaluate(()=>__qh.G.w.prints.length),fog:[await H.evaluate(()=>+scene.fog.density.toFixed(3)),await G.evaluate(()=>+scene.fog.density.toFixed(3))]};
+      r.prints={host:(await H.evaluate(()=>__qh.G.w.prints.length))-n0,guest:await G.evaluate(()=>__qh.G.w.prints.length),fog:[await H.evaluate(()=>+__qh.scene.fog.density.toFixed(3)),await G.evaluate(()=>+__qh.scene.fog.density.toFixed(3))]};
     }
     // a laser lane: stand in it and wait for the beams
     await H.evaluate(()=>{__qh.G.w.lasersOff=false;});
