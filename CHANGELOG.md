@@ -5,6 +5,18 @@ feature round bumps MINOR, a bug-fix-only update bumps PATCH, and 1.0.0 is
 the first "finished" release. Up to 0.30.0, MINOR is the version number the
 claude.ai artifact had. Releases are tagged `v0.30.0` and so on.
 
+## 0.33.0 — career economy
+Career only: free play and co-op are unchanged. Old careers keep their cash, levels, skills and gear.
+- **Pay by job size:** your cut is now the job's score measured against what that job is worth. A full, clean take on Normal with a ×1.00 contract pays $7,000 (Quiet Hours), $8,000 (Business Hours), $14,000–18,000 (medium jobs) and $30,000–42,000 (long jobs). Twists, stealth, difficulty and partial takes still count. Offers show what the whole job pays.
+- **Plan the job:** "Plan the job" opens intel (guards, cameras, civilians, locked doors, keycards, loot), a checklist of what it takes to clear it, and your kit. Fill to plan, adjust, and start.
+- **Nothing is free:** you go in with your mask and nothing else. Hire a getaway driver ($1,000 / $2,000 / $4,000 by job size; on foot you can only get one bag out), and bring a pistol ($500), a lockpick set ($400), a drill ($800, bank jobs), duffel bags ($200, one per loot bag or gold bar), body bags ($150), zip ties ($100), spare magazines ($150), coins ($100 for 3), jammers ($500) and bump keys ($1,200).
+- **Stash:** whatever you don't use goes back to your stash for the next job. Get busted and the police keep everything you brought.
+- **Hands only:** without a pistol, take guards down from behind with F, ACTION on a touch screen, or Y on a controller. The fire button does the same.
+- **Gear** now costs $3,000 to $60,000 and needs a career level: extended magazine, soft-soled shoes, own drill rig (no more rental), pro lockpicks (no more rental), fake staff badge, signal booster (new: jammers run 50% longer) and a better silencer. Spare jammer, zip-tie bandolier, roll of coins and thermal bit are gone; old saves get them as stash stock or the drill rig.
+- **Big goals:** Workshop ($75,000: kit half price), Veteran wheelman ($120,000: driver half price, police 20% slower), Inside man ($200,000: +15% pay), Offshore account ($300,000: a bust costs 5%) and the Penthouse ($750,000).
+- **Skills:** Signal tech makes jammers half price (and they still run 7 s longer). Zip-tie stash makes zip ties and body bags half price.
+- New offers cost $500, a skill reset $8,000.
+
 ## 0.32.1 — dev mode on phones
 - Phones and tablets: dev mode is back. Tap **Co-op · Dev** next to Start in the job menu (the button used to say "More") and tick Dev mode.
 - In a job, a **GHOST** button under the pause and OBJ buttons turns noclip on and off. JUMP flies up, CROUCH flies down, and pushing the stick all the way goes faster.

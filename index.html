@@ -278,6 +278,34 @@ body.coop-guest .diffs{pointer-events:none;opacity:.6}
 #endCareer{display:grid;grid-template-columns:1fr auto;gap:4px 16px;padding:10px 12px;border:1px solid var(--line);background:rgba(255,255,255,.03);font-family:var(--f-mono);font-size:13px}
 #endCareer dt{color:var(--dim)}#endCareer dd{margin:0;text-align:right;font-weight:700}
 #endCareer .lvl{grid-column:1/-1;color:var(--sodium);letter-spacing:.12em}
+.item.lockd{opacity:.6}.cr-h{margin:6px 0 0;font-family:var(--f-display);font-weight:400;font-size:24px;display:flex;gap:10px;align-items:baseline;flex-wrap:wrap}
+/* the plan */
+.plan{display:grid;gap:14px}
+.plan-head{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:14px;align-items:center}
+.plan-head h3{margin:0}.plan-worth{display:grid;justify-items:end;gap:2px}.plan-worth b{font-family:var(--f-mono);font-size:22px;color:var(--secure)}
+.plan-cols{display:grid;grid-template-columns:minmax(0,5fr) minmax(0,7fr);gap:18px;align-items:start}
+.plan-cols h4{margin:0 0 8px}.plan-cols h4 span{text-transform:none;letter-spacing:0}
+.plan-intel{display:grid;grid-template-columns:auto 1fr;gap:3px 14px;margin:0 0 14px;font-size:14px}.plan-intel dt{color:var(--dim)}.plan-intel dd{margin:0;font-weight:700}
+.plan-check{list-style:none;margin:0;padding:0;display:grid;gap:5px}
+.plan-check li{display:grid;grid-template-columns:18px minmax(0,1fr);gap:0 8px;padding:6px 8px;border-left:2px solid var(--line);background:rgba(255,255,255,.02)}
+.plan-check i{font-style:normal;grid-row:1/3;font-weight:700}.plan-check b{font-size:14px}.plan-check span{font-size:12px;color:var(--dim)}
+.plan-check li.ok{border-color:var(--secure)}.plan-check li.ok i{color:var(--secure)}
+.plan-check li.miss{border-color:var(--alarm);background:rgba(255,77,77,.06)}.plan-check li.miss i{color:var(--alarm)}
+.plan-check li.opt i{color:var(--dim)}
+.kit{display:grid;gap:4px}
+.kit-row{display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:4px 12px;align-items:center;padding:6px 10px;border:1px solid var(--line);background:rgba(255,255,255,.02)}
+.kit-row.on{border-color:rgba(244,171,61,.55)}.kit-row.off{opacity:.45}
+.kit-name{display:grid;min-width:0}.kit-name b{font-size:15px}.kit-name span{font-size:12px;color:var(--dim);line-height:1.3}
+.kit-price{font-family:var(--f-mono);font-size:11px;color:var(--dim);text-align:right;white-space:nowrap}
+.kit-ctl{display:flex;align-items:center;gap:6px}
+.kit-step{width:32px;height:32px;border:1px solid var(--line);background:rgba(255,255,255,.04);color:var(--fg);font-size:18px;line-height:1;padding:0}
+.kit-step:disabled{opacity:.35}.kit-n{min-width:20px;text-align:center;font-family:var(--f-mono)}
+.kit-tog{min-width:64px;height:32px;border:1px solid var(--line);background:transparent;color:var(--dim);font-family:var(--f-mono);font-size:11px;letter-spacing:.12em;text-transform:uppercase}
+.kit-tog[aria-pressed="true"]{background:var(--sodium);border-color:var(--sodium);color:var(--ink)}
+.kit-step:focus-visible,.kit-tog:focus-visible{outline:2px solid var(--fg);outline-offset:2px}
+.plan-foot{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:flex-end;padding-top:12px;border-top:1px solid var(--line)}
+.plan-total{display:grid;grid-template-columns:auto auto;gap:0 10px;align-items:baseline;margin-right:auto}.plan-total b{font-family:var(--f-mono);font-size:22px}.plan-total b.bad{color:var(--alarm)}.plan-total .lbl:last-child{grid-column:1/-1}
+@media (max-width:760px){.plan-cols{grid-template-columns:1fr}}
 @media (max-width:760px){.trees{grid-template-columns:1fr}.cr-top{grid-template-columns:1fr 1fr}.cr-xp{grid-column:1/-1}}
 
 @media (max-width:640px){#obj{max-width:calc(100vw - 150px)}#objText{font-size:15px}}
@@ -314,6 +342,11 @@ body.coop-guest .diffs{pointer-events:none;opacity:.6}
   #careerPanel>.cr-top{grid-column:1;grid-template-columns:auto minmax(80px,1fr) auto auto;padding:6px 12px;gap:4px 12px;align-items:center}.cr-stat b{font-size:19px}.cr-xp .lbl{font-size:9px}
   #careerPanel>.cr-tabs{grid-column:2;align-self:stretch}.cr-tabs button{padding:6px 10px}
   details.help{padding-bottom:14px}
+  .plan-head{grid-template-columns:auto minmax(0,1fr)}.plan-worth{grid-column:1/-1;display:flex;gap:10px;align-items:baseline}.plan-worth b{font-size:18px}
+  .plan-head .job-place{font-size:12px}.plan-head h3{font-size:22px}
+  .kit-row{padding:5px 8px;grid-template-columns:minmax(0,1fr) auto}.kit-price{grid-column:1;text-align:left}.kit-ctl{grid-column:2;grid-row:1/3}.kit-name span{display:none}
+  .plan-foot{position:sticky;bottom:0;z-index:2;margin:0 -16px;padding:8px 16px calc(8px + env(safe-area-inset-bottom,0px));background:rgba(8,11,16,.97);backdrop-filter:blur(8px)}
+  .plan-foot .btn.small{padding:7px 10px;font-size:14px}.plan-total b{font-size:18px}
 }
 @media (max-width:480px){#jdName{font-size:19px}#startBtn{font-size:16px;padding:9px 12px}#coopToggle{padding:7px 10px}}
 @media (max-height:520px){.card.menu .menu-head h1{display:none}}
@@ -330,7 +363,7 @@ body.coop-guest .diffs{pointer-events:none;opacity:.6}
   <div id="detect"><div class="lbl" id="detectLbl">Detection</div><div class="bar"><i id="detectFill"></i></div></div>
   <div id="clock"><span class="lbl" id="clockLbl">Elapsed</span><span id="clockVal">00:00</span></div>
   <div id="obj"><div class="lbl">Objective</div><div id="objText">Get into the bank unseen.</div><div id="objTip" hidden></div><div id="bagsRow"><span id="bagsLbl">Bags in the van</span> <b id="bagsVal">0/3</b> · Take <b id="takeVal">$0</b></div></div>
-  <div id="status"><span class="chip warn" id="ctChip" hidden></span><span class="chip" id="mateChip" hidden></span><span class="chip" id="devChip" hidden>DEV · GHOST OFF · V</span><span class="chip" id="posChip" hidden></span><span class="chip" id="ammo" hidden>PISTOL 12 / 36</span><span class="chip" id="pagerChip" hidden>PAGERS 0/3</span><span class="chip" id="tieChip" hidden>ZIP TIES 6</span><span class="chip" id="loopChip" hidden></span><span class="chip" id="jamChip" hidden>JAMMERS 2 · J</span><span class="chip" id="coinChip" hidden>COINS 3 · T</span><span class="chip ok" id="cardChip" hidden>KEYCARD</span><span class="chip ok" id="codeChip" hidden></span><span class="chip" id="maskChip">UNMASKED · OUTSIDE</span><span class="chip" id="carry" hidden>CARRYING BAG · SLOWED</span><span class="chip" id="stance">STANDING</span><span class="chip" id="sound">SOUND ON · M</span></div>
+  <div id="status"><span class="chip warn" id="ctChip" hidden></span><span class="chip" id="mateChip" hidden></span><span class="chip" id="devChip" hidden>DEV · GHOST OFF · V</span><span class="chip" id="posChip" hidden></span><span class="chip" id="ammo" hidden>PISTOL 12 / 36</span><span class="chip" id="pagerChip" hidden>PAGERS 0/3</span><span class="chip" id="tieChip" hidden>ZIP TIES 6</span><span class="chip" id="kitChip" hidden>DUFFELS 0</span><span class="chip" id="loopChip" hidden></span><span class="chip" id="jamChip" hidden>JAMMERS 2 · J</span><span class="chip" id="coinChip" hidden>COINS 3 · T</span><span class="chip ok" id="cardChip" hidden>KEYCARD</span><span class="chip ok" id="codeChip" hidden></span><span class="chip" id="maskChip">UNMASKED · OUTSIDE</span><span class="chip" id="carry" hidden>CARRYING BAG · SLOWED</span><span class="chip" id="stance">STANDING</span><span class="chip" id="sound">SOUND ON · M</span></div>
   <div id="crosshair"></div>
   <div id="prompt" hidden><span id="promptText"></span><div class="pbar" id="pbar" hidden><i id="pfill"></i></div></div>
   <div id="keypad" hidden><span class="lbl" id="kpTitle">SAFE KEYPAD</span><div id="kpScreen">_ _ _ _</div>
@@ -565,7 +598,7 @@ body.coop-guest .diffs{pointer-events:none;opacity:.6}
 // Co-op: the same code runs for every player by swapping who P is. CTX.cur is the player whose turn it is (null = you);
 // HUD writes during another player's turn go to that player's copy of the HUD, which is sent to them.
 const CTX={cur:null,kind:null,pl:null};
-const GAME_VERSION="0.32.1";
+const GAME_VERSION="0.33.0";
 const NET={on:false,host:false,guest:false,send:null,close:null,code:"",busy:false,waiting:false,started:false,acc:0,remote:null,ending:false};
 const $=id=>(CTX.cur&&CTX.cur.dom&&CTX.cur.dom[id])||document.getElementById(id);
 // a timer started during another player's turn runs as that player
@@ -5963,13 +5996,13 @@ const SKILL_TREES=[
     {id:"vanish",t:4,cost:4,name:"Vanish",fx:"Once per job: the first guard or camera that would raise the alarm on you loses you instead",cap:true}]},
   {id:"tech",name:"Technician",blurb:"Tools",skills:[
     {id:"fingers",t:1,cost:1,name:"Nimble fingers",fx:"Pick locks, latches and safes 30% faster"},
-    {id:"signal",t:1,cost:1,name:"Signal tech",fx:"+1 jammer per job, and each one runs 7 s longer"},
+    {id:"signal",t:1,cost:1,name:"Signal tech",fx:"Jammers cost half, and each one runs 7 s longer"},
     {id:"drilltune",t:2,cost:2,name:"Drill tuner",fx:"The drill works 35% faster"},
     {id:"loop",t:2,cost:2,name:"Loop master",fx:"Camera loops last 40 s instead of 25"},
     {id:"coolhead",t:3,cost:3,name:"Cool head",fx:"One extra wrong code on keypads before the alarm"},
     {id:"masterkey",t:4,cost:4,name:"Master key",fx:"Once per job: a locked door opens the moment you start picking it",cap:true}]},
   {id:"enf",name:"Enforcer",blurb:"Bodies and people",skills:[
-    {id:"stash",t:1,cost:1,name:"Zip-tie stash",fx:"+2 zip ties per job"},
+    {id:"stash",t:1,cost:1,name:"Zip-tie stash",fx:"Zip ties and body bags cost half"},
     {id:"aim",t:1,cost:1,name:"Steady aim",fx:"Half the pistol spread"},
     {id:"hands",t:2,cost:2,name:"Quick hands",fx:"Knock guards out from the side, and from a step further away"},
     {id:"voice",t:2,cost:2,name:"Commanding voice",fx:"Your shout reaches further and civilians stay down twice as long"},
@@ -5977,17 +6010,44 @@ const SKILL_TREES=[
     {id:"iron",t:4,cost:4,name:"Iron grip",fx:"Once per job: when a guard grabs you, break free and floor him",cap:true}]}
 ];
 const TIER_REQ={1:0,2:2,3:4,4:7};
+// permanent gear: a steep price curve, and each piece needs a career level
 const GEAR=[
-  {id:"picks",name:"Pro lockpicks",fx:"Locks, latches and safes open 20% faster",price:18000},
-  {id:"shoes",name:"Soft-soled shoes",fx:"Your footsteps carry a third less far",price:22000},
-  {id:"silencer",name:"Better silencer",fx:"Gunshots carry half as far",price:30000},
-  {id:"jammer",name:"Spare jammer",fx:"+1 jammer on every job",price:26000},
-  {id:"mag",name:"Extended magazine",fx:"+6 rounds in every magazine",price:14000},
-  {id:"bit",name:"Thermal drill bit",fx:"The drill works 25% faster",price:34000},
-  {id:"bandolier",name:"Zip-tie bandolier",fx:"+3 zip ties on every job",price:9000},
-  {id:"coins",name:"Roll of coins",fx:"+3 coins to throw on every job",price:6000},
-  {id:"badge",name:"Fake staff badge",fx:"Unmasked in a staff area, you take 25% longer to get noticed",price:24000}
+  {id:"mag",name:"Extended magazine",fx:"+6 rounds in every magazine",price:3000,lvl:1},
+  {id:"shoes",name:"Soft-soled shoes",fx:"Your footsteps carry a third less far",price:8000,lvl:2},
+  {id:"rig",name:"Own drill rig",fx:"No more drill rental, and the drill works 25% faster",price:12000,lvl:3},
+  {id:"picks",name:"Pro lockpicks",fx:"No more lockpick rental, and locks, latches and safes open 20% faster",price:15000,lvl:3},
+  {id:"badge",name:"Fake staff badge",fx:"Unmasked in a staff area, you take 25% longer to get noticed",price:25000,lvl:5},
+  {id:"booster",name:"Signal booster",fx:"Every jammer runs 50% longer",price:40000,lvl:7},
+  {id:"silencer",name:"Better silencer",fx:"Gunshots carry half as far",price:60000,lvl:9}
 ];
+// big things to save up for, once the gear is bought
+const GOALS=[
+  {id:"workshop",name:"Workshop",fx:"Everything you buy for a job costs half (not the driver)",price:75000,lvl:6},
+  {id:"wheelman",name:"Veteran wheelman",fx:"The driver costs half, and the police take 20% longer to arrive",price:120000,lvl:8},
+  {id:"inside",name:"Inside man",fx:"+15% on every contract",price:200000,lvl:12},
+  {id:"offshore",name:"Offshore account",fx:"A bust costs 5% of your cash instead of 15%",price:300000,lvl:15},
+  {id:"penthouse",name:"Penthouse",fx:"The finish line. Retire in style: the safehouse becomes the penthouse",price:750000,lvl:20}
+];
+/* The kit for one career job. You go in with your mask and nothing else: everything here is bought before the job.
+   "job" items are hired or rented for one job. The rest are counted: what you don't use goes back to your stash,
+   and if you're busted the police keep everything you brought. */
+const DRIVER_FEE={Short:1000,Medium:2000,Long:4000};
+const KIT=[
+  {id:"driver",job:true,name:"Getaway driver",fx:"Waits with the van. Without one you leave on foot, with one bag at most"},
+  {id:"gun",job:true,name:"Silenced pistol",price:500,fx:"For one job, with one magazine loaded. Without it you only have your hands"},
+  {id:"picks",job:true,name:"Lockpick set",price:400,fx:"Pick locks, window latches and safes on this job",own:"picks"},
+  {id:"drill",job:true,name:"Drill rental",price:800,fx:"Opens the vault on the bank jobs",own:"rig",need:"drill"},
+  {id:"duffel",name:"Duffel bag",price:200,max:10,fx:"One for each loot bag or gold bar you carry out"},
+  {id:"bodybag",name:"Body bag",price:150,max:6,fx:"Bag a guard you've put down, to hide him in a bin"},
+  {id:"tie",name:"Zip tie",price:100,max:12,fx:"Tie up one civilian"},
+  {id:"mag",name:"Spare magazine",price:150,max:4,fx:"A full magazine for the pistol",needGun:true},
+  {id:"coins",name:"Coins ×3",price:100,max:9,step:3,fx:"Throw one to make a guard look"},
+  {id:"jammer",name:"Jammer",price:500,max:4,fx:"Blocks radios, phones and pagers for a while"},
+  {id:"bump",name:"Bump key",price:1200,max:2,fx:"A locked door opens straight away (used before your picks)"}
+];
+const KIT_COUNT=KIT.filter(k=>!k.job).map(k=>k.id);
+// what a full, clean take pays you on Normal with a ×1.00 contract: your cut is the score scaled to this
+const MAP_PAY={harbor:7000,harborDay:8000,meridian:14000,meridianDay:15500,club:16000,jewel:17000,jewelDay:18000,whiteout:30000,port:32000,manor:35000,casino:38000,tower:42000};
 const TWISTS={
   tight:{name:"Tight schedule",desc:c=>`Out within ${c.mins} minutes, or someone tips off the police`,pay:1.3,xp:1.25,hard:true},
   jumpy:{name:"Jumpy dispatch",desc:()=>"Only one pager answer before dispatch sends units",pay:1.25,xp:1.2,hard:true},
@@ -5995,20 +6055,66 @@ const TWISTS={
   sharp:{name:"Alert guards",desc:()=>"Guards see 25% further and notice you faster",pay:1.35,xp:1.3,hard:true},
   ghost:{name:"Ghost contract",desc:()=>"+50% if the alarm never goes off. An alarm halves the pay",pay:1,xp:1.2},
   nokill:{name:"Nobody dies",desc:()=>"Any death cuts the pay in half",pay:1.15,xp:1.1},
-  light:{name:"Light kit",desc:()=>"No jammers, and only the magazine in the gun",pay:1.2,xp:1.15},
+  light:{name:"Light kit",desc:()=>"No jammers and no spare magazines",pay:1.2,xp:1.15},
   fat:{name:"Fat vault",desc:()=>"Every bag is worth 40% more",pay:1,xp:1},
   quiet:{name:"Quiet night",desc:()=>"Guards see 20% less. Easy money, smaller cut",pay:0.85,xp:0.85}
 };
 const CAREER_KEY="cg-career-v1",LEN_STARS={Short:1,Medium:2,Long:3},LEN_LEVEL={Short:1,Medium:2,Long:4},LEN_MINS={Short:6,Medium:9,Long:13};
-const REFRESH_COST=3000,RESPEC_COST=25000,BUST_FEE=0.15,MAX_LEVEL=30;
+const REFRESH_COST=500,RESPEC_COST=8000,BUST_FEE=0.15,MAX_LEVEL=30;
 let CAREER=null,MODE="career";
-function newCareer(){return {v:1,cash:5000,xp:0,skills:{},gear:{},board:[],active:null,stats:{jobs:0,clean:0,busts:0,earned:0,best:0}};}
+function newCareer(){return {v:1,econ:2,cash:5000,xp:0,skills:{},gear:{},goals:{},stash:{},kit:null,board:[],active:null,stats:{jobs:0,clean:0,busts:0,earned:0,best:0}};}
 function saveCareer(){try{localStorage.setItem(CAREER_KEY,JSON.stringify(CAREER));}catch(e){}}
 function loadCareer(){
-  try{const s=localStorage.getItem(CAREER_KEY);CAREER=s?Object.assign(newCareer(),JSON.parse(s)):newCareer();}catch(e){CAREER=newCareer();}
-  CAREER.board=(CAREER.board||[]).filter(c=>MAPS[c.map]);fillBoard();
+  try{const s=localStorage.getItem(CAREER_KEY),raw=s?JSON.parse(s):null;CAREER=Object.assign(newCareer(),raw||{});if(raw&&!raw.econ)CAREER.econ=1;}catch(e){CAREER=newCareer();}
+  CAREER.board=(CAREER.board||[]).filter(c=>MAPS[c.map]);
+  migrateCareer();
+  if(CAREER.kit)returnKit();   // the page closed during a job: whatever was brought goes back
+  fillBoard();
   try{const m=localStorage.getItem("cg-mode");if(m==="free"||m==="career")MODE=m;}catch(e){}
 }
+// saves from before 0.33: the gear that handed out free items becomes stock in the stash. Cash and everything else stay
+function migrateCareer(){
+  const C=CAREER;C.gear=C.gear||{};C.goals=C.goals||{};C.stash=C.stash||{};C.skills=C.skills||{};
+  if((C.econ||1)<2){
+    const g=C.gear,s=C.stash;
+    if(g.jammer){s.jammer=(s.jammer||0)+4;delete g.jammer;}
+    if(g.bandolier){s.tie=(s.tie||0)+9;delete g.bandolier;}
+    if(g.coins){s.coins=(s.coins||0)+9;delete g.coins;}
+    if(g.bit){g.rig=true;delete g.bit;}
+    C.econ=2;
+  }
+}
+const goal=id=>MODE==="career"&&!!(CAREER&&CAREER.goals&&CAREER.goals[id]);
+// what a kit item costs right now: the workshop halves everything but the driver, two skills halve their items
+function kitPrice(k,c){
+  if(k.id==="driver"){const j=c&&jobInfo(c.map);return Math.round(DRIVER_FEE[j?j.len:"Short"]*(goal("wheelman")?0.5:1));}
+  let p=k.price;if(goal("workshop"))p*=0.5;
+  if(k.id==="jammer"&&CAREER.skills.signal)p*=0.5;
+  if((k.id==="tie"||k.id==="bodybag")&&CAREER.skills.stash)p*=0.5;
+  return Math.round(p/10)*10;
+}
+// the bill for a planned kit: job items, plus counted items beyond what's already in the stash
+function kitCost(sel,c){
+  let t=0;
+  for(const k of KIT){
+    if(k.job){if(sel[k.id]&&!(k.own&&CAREER.gear[k.own]))t+=kitPrice(k,c);continue;}
+    const buy=Math.max(0,(sel[k.id]||0)-(CAREER.stash[k.id]||0));t+=Math.ceil(buy/(k.step||1))*kitPrice(k,c);
+  }
+  return t;
+}
+// back to the stash (a clean getaway, or walking away from the job)
+function returnKit(){
+  const K=CAREER.kit;if(!K)return null;const back={};
+  for(const id of KIT_COUNT){const n=Math.max(0,K[id]|0);if(n){CAREER.stash[id]=(CAREER.stash[id]||0)+n;back[id]=n;}}
+  CAREER.kit=null;G.kitLive=false;saveCareer();return back;
+}
+// the counters on the job back into the kit (before a restart, at the end, when walking away)
+function syncKit(){
+  const K=CAREER&&CAREER.kit;if(!K||!G.kitLive)return;
+  K.tie=P.ties;K.coins=G.coins;K.duffel=G.duffels;K.bodybag=G.bodyBags;K.bump=G.bumps;
+  if(!(G.tw&&G.tw.light)){K.jammer=P.jammers;K.mag=K.gun?Math.floor(P.reserve/magSize()):0;}
+}
+const kitWord=(id,n)=>{const k=KIT.find(x=>x.id===id);const nm=id==="coins"?"coin":k.name.toLowerCase();return `${n} ${nm}${n===1?"":id==="coins"?"s":nm.endsWith("s")?"":"s"}`;};
 const XP_FOR=n=>400+120*n;   // experience from level n to n+1
 function levelInfo(xp){let L=1,x=xp;while(L<MAX_LEVEL&&x>=XP_FOR(L)){x-=XP_FOR(L);L++;}return {level:L,into:x,need:L>=MAX_LEVEL?0:XP_FOR(L)};}
 const treeSpent=t=>t.skills.reduce((a,k)=>a+(CAREER.skills[k.id]?k.cost:0),0);
@@ -6021,16 +6127,16 @@ function skillState(t,k){
 }
 
 // what your skills and gear add up to on the job (free play: nothing)
-const SK0={coins:0,pick:1,drill:1,jammers:0,jamT:0,loop:1,kp:0,mask:1,bag:1,body:0.5,crouch:1,shadow:1,pagers:0,pagerWin:1,heavy:false,hands:false,voice:false,down:1,aim:1,ties:0,mag:0,shot:1,step:1,unmasked:1,vanish:false,masterKey:false,iron:false};
+const SK0={coins:0,pick:1,drill:1,jammers:0,jamT:0,jamMul:1,loop:1,kp:0,mask:1,bag:1,body:0.5,crouch:1,shadow:1,pagers:0,pagerWin:1,heavy:false,hands:false,voice:false,down:1,aim:1,ties:0,mag:0,shot:1,step:1,unmasked:1,vanish:false,masterKey:false,iron:false};
 let SK=Object.assign({},SK0);
 function computeSK(){
   const s=Object.assign({},SK0);if(MODE!=="career"||!CAREER)return s;
   const k=CAREER.skills,g=CAREER.gear;
   if(k.softstep)s.crouch=1.4;if(k.shadow)s.shadow=0.75;if(k.talker){s.pagers=1;s.pagerWin=1.5;}if(k.quickchange)s.mask=0.4;
   if(k.lightload){s.bag=0.5;s.body=0.7;}if(k.vanish)s.vanish=true;
-  if(k.fingers)s.pick*=1.3;if(k.signal){s.jammers+=1;s.jamT=7;}if(k.drilltune)s.drill*=1.35;if(k.loop)s.loop=40/25;if(k.coolhead)s.kp=1;if(k.masterkey)s.masterKey=true;
-  if(k.stash)s.ties+=2;if(k.aim)s.aim=0.5;if(k.hands)s.hands=true;if(k.voice){s.voice=true;s.down=2;}if(k.heavy)s.heavy=true;if(k.iron)s.iron=true;
-  if(g.picks)s.pick*=1.2;if(g.shoes)s.step=0.65;if(g.silencer)s.shot=0.5;if(g.jammer)s.jammers+=1;if(g.mag)s.mag=6;if(g.bit)s.drill*=1.25;if(g.bandolier)s.ties+=3;if(g.badge)s.unmasked=0.75;if(g.coins)s.coins=3;
+  if(k.fingers)s.pick*=1.3;if(k.signal)s.jamT=7;if(k.drilltune)s.drill*=1.35;if(k.loop)s.loop=40/25;if(k.coolhead)s.kp=1;if(k.masterkey)s.masterKey=true;
+  if(k.aim)s.aim=0.5;if(k.hands)s.hands=true;if(k.voice){s.voice=true;s.down=2;}if(k.heavy)s.heavy=true;if(k.iron)s.iron=true;
+  if(g.picks)s.pick*=1.2;if(g.shoes)s.step=0.65;if(g.silencer)s.shot=0.5;if(g.mag)s.mag=6;if(g.rig)s.drill*=1.25;if(g.badge)s.unmasked=0.75;if(g.booster)s.jamMul=1.5;
   return s;
 }
 const magSize=()=>MAG+(SK.mag||0);
@@ -6062,8 +6168,24 @@ function careerOnReset(){
   G.deadline=G.tw.tight?c.mins*60:0;G.deadWarn=0;
   G.vanishUsed=false;G.masterUsed=false;G.ironUsed=false;G.coins=COINS+SK.coins;
   P.ties+=SK.ties;P.jammers=G.tw.light?0:P.jammers+SK.jammers;P.mag=magSize();P.reserve=G.tw.light?0:magSize()*3;
+  // a career job: you have what you brought and nothing more (a restart keeps what's left of it)
+  G.kit=null;
+  if(c){
+    if(G.kitLive)syncKit();
+    const K=CAREER.kit||(CAREER.kit={map:c.map});
+    G.kit=K;G.kitLive=true;
+    P.hasGun=!!K.gun;P.ties=K.tie|0;P.jammers=G.tw.light?0:K.jammer|0;G.coins=K.coins|0;
+    P.mag=K.gun?magSize():0;P.reserve=K.gun&&!G.tw.light?(K.mag|0)*magSize():0;
+    G.duffels=K.duffel|0;G.bodyBags=K.bodybag|0;G.bumps=K.bump|0;
+    // what everything on the map is worth on average: your cut is the score measured against this
+    const mid=r=>r?(r[0]+r[1])/2:0,d=LV.def;
+    G.fullTake=bags.reduce((s,b)=>s+mid(b.gold?(d.goldValue||[80000,120000]):(d.bagValue||[30000,50000])),0)
+      +CASH.reduce((s,x)=>s+mid(x.jewel?(d.jewelValue||[2000,8000]):x.chips?(d.chipValue||[1000,5000]):(d.cashValue||[300,2000])),0)+(d.diamondValue||0);
+  }
   if(G.tw.fat)bags.forEach(b=>{b.value=Math.round(b.value*1.4/100)*100;});
 }
+// is this a career job where the kit counts?
+const kitOn=()=>!!(G.kit&&G.contract);
 // every frame: the deadline
 function careerTick(dt){
   if(!G.deadline||G.alarm)return;
@@ -6086,11 +6208,21 @@ function careerOnEnd(won,score,stealth){
   const L0=levelInfo(CAREER.xp).level,notes=[];
   CAREER.board=CAREER.board.filter(b=>b.id!==c.id);CAREER.active=null;G.contract=null;
   let pay=0,fee=0,mult=c.pay;const deaths=(G.kills||0)+(G.civKills||0);
+  syncKit();
   if(won){
     if(c.tw.includes("ghost")){mult*=stealth?1.5:0.5;notes.push(stealth?"Ghost contract kept · ×1.5":"Ghost contract broken · ×0.5");}
     if(c.tw.includes("nokill")&&deaths){mult*=0.5;notes.push("Somebody died · ×0.5");}
-    pay=Math.round(score*mult/10)*10;CAREER.cash+=pay;CAREER.stats.jobs++;if(stealth&&score>0)CAREER.stats.clean++;CAREER.stats.earned+=pay;CAREER.stats.best=Math.max(CAREER.stats.best,pay);
-  }else{fee=Math.round(CAREER.cash*BUST_FEE/10)*10;CAREER.cash-=fee;CAREER.stats.busts++;}
+    if(goal("inside")){mult*=1.15;notes.push("Inside man · ×1.15");}
+    // the fence, the crew, the clean-up: your cut is the score measured against what this job is worth to you
+    const full=(G.fullTake||score||1)*(1+STEALTH_BONUS+(civs.length?CIV_BONUS:0));
+    pay=Math.round(score*(MAP_PAY[c.map]||10000)/full*mult/10)*10;CAREER.cash+=pay;CAREER.stats.jobs++;if(stealth&&score>0)CAREER.stats.clean++;CAREER.stats.earned+=pay;CAREER.stats.best=Math.max(CAREER.stats.best,pay);
+    const back=returnKit();if(back&&Object.keys(back).length)notes.push("Back in the stash: "+Object.entries(back).map(([k,n])=>kitWord(k,n)).join(", "));
+  }else{
+    fee=Math.round(CAREER.cash*(goal("offshore")?0.05:BUST_FEE)/10)*10;CAREER.cash-=fee;CAREER.stats.busts++;
+    const K=CAREER.kit;if(K&&KIT_COUNT.some(id=>K[id]>0))notes.push("The police kept your kit: "+KIT_COUNT.filter(id=>K[id]>0).map(id=>kitWord(id,K[id])).join(", "));
+    CAREER.kit=null;G.kitLive=false;
+  }
+  G.kit=null;
   const xp=Math.round((won?(150*c.stars+(stealth&&score>0?200:0)+score/500)*c.xp:60*c.stars)*(won?DIFF.pay:1));
   CAREER.xp+=xp;const L1=levelInfo(CAREER.xp).level;
   fillBoard();saveCareer();
@@ -6111,7 +6243,9 @@ function renderCareer(){
   document.querySelectorAll(".cr-tabs button").forEach(b=>b.setAttribute("aria-selected",String(b.dataset.tab===crTab)));
   $("crJobs").hidden=crTab!=="jobs";$("crShop").hidden=crTab!=="shop";$("crSkills").hidden=crTab!=="skills";
   $("crTabSkills").textContent=pts>0?`Skills · ${pts}`:"Skills";
-  if(crTab==="jobs"){
+  if(crTab==="jobs"&&PLAN&&!CAREER.board.some(c=>c.id===PLAN.id))PLAN=null;
+  if(crTab==="jobs"&&PLAN)renderPlan();
+  else if(crTab==="jobs"){
     const L=li.level,locks=[];if(L<LEN_LEVEL.Medium)locks.push(`medium jobs at level ${LEN_LEVEL.Medium}`);if(L<LEN_LEVEL.Long)locks.push(`long jobs at level ${LEN_LEVEL.Long}`);
     $("crJobs").innerHTML=`<div class="offers">${CAREER.board.map(c=>{const j=jobInfo(c.map);if(!j)return "";
       return `<article class="offer">
@@ -6119,19 +6253,27 @@ function renderCareer(){
         <div class="offer-stars" aria-label="${c.stars} of 5">${stars(c.stars)}</div>
         <h3 class="job-name">${j.name}</h3><div class="job-place">${j.place}</div>
         <ul class="twists">${c.tw.map(t=>`<li><b>${TWISTS[t].name}</b><span>${TWISTS[t].desc(c)}</span></li>`).join("")}</ul>
-        <div class="offer-pay"><span>PAY ×${c.pay.toFixed(2)}</span><span>XP ×${c.xp.toFixed(2)}</span></div>
-        <div class="job-best">${readBest(c.map)?"YOUR BEST "+money(readBest(c.map)):""}</div>
-        <button class="btn" data-take="${c.id}">Take the job</button></article>`;}).join("")}</div>
+        <div class="offer-pay"><span>UP TO ${money(fullCut(c))}</span><span>PAY ×${c.pay.toFixed(2)}</span><span>XP ×${c.xp.toFixed(2)}</span></div>
+        <button class="btn" data-take="${c.id}">Plan the job</button></article>`;}).join("")}</div>
       <div class="cr-row"><button class="btn ghost small" id="crRefresh" ${CAREER.cash<REFRESH_COST?"disabled":""}>New offers · ${money(REFRESH_COST)}</button>
         <span class="lbl">${locks.length?"Unlocks: "+locks.join(", "):"Every job is open to you"}</span></div>`;
-    $("crJobs").querySelectorAll("[data-take]").forEach(b=>b.onclick=()=>takeContract(b.dataset.take));
+    $("crJobs").querySelectorAll("[data-take]").forEach(b=>b.onclick=()=>openPlan(b.dataset.take));
     $("crRefresh").onclick=()=>{if(CAREER.cash<REFRESH_COST)return;CAREER.cash-=REFRESH_COST;CAREER.board=[];fillBoard();renderCareer();};
   }
   if(crTab==="shop"){
-    $("crShop").innerHTML=`<p class="cr-note">Gear is yours for the rest of the career: it comes along on every career job.</p><div class="shop">${GEAR.map(g=>{const own=!!CAREER.gear[g.id],can=CAREER.cash>=g.price;
-      return `<article class="item ${own?"owned":""}"><h3>${g.name}</h3><p>${g.fx}</p>
-        ${own?`<span class="lbl good">OWNED</span>`:`<button class="btn ${can?"":"ghost"} small" data-buy="${g.id}" ${can?"":"disabled"}>Buy · ${money(g.price)}</button>`}</article>`;}).join("")}</div>`;
-    $("crShop").querySelectorAll("[data-buy]").forEach(b=>b.onclick=()=>{const g=GEAR.find(x=>x.id===b.dataset.buy);if(!g||CAREER.gear[g.id]||CAREER.cash<g.price)return;CAREER.cash-=g.price;CAREER.gear[g.id]=true;saveCareer();renderCareer();});
+    const L=li.level,st=CAREER.stash;
+    const card=(g,owned,kind)=>{const lock=L<g.lvl,can=!lock&&CAREER.cash>=g.price;
+      return `<article class="item ${owned?"owned":""} ${lock?"lockd":""}"><h3>${g.name}</h3><p>${g.fx}</p>
+        ${owned?`<span class="lbl good">${kind==="goal"?"YOURS":"OWNED"}</span>`:lock?`<span class="lbl">LEVEL ${g.lvl} · ${money(g.price)}</span>`:`<button class="btn ${can?"":"ghost"} small" data-buy="${kind}:${g.id}" ${can?"":"disabled"}>Buy · ${money(g.price)}</button>`}</article>`;};
+    const stock=KIT_COUNT.filter(id=>st[id]>0);
+    $("crShop").innerHTML=`<h3 class="cr-h">Gear <span class="lbl">yours for the rest of the career</span></h3>
+      <div class="shop">${GEAR.map(g=>card(g,!!CAREER.gear[g.id],"gear")).join("")}</div>
+      <h3 class="cr-h">Stash <span class="lbl">bought before each job, on the plan</span></h3>
+      <p class="cr-note">${stock.length?stock.map(id=>kitWord(id,st[id])).join(" · "):"Empty. Anything you don't use on a job comes back here. If you're busted, the police keep what you brought."}</p>
+      <h3 class="cr-h">Big goals <span class="lbl">something to save up for</span></h3>
+      <div class="shop">${GOALS.map(g=>card(g,!!CAREER.goals[g.id],"goal")).join("")}</div>`;
+    $("crShop").querySelectorAll("[data-buy]").forEach(b=>b.onclick=()=>{const [kind,id]=b.dataset.buy.split(":"),list=kind==="goal"?GOALS:GEAR,own=kind==="goal"?CAREER.goals:CAREER.gear;
+      const g=list.find(x=>x.id===id);if(!g||own[g.id]||CAREER.cash<g.price||levelInfo(CAREER.xp).level<g.lvl)return;CAREER.cash-=g.price;own[g.id]=true;saveCareer();renderCareer();setMode(MODE);});
   }
   if(crTab==="skills"){
     $("crSkills").innerHTML=`<div class="trees">${SKILL_TREES.map(t=>`<section class="tree"><header><h3>${t.name}</h3><span class="lbl">${t.blurb} · ${treeSpent(t)} points</span></header>
@@ -6152,12 +6294,94 @@ function takeContract(id){
   CAREER.active=c.id;saveCareer();setMode("career");initAudio();
   pickMap(c.map);resetGame();begin();
 }
+// what the whole job is worth to you: everything, clean, on this difficulty and contract
+const fullCut=c=>Math.round((MAP_PAY[c.map]||10000)*c.pay*DIFF.pay*(goal("inside")?1.15:1)/100)*100;
+
+/* ---------- the plan: intel on the job, what it takes, and the kit you bring ---------- */
+let PLAN=null;
+function openPlan(id){
+  const c=CAREER.board.find(x=>x.id===id);if(!c)return;
+  pickMap(c.map);   // build the job to read it
+  const d=LV.def,V=VAULT,gold=bags.filter(b=>b.gold).length;
+  const I={guards:guards.length,cams:cams.length,civs:civs.length,nb:bags.length-gold,gold,cash:CASH.length,diamond:d.needDiamond||"",
+    drill:!!(V&&!V.custom&&!V.safe),safeCode:!!(V&&V.safe),pickDoors:doors.filter(x=>x.locked&&x.pick).length,cardDoors:doors.filter(x=>x.locked&&!x.pick&&!x.gate).length,
+    card:!!KEYCARD,ties:d.zipTies||0,len:(jobInfo(c.map)||{}).len||"Short"};
+  PLAN={id,c,I,sel:{}};planFill();crTab="jobs";renderCareer();
+  const el=$("crJobs");if(el&&el.scrollIntoView)try{el.scrollIntoView({block:"start"});}catch(e){}
+}
+// what it takes to clear the job, and what helps
+function planNeeds(){
+  const {I,c}=PLAN,light=c.tw.includes("light"),r=[];
+  r.push({id:"driver",n:1,need:true,why:"Without one you leave on foot with one bag"});
+  r.push({id:"duffel",n:I.nb+I.gold,need:true,why:`${I.nb} loot bag${I.nb===1?"":"s"}${I.gold?` and ${I.gold} gold`:""}`});
+  if(I.drill)r.push({id:"drill",n:1,need:true,why:"The vault has to be drilled"});
+  if(I.pickDoors)r.push({id:"picks",n:1,need:true,why:`${I.pickDoors} locked door${I.pickDoors===1?"":"s"} to pick, plus latches and safes`});
+  if(I.civs)r.push({id:"tie",n:Math.min(12,Math.max(2,I.ties)),need:false,why:`${I.civs} civilian${I.civs===1?"":"s"} on site`});
+  if(!light)r.push({id:"jammer",n:2,need:false,why:`${I.cams} camera${I.cams===1?"":"s"}, and every guard has a pager`});
+  r.push({id:"bodybag",n:2,need:false,why:`${I.guards} guard${I.guards===1?"":"s"}, and bodies get found`});
+  r.push({id:"gun",n:1,need:false,why:"Cameras, and when it goes loud"});
+  if(!light)r.push({id:"mag",n:1,need:false,why:"One more magazine"});
+  r.push({id:"coins",n:3,need:false,why:"Lure a guard away"});
+  return r;
+}
+const kitMax=(k)=>{const light=PLAN&&PLAN.c.tw.includes("light");if(light&&(k.id==="jammer"||k.id==="mag"))return 0;if(k.id==="mag"&&!PLAN.sel.gun)return 0;return k.max||1;};
+const kitOwned=k=>!!(k.own&&CAREER.gear[k.own]);
+function planFill(){const sel={};for(const n of planNeeds()){const k=KIT.find(x=>x.id===n.id);sel[n.id]=k.job?!kitOwned(k):n.n;}PLAN.sel=sel;}
+function planCovered(n){const k=KIT.find(x=>x.id===n.id);return k.job?(kitOwned(k)||!!PLAN.sel[n.id]):(PLAN.sel[n.id]||0)>=n.n;}
+function renderPlan(){
+  const {c,I,sel}=PLAN,j=jobInfo(c.map)||{name:c.map,place:"",len:"Short"},cost=kitCost(sel,c),can=CAREER.cash>=cost,st=CAREER.stash;
+  const needs=planNeeds();
+  const row=k=>{
+    if(k.id==="drill"&&!I.drill)return "";
+    const owned=kitOwned(k),price=k.job?kitPrice(k,c):kitPrice(k,c),max=kitMax(k),n=sel[k.id]||0;
+    let ctl;
+    if(k.job)ctl=owned?`<span class="lbl good">OWNED</span>`:`<button type="button" class="kit-tog" data-tog="${k.id}" aria-pressed="${!!sel[k.id]}">${sel[k.id]?"Bring":"Skip"}</button>`;
+    else ctl=`<button type="button" class="kit-step" data-dec="${k.id}" ${n<=0?"disabled":""} aria-label="One less">−</button><b class="kit-n">${n}</b><button type="button" class="kit-step" data-inc="${k.id}" ${n>=max?"disabled":""} aria-label="One more">+</button>`;
+    const have=!k.job&&st[k.id]?` · ${st[k.id]} in stash`:"";
+    const pr=owned?"":`${money(price)}${k.job?" / job":k.step?" / "+k.step:" each"}${have}`;
+    return `<div class="kit-row ${(k.job?(owned||sel[k.id]):n)?"on":""} ${max===0&&!k.job?"off":""}"><div class="kit-name"><b>${k.name}</b><span>${k.fx}</span></div><div class="kit-price">${pr}</div><div class="kit-ctl">${ctl}</div></div>`;};
+  const lines=[["Guards",I.guards],["Cameras",I.cams],["Civilians",I.civs],["Locked doors",I.pickDoors+I.cardDoors+(I.card?` (keycard on site)`:"")],
+    ["Loot",`${I.nb} bag${I.nb===1?"":"s"}${I.gold?` · ${I.gold} gold`:""}`],["Loose cash",`${I.cash} stack${I.cash===1?"":"s"}`]];
+  if(I.diamond)lines.push(["The target",I.diamond.replace(/^the /,"The ")]);
+  if(I.safeCode)lines.push(["The safe","A code, written down somewhere"]);
+  $("crJobs").innerHTML=`<div class="plan">
+    <div class="plan-head"><button type="button" class="btn ghost small" id="planBack">← Board</button>
+      <div><h3 class="job-name">${j.name}</h3><div class="job-place">${j.place} · ${j.len.toUpperCase()} · ${stars(c.stars)}${c.tw.length?" · "+c.tw.map(t=>TWISTS[t].name).join(", "):""}</div></div>
+      <div class="plan-worth"><span class="lbl">Everything, clean</span><b>${money(fullCut(c))}</b></div></div>
+    <div class="plan-cols">
+      <section><h4 class="lbl">Intel</h4><dl class="plan-intel">${lines.map(([a,b])=>`<dt>${a}</dt><dd>${b}</dd>`).join("")}</dl>
+        <h4 class="lbl">To take everything</h4><ul class="plan-check">${needs.map(n=>{const ok=planCovered(n),k=KIT.find(x=>x.id===n.id);
+          return `<li class="${ok?"ok":n.need?"miss":"opt"}"><i>${ok?"✓":n.need?"✗":"·"}</i><b>${k.job?k.name:`${k.name.replace(/ ×\d+$/,"")} ×${n.n}`}</b><span>${n.need?"":"Useful · "}${n.why}</span></li>`;}).join("")}</ul></section>
+      <section><h4 class="lbl">Your kit <span>· you go in with your mask and nothing else</span></h4><div class="kit">${KIT.map(row).join("")}</div></section>
+    </div>
+    <div class="plan-foot"><div class="plan-total"><span class="lbl">Kit and crew</span><b class="${can?"":"bad"}">${money(cost)}</b><span class="lbl">You have ${money(CAREER.cash)}</span></div>
+      <button type="button" class="btn ghost small" id="planFill">Fill to plan</button><button type="button" class="btn ghost small" id="planClear">Nothing</button>
+      <button type="button" class="btn" id="planGo" ${can?"":"disabled"}>${can?"Start the job":"Not enough cash"}</button></div></div>`;
+  const root=$("crJobs"),re=()=>renderCareer();
+  root.querySelector("#planBack").onclick=()=>{PLAN=null;re();};
+  root.querySelector("#planFill").onclick=()=>{planFill();re();};
+  root.querySelector("#planClear").onclick=()=>{PLAN.sel={};re();};
+  root.querySelectorAll("[data-tog]").forEach(b=>b.onclick=()=>{const id=b.dataset.tog;sel[id]=!sel[id];if(id==="gun"&&!sel.gun)sel.mag=0;re();});
+  root.querySelectorAll("[data-inc],[data-dec]").forEach(b=>b.onclick=()=>{const id=b.dataset.inc||b.dataset.dec,k=KIT.find(x=>x.id===id),st=k.step||1;
+    sel[id]=clamp((sel[id]||0)+(b.dataset.inc?st:-st),0,kitMax(k));re();});
+  root.querySelector("#planGo").onclick=startPlan;
+}
+// pay, take from the stash, and go
+function startPlan(){
+  if(!PLAN)return;const {c,sel}=PLAN,cost=kitCost(sel,c);if(CAREER.cash<cost)return;
+  CAREER.cash-=cost;const K={map:c.map};
+  for(const k of KIT){
+    if(k.job){K[k.id]=kitOwned(k)||!!sel[k.id];continue;}
+    const n=Math.min(sel[k.id]||0,kitMax(k));K[k.id]=n;CAREER.stash[k.id]=Math.max(0,(CAREER.stash[k.id]||0)-n);
+  }
+  CAREER.kit=K;PLAN=null;G.kitLive=false;saveCareer();takeContract(c.id);
+}
 function setMode(m){
   MODE=m;try{localStorage.setItem("cg-mode",m);}catch(e){}
   document.querySelectorAll(".modes button").forEach(b=>b.setAttribute("aria-selected",String(b.dataset.mode===m)));
   $("careerPanel").hidden=m!=="career";$("freePanel").hidden=m!=="free";
-  $("menuStamp").textContent=m==="career"?"THE SAFEHOUSE":"FREE PLAY";
-  $("menuIntro").textContent=m==="career"?"Take jobs off the board. Each one has a twist that changes how it plays and what it pays. Money buys gear for the rest of your career; experience gives levels, and every level a skill point. Get busted and the lawyers take 15% of your cash.":
+  $("menuStamp").textContent=m==="career"?(goal("penthouse")?"THE PENTHOUSE · RETIRED IN STYLE":"THE SAFEHOUSE"):"FREE PLAY";
+  $("menuIntro").textContent=m==="career"?`Take jobs off the board and plan them: you go in with your mask and whatever you buy, so hire a driver and bring bags, picks and the rest. Each job has a twist that changes how it plays and what it pays. Money buys gear and big upgrades; experience gives levels, and every level a skill point. Get busted and the police keep your kit, and the lawyers take ${goal("offshore")?5:15}% of your cash.`:
     "Any job, as it comes: no twists, no skills, no gear. Every bag and every stack of loose cash adds to your take, and you can leave whenever you like. Never set off the alarm: +30%. On jobs with civilians, nobody hurt: another +15%.";
   if(m==="career")renderCareer();
 }
@@ -6172,7 +6396,7 @@ function initCareerUI(){
 function resetGame(){
   const sp=LV.def.spawn;
   Object.assign(P,{x:sp.x,z:sp.z,yaw:sp.yaw||0,level:sp.lvl||0,y:(sp.lvl||0)*ROOF_Y,climb:null,ladder:null,onStair:false,jh:0,vy:0,gnd:0,fiddle:0,pitch:0,crouch:false,eye:1.65,bobT:0,carry:null,sprinting:false,kick:0,
-    masked:false,maskT:0,mag:MAG,reserve:MAG*3,reload:0,fireCD:0,aim:false,aimT:0,recoil:0,raise:0,wasRestricted:false,ties:LV.def.zipTies||0,shoutCD:0,jammers:JAMMERS,hasCard:false});
+    masked:false,maskT:0,mag:MAG,reserve:MAG*3,reload:0,fireCD:0,aim:false,aimT:0,recoil:0,raise:0,wasRestricted:false,ties:LV.def.zipTies||0,shoutCD:0,jammers:JAMMERS,hasCard:false,hasGun:true});
   Object.assign(G,{time:0,susp:0,unseen:0,alarm:false,alarmT:ALARM_TIME,drill:0,drillWas:false,vaultOpen:false,doorAnim:0,secured:0,takedowns:0,kills:0,camsShot:0,shots:0,everAlarm:false,noise:0,shotNoise:0,blipT:0,bodies:[],secAlert:0,bagT:0,binned:0,
     loud:0,trail:[],trailBase:0,tieT:0,tied:0,civKills:0,callLine:-9,bodyHost:false,lastSpotter:null,secMsg:"",jamT:0,jamsUsed:0,jamBeep:0,loopHold:0,loops:0,picks:0,picking:false,pickScr:0,bang:null,civWatched:false});
   cams.forEach(c=>{c.dead=false;c.loopT=0;c.civDist=-1;c.cone.visible=true;c.spot.intensity=1.6;c.head.rotation.set(0.24,0,0);c.body.material=M.camBody;});
@@ -6185,7 +6409,7 @@ function resetGame(){
   drillOff(true);alarmOff();
   VAULT.pivot.rotation.y=0;VAULT.wheel.rotation.z=0;if(!colliders.includes(VAULT.col))colliders.push(VAULT.col);
   VAULT.drillGroup.visible=false;VAULT.drillLight.intensity=0;
-  bags.forEach((b,i)=>{const sp=BAG_SPOTS[i];b.box=sp.box||(VAULT.safe?"vault":null);b.state=b.box?"locked":"ground";b.level=sp.lvl||0;b.mesh.visible=true;b.mesh.position.set(sp.x,b.level*ROOF_Y+(sp.y!=null?sp.y:0.22),sp.z);b.mesh.rotation.set(0,sp.ry!=null?sp.ry:i*0.7,0);});
+  bags.forEach((b,i)=>{const sp=BAG_SPOTS[i];b.box=sp.box||(VAULT.safe?"vault":null);b.state=b.box?"locked":"ground";b.level=sp.lvl||0;b.mesh.visible=true;b.mesh.position.set(sp.x,b.level*ROOF_Y+(sp.y!=null?sp.y:0.22),sp.z);b.mesh.rotation.set(0,sp.ry!=null?sp.ry:i*0.7,0);b.duffel=false;});
   bags.forEach(b=>{b.value=rollValue(b.gold?(LV.def.goldValue||[80000,120000]):(LV.def.bagValue||[30000,50000]),100);});
   CASH.forEach(c=>{c.taken=false;c.mesh.visible=true;c.value=c.jewel?rollValue(LV.def.jewelValue||[2000,8000],100):c.chips?rollValue(LV.def.chipValue||[1000,5000],100):rollValue(LV.def.cashValue||[300,2000],50);});
   G.vanTake=0;G.vanN=0;G.pocket=0;G.cashTaken=0;G.leaveT=0;G.leaveBlock=false;
@@ -6276,7 +6500,9 @@ $("startBtn").onclick=()=>{initAudio();setMode("free");if(LV.id!==selectedMap)bu
 $("againBtn").onclick=()=>{initAudio();resetGame();begin();};
 $("resumeBtn").onclick=()=>{initAudio();$("pauseNote").textContent="The guards are frozen until you come back.";begin();};
 $("restartBtn").onclick=()=>{initAudio();resetGame();begin();};
-function toMenu(){if(NET.host&&NET.send)NET.send({t:"menu"});NET.started=false;if(document.pointerLockElement)document.exitPointerLock();stopVoices();drillOff(true);alarmOff();if(CAREER)CAREER.active=null;resetGame();setState("menu");if(MODE==="career")renderCareer();}
+function toMenu(){if(NET.host&&NET.send)NET.send({t:"menu"});NET.started=false;if(document.pointerLockElement)document.exitPointerLock();stopVoices();drillOff(true);alarmOff();
+  if(CAREER&&CAREER.kit&&state!=="ended"){syncKit();returnKit();}   // walking away from a job: the kit you didn't use comes home
+  if(CAREER)CAREER.active=null;resetGame();setState("menu");if(MODE==="career")renderCareer();}
 $("menuBtn").onclick=toMenu;$("pauseMenuBtn").onclick=toMenu;
 // job picker
 let selectedMap="harbor";
@@ -6589,6 +6815,8 @@ function tryJump(){
 }
 // lockpicking: hold E, five pins click into place one by one; progress stays if you let go
 function pickTick(o,total,dt){
+  if(o.pickT>=total)return true;
+  if(kitOn()&&!G.kit.picks){G.noPicks=true;return false;}
   if(!G.picking&&o.pickT===0)SFX.pick();
   const b=Math.floor(o.pickT/total*PINS);o.pickT=Math.min(total,o.pickT+dt*SK.pick);const a=Math.floor(o.pickT/total*PINS);
   if(a>b&&a<PINS)SFX.pin();
@@ -6713,14 +6941,14 @@ function placeJammer(){
   if(blocked(P.x,P.z,p.x,p.z,0.3,P.level))p={x:P.x,z:P.z};
   resolve(p,0.2,P.level);
   {const jy=P.onStair?P.y:P.level*ROOF_Y+supportAt(p.x,p.z,0.12,P.level,P.gnd);makeJammer(p.x,p.z,jy,P.yaw);if(NET.host)netEvAll(["jam",r3(p.x),r3(p.z),r3(jy),r3(P.yaw)]);}
-  P.jammers--;G.jamsUsed++;G.jamT=JAM_TIME+SK.jamT;G.jamBeep=0;SFX.jamOn();
+  P.jammers--;G.jamsUsed++;G.jamT=(JAM_TIME+SK.jamT)*SK.jamMul;G.jamBeep=0;SFX.jamOn();
   // every countdown the jammer catches starts over: when it burns out, they begin again from the top
   for(const g of guards){if(g.down)continue;if(g.wounded>0)g.wounded=2.0;if(g.reportT>0)g.reportT=REPORT_TIME*DIFF.report;}
   for(const g of guards){const pg=g.pager;if(!pg)continue;if(pg.state==="pending")pg.t=PAGER_DELAY;else if(pg.state==="ringing")pg.t=PAGER_WINDOW*SK.pagerWin;}
   for(const c of civs)if(c.state==="calling")c.callT=CALL_TIME;
   if(G.secAlert>0)G.secAlert=G.secAlertFull||REPORT_TIME;
   if(civs.some(c=>c.state==="calling")){speak(1.1,VOICE_CIV);showSub("C","Hello? Hello?! …I've got no signal!",2400,"CIVILIAN · ON THE PHONE");}
-  toast(`Jammer on: no radios, phones or pagers for ${JAM_TIME+SK.jamT} s. Any call in progress starts over`,"good",2600);
+  toast(`Jammer on: no radios, phones or pagers for ${Math.round((JAM_TIME+SK.jamT)*SK.jamMul)} s. Any call in progress starts over`,"good",2600);
 }
 function updateJammer(dt){
   const j=jammerMeshes[jammerMeshes.length-1];
@@ -6752,6 +6980,7 @@ const _v2=new THREE.Vector2();
 function shoot(){
   if(NET.guest){guestShoot();return;}
   if(P.locked||P.climb)return;
+  if(P.hasGun===false){if(takedownTarget())tryTakedown();else toast("No pistol on this job. Take guards down from behind with F","warn",1600);return;}
   if(!P.masked){toast("Put on your mask first. Hold G","warn",1400);return;}
   if(P.raise<0.9||P.reload>0||P.fireCD>0)return;
   if(P.mag<=0){SFX.dry();P.fireCD=0.25;if(P.reserve>0)startReload();else toast("Out of ammo","bad");return;}
@@ -6817,7 +7046,7 @@ function dropCarry(){
 }
 function startReload(){
   if(NET.guest)return netAct("startReload");
-  if(!P.masked||P.reload>0||P.mag>=magSize()||P.reserve<=0)return;
+  if(!P.masked||P.hasGun===false||P.reload>0||P.mag>=magSize()||P.reserve<=0)return;
   P.reload=RELOAD_TIME;SFX.reload();
 }
 function updateWeapon(dt){
@@ -6839,9 +7068,9 @@ function updateWeapon(dt){
   }
   P.shoutCD=Math.max(0,P.shoutCD-dt);
   if(P.aim&&(P.sprinting||P.carry||!P.masked||P.climb))P.aim=false;
-  const canAim=P.masked&&P.reload<=0&&!P.sprinting&&!P.carry;
+  const armed=P.masked&&P.hasGun!==false,canAim=armed&&P.reload<=0&&!P.sprinting&&!P.carry;
   P.aimT=clamp(P.aimT+(P.aim&&canAim?dt:-dt)*7,0,1);
-  P.raise=clamp(P.raise+(P.masked?dt*2.2:-dt*4),0,1);
+  P.raise=clamp(P.raise+(armed?dt*2.2:-dt*4),0,1);
   P.recoil=Math.max(0,P.recoil-dt*9);
   if(CTX.cur)return;
   const fov=72-24*P.aimT;
@@ -6947,7 +7176,7 @@ function triggerAlarm(msg){
   if(G.alarm)return;
   for(const g of guards){if(g.pager&&g.pager.state!=="done"){if(g.pager.state==="answering")stopVoices();g.pager.state="done";g.sprite.visible=false;}}
   P.locked=false;
-  G.alarm=true;G.everAlarm=true;G.alarmT=G.alarmFull=ALARM_TIME*DIFF.police;G.susp=1;
+  G.alarm=true;G.everAlarm=true;G.alarmT=G.alarmFull=ALARM_TIME*DIFF.police*(kitOn()&&goal("wheelman")?1.2:1);G.susp=1;
   $("alarmEdge").hidden=false;
   SFX.alarmHit();alarmOn();
   toastAll(msg||"Alarm!","bad",3000);
@@ -6980,6 +7209,7 @@ function updateInteraction(dt){
     const inRange=d>=0&&P.z>VAULT.z+0.2;
     if(inRange&&G.drilling){prompt=`Drill running · ${Math.round(G.drill*100)}%`;prog=G.drill;}
     else if(inRange&&!P.masked){prompt="Put on your mask to set up the drill. Hold <kbd>G</kbd>";}
+    else if(inRange&&kitOn()&&!G.kit.drill){prompt="The vault needs a drill, and you didn't bring one";}
     else if(inRange){
       prompt="Press <kbd>E</kbd> to set up the drill";
       if(pressedE){
@@ -7044,13 +7274,14 @@ function updateInteraction(dt){
     if(bagTarget&&bagTarget.pager&&bagTarget.pager.state==="pending"){prompt="His pager is about to go off…";bagTarget=null;}
     if(bagTarget){
       if(P.carry){prompt="Drop what you're carrying first. Press <kbd>Q</kbd>";}
+      else if(kitOn()&&G.bodyBags<=0){prompt="No body bags left. Leave him somewhere nobody walks";}
       else{
-        prompt="Hold <kbd>E</kbd> to bag the body";
+        prompt=kitOn()?`Hold <kbd>E</kbd> to bag the body · ${G.bodyBags} body bag${G.bodyBags===1?"":"s"} left`:"Hold <kbd>E</kbd> to bag the body";
         if(keys.KeyE){
           if(G.bagT===0)SFX.zip();
           G.bagT+=dt;prompt="Bagging the body…";
           if(G.bagT>=BAG_TIME*SK.bag){
-            G.bagT=0;bagTarget.bagged=true;bagTarget.root.visible=false;
+            G.bagT=0;bagTarget.bagged=true;bagTarget.root.visible=false;if(kitOn())G.bodyBags--;
             const it=bagTarget.item;it.state="carried";it.level=bagTarget.level;P.carry=it;showCarry();SFX.pickup();
             toast("Body bagged. Dump it in a bin","warn",2200);
           }
@@ -7095,10 +7326,12 @@ function updateInteraction(dt){
     const items=[...bags,...npcs().map(g=>g.item)];
     for(const it of items){if(it.state!=="ground"||(it.level||0)!==P.level)continue;const d=facing(it.mesh.position.x,it.mesh.position.z,2.0);if(d>=0&&d<bd){best=it;bd=d;}}
     if(best&&!prompt&&!P.masked)prompt="Put on your mask first. Hold <kbd>G</kbd>";
+    else if(best&&!prompt&&best.kind==="loot"&&!best.duffel&&kitOn()&&G.duffels<=0)prompt=`No duffel bag for this ${best.gold?"gold":"loot"}. You didn't bring enough`;
     else if(best&&!prompt){
       prompt=best.kind==="body"?"Press <kbd>E</kbd> to pick up the body bag":"Press <kbd>E</kbd> to pick up the loot";
       if(pressedE){
         best.state="carried";best.mesh.visible=false;P.carry=best;showCarry();SFX.pickup();
+        if(best.kind==="loot"&&!best.duffel&&kitOn()){best.duffel=true;G.duffels--;}
         if(best.kind==="loot")toast(best.gold?`Gold · ${money(best.value)}. Heavy: no running or jumping`:`Loot bag · ${money(best.value)}. Get it to the ${LV.def.getaway||"van"}`,"warn",2200);
       }
     }
@@ -7107,7 +7340,7 @@ function updateInteraction(dt){
     if(!prompt&&dv<2.6&&LV.def.needDiamond&&!G.hasDiamond){prompt=`The ${gwy.name||LV.def.getaway||"van"} isn't going anywhere without ${LV.def.needDiamond}`;G.leaveT=0;}
     else if(!prompt&&dv<2.6){
       const take=G.vanTake+G.pocket+G.diamondVal,all=G.secured>=bags.length;
-      const vb=gwy.verb||LV.def.leaveVerb||"drive off",gw=gwy.name||LV.def.getaway||"van";prompt=all?`Hold <kbd>E</kbd> to ${vb} · every bag is in the ${gw} · ${money(take)}`:`Hold <kbd>E</kbd> to ${vb} with ${money(take)} · ${G.secured}/${bags.length} bags`;
+      const foot=kitOn()&&!G.kit.driver,vb=foot?"run for it":gwy.verb||LV.def.leaveVerb||"drive off",gw=gwy.name||LV.def.getaway||"van";prompt=all?`Hold <kbd>E</kbd> to ${vb} · every bag is in the ${gw} · ${money(take)}`:`Hold <kbd>E</kbd> to ${vb} with ${money(take)} · ${G.secured}/${bags.length} bags`;
       const away=partnerAway(gwy);if(away){prompt=away;G.leaveT=0;}
       else if(keys.KeyE&&!G.leaveBlock){
         if(G.leaveT===0)SFX.engine();
@@ -7120,7 +7353,8 @@ function updateInteraction(dt){
     if(gwy&&!prompt){
       const gw=gwy.name||LV.def.getaway||"van";
       prompt=`Press <kbd>E</kbd> to load the bag into the ${gw}`;
-      if(pressedE){
+      if(kitOn()&&!G.kit.driver&&G.secured>=1)prompt="No driver: on foot you can only run with one bag. Drop it with <kbd>Q</kbd>";
+      else if(pressedE){
         const b=P.carry;let slot,y;
         if(gwy===SECURE){slot=VAN_SLOTS[G.vanN%VAN_SLOTS.length];y=VAN_Y+Math.floor(G.vanN/VAN_SLOTS.length)*0.42;G.vanN++;}
         else{slot=gwy.slots[gwy.n%gwy.slots.length];y=gwy.y+Math.floor(gwy.n/gwy.slots.length)*0.42;gwy.n++;}
@@ -7194,7 +7428,8 @@ function updateInteraction(dt){
         prompt=`Locked · Hold <kbd>E</kbd> to pick the ${door.name}`;
         if(keys.KeyE){
           prompt=pinTxt(door,PICK_DOOR);
-          if(SK.masterKey&&!G.masterUsed){G.masterUsed=true;door.pickT=PICK_DOOR;toast("Master key: the lock gives straight away","good",2000);}
+          if(SK.masterKey&&!G.masterUsed&&door.pickT<PICK_DOOR){G.masterUsed=true;door.pickT=PICK_DOOR;toast("Master key: the lock gives straight away","good",2000);}
+          else if(kitOn()&&G.bumps>0&&door.pickT<PICK_DOOR){G.bumps--;door.pickT=PICK_DOOR;toast(`Bump key: the lock turns · ${G.bumps} left`,"good",2000);}
           if(pickTick(door,PICK_DOOR,dt)){door.locked=false;G.picks++;SFX.unlock();toast("Lock picked","good",1200);}
         }
         if(door.pickT>0&&door.locked)prog=door.pickT/PICK_DOOR;
@@ -7235,6 +7470,7 @@ function updateInteraction(dt){
       }
     }
   }
+  if(G.noPicks){G.noPicks=false;prompt="You didn't bring lockpicks. Find a key, a keycard or another way in";prog=null;}
   if(P.climb||G.keypad)prompt=null;
   if(wasPicking&&!G.picking)G.pickScr=0;
   if(!P.masked&&P.maskT>0){prompt="Putting on your mask…";prog=P.maskT/(MASK_TIME*SK.mask);}
@@ -7390,6 +7626,7 @@ function updateHUD(){
   {const cc=$("codeChip");const t=LV.def.chip?LV.def.chip():(G.knowCode&&!G.vaultOpen?`SAFE CODE ${G.safeCode}`:"");cc.hidden=!t;if(t&&cc.textContent!==t)cc.textContent=t;}
   {const lc=$("loopChip"),lp=cams.filter(c=>c.loopT>0&&!c.dead);lc.hidden=!lp.length||G.alarm;
    if(!lc.hidden){const m=Math.min(...lp.map(c=>c.loopT)),t=`CAM LOOP${lp.length>1?" ×"+lp.length:""} · ${Math.ceil(m)} s`;if(lc.textContent!==t)lc.textContent=t;lc.className=m<6?"chip warn":"chip ok";}}
+  {const kc=$("kitChip");kc.hidden=!(P.masked&&kitOn());if(!kc.hidden){const t=`DUFFELS ${G.duffels}`+(G.bodyBags?` · BODY BAGS ${G.bodyBags}`:"")+(G.bumps?` · BUMP KEYS ${G.bumps}`:"")+(G.kit.driver?"":" · ON FOOT");if(kc.textContent!==t)kc.textContent=t;kc.className=G.duffels?"chip":"chip warn";}}
   const tc=$("tieChip");tc.hidden=!(P.masked&&civs.length);
   if(!tc.hidden){const nf=civs.filter(c=>c.follow&&!c.dead).length;const t=`ZIP TIES ${P.ties}`+(nf?` · ${nf} FOLLOWING`:"");if(tc.textContent!==t)tc.textContent=t;tc.className=P.ties===0?"chip bad":"chip";}
   // phones: the OBJ button folds the objective away; a new objective still shows for a few seconds, and an urgent warning always does
@@ -7400,7 +7637,7 @@ function updateHUD(){
   const pc=$("pagerChip");pc.hidden=!P.masked;
   {const t=`PAGERS ${G.pagersUsed}/${maxPagers()}`;if(pc.textContent!==t)pc.textContent=t;pc.className=G.pagersUsed>=maxPagers()?"chip bad":G.pagersUsed>0?"chip warn":"chip";}
   const am=$("ammo");am.hidden=!P.masked;
-  if(P.masked){const t=P.reload>0?"RELOADING":`PISTOL ${P.mag} / ${P.reserve}`;if(am.textContent!==t)am.textContent=t;am.className=P.mag===0&&P.reload<=0?"chip bad":"chip";}
+  if(P.masked){const t=P.hasGun===false?"NO PISTOL · HANDS ONLY":P.reload>0?"RELOADING":`PISTOL ${P.mag} / ${P.reserve}`;if(am.textContent!==t)am.textContent=t;am.className=P.hasGun!==false&&P.mag===0&&P.reload<=0?"chip bad":"chip";}
   $("crosshair").hidden=!P.masked||P.aimT>0.6;
   const dc=$("devChip");dc.hidden=!DEV.on;
   if(DEV.on){const t=`DEV · GHOST ${DEV.ghost?"ON":"OFF"}${IN.src==="touch"?"":IN.src==="pad"?" · BACK":" · V"}`;if(dc.textContent!==t)dc.textContent=t;dc.className=DEV.ghost?"chip warn":"chip";}
@@ -7432,7 +7669,7 @@ function endGame(won,reason){
   const base=take+bStealth+bCivs,score=Math.round(base*DIFF.pay/10)*10,bDiff=score-base;
   const cr=careerOnEnd(won,score,stealth),ec=$("endCareer");ec.hidden=!cr;
   if(cr){const li=levelInfo(CAREER.xp);
-    ec.innerHTML=(won?`<dt>Your cut (contract ×${cr.mult.toFixed(2)})</dt><dd class="good">+${money(cr.pay)}</dd>`:`<dt>Lawyers' fees (15% of your cash)</dt><dd class="bad">−${money(cr.fee)}</dd>`)
+    ec.innerHTML=(won?`<dt>Your cut (contract ×${cr.mult.toFixed(2)})</dt><dd class="good">+${money(cr.pay)}</dd>`:`<dt>Lawyers' fees (${goal("offshore")?5:15}% of your cash)</dt><dd class="bad">−${money(cr.fee)}</dd>`)
       +cr.notes.map(n=>`<dt>${n}</dt><dd></dd>`).join("")
       +`<dt>Experience</dt><dd>+${cr.xp} XP</dd><dt>Cash in the safehouse</dt><dd>${money(CAREER.cash)}</dd>`
       +(cr.L1>cr.L0?`<span class="lvl">LEVEL ${cr.L1}! +${cr.L1-cr.L0} SKILL POINT${cr.L1-cr.L0>1?"S":""}</span>`:`<span class="lvl" style="color:var(--dim)">LEVEL ${li.level} · ${li.need?li.need-li.into+" XP TO THE NEXT":"MAX"}</span>`);}
@@ -8097,9 +8334,9 @@ function guestWeapon(dt){
   // the host keeps the ammo and the mask; here the gun only moves
   P.fireCD=Math.max(0,(P.fireCD||0)-dt);
   if(P.aim&&(P.sprinting||P.carry||!P.masked||P.climb))P.aim=false;
-  const canAim=P.masked&&P.reload<=0&&!P.sprinting&&!P.carry;
+  const armed=P.masked&&P.hasGun!==false,canAim=armed&&P.reload<=0&&!P.sprinting&&!P.carry;
   P.aimT=clamp(P.aimT+(P.aim&&canAim?dt:-dt)*7,0,1);
-  P.raise=clamp(P.raise+(P.masked?dt*2.2:-dt*4),0,1);
+  P.raise=clamp(P.raise+(armed?dt*2.2:-dt*4),0,1);
   P.recoil=Math.max(0,P.recoil-dt*9);
   const fov=72-24*P.aimT;
   if(Math.abs(camera.fov-fov)>0.01){camera.fov=fov;camera.updateProjectionMatrix();}
@@ -8276,7 +8513,7 @@ function digitPressed(n){if(NET.guest){netAct("digit",[n]);return true;}return !
 function touchHUD(){
   const on=IN.src==="touch"&&state==="playing"&&!G.keypad;$("touch").hidden=!on;if(!on){if(G.keypad){IN.fwd=IN.right=IN.mag=0;TP.clear();}return;}
   const vis=(act,v)=>{const b=document.querySelector(`.tb[data-act="${act}"]`);if(b&&b.hidden!==!v)b.hidden=!v;};
-  vis("mask",!P.masked);vis("fire",P.masked);vis("aim",P.masked);vis("reload",P.masked&&P.mag<magSize()&&P.reserve>0);
+  vis("mask",!P.masked);vis("fire",P.masked&&P.hasGun!==false);vis("aim",P.masked&&P.hasGun!==false);vis("reload",P.masked&&P.hasGun!==false&&P.mag<magSize()&&P.reserve>0);
   vis("drop",!!P.carry);vis("coin",G.coins>0);vis("jam",P.masked&&P.jammers>0);
   const cnt=(act,lbl,n)=>{const b=document.querySelector(`.tb[data-act="${act}"]`),h=`${lbl}<small>${n}</small>`;if(b.innerHTML!==h)b.innerHTML=h;};
   cnt("coin","COIN",G.coins);cnt("jam","JAM",P.jammers);
