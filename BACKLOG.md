@@ -1,6 +1,6 @@
 # Backlog
 
-Ideas for Clean Getaway that are agreed but not built yet. Nothing here is in the game.
+Ideas for Clean Getaway that are agreed but not built yet. Items keep their numbers when they're done, so references stay valid.
 Each item says what's wanted, then what the game does today and any open questions, so it can be picked up later.
 
 ## Menus and settings
@@ -9,19 +9,7 @@ Each item says what's wanted, then what the game does today and any open questio
 A proper start menu with **Singleplayer**, **Co-op**, **Settings** and so on. The dev option moves into **Settings**.
 - Today: one job menu with Career / Free play tabs. Co-op and dev mode sit in the job panel; on phones they're behind the "Co-op · Dev" button.
 
-### 2. Export and import saves
-Move a save between devices with a code you export on one device and import on another. The code is encrypted or signed, so typing in a random or edited string doesn't produce a valid save (no free cash).
-- Today: the career lives only in the browser's localStorage under `cg-career-v1`.
-- Note: the game is a single public page, so any key in the code can be read. A signature stops casual tampering, not a determined cheater. That's fine for a single-player save.
-
 ## Career economy and kit
-
-### 3. Pistol and lockpicks become stash items
-The silenced pistol and the lockpick set stop being "per job". Like the other kit, you own them and keep them in your stash.
-- **Lockpicks get used up:** one is spent each time you pick a lock.
-- Today: both are bought for one job ($500 and $400). Pro lockpicks (permanent gear) remove the lockpick rental.
-- **Decided:** the pistol works like the rest of the kit: it comes back to your stash after a clean job, and the police keep it if you're busted.
-- Open question: does a window latch or a safe also use up a pick?
 
 ### 4. Bag the loot yourself
 Money and gold aren't already in bags. You fill a duffel with the cash or gold on the spot, and only then can you carry it out.
@@ -46,24 +34,22 @@ When the police arrive they come in waves, and they're armed and try to kill you
 - Today: the alarm gives you a countdown; when it ends, you're caught if you're still inside.
 - Needs: police units, spawn points per map, and player health and damage.
 
-### 8. Getting caught takes about 3 seconds
-When a guard catches you, he spends about 3 seconds trying to cuff you. In that window you can fight back and knock him down.
-- Today: a guard who reaches you catches you at once. The Iron grip skill frees you once per job.
-- Open question: what does Iron grip become? Maybe an automatic win of this struggle, once per job.
-
-### 9. Fight a guard from the front
-You can knock a guard down from the front too, even after he has seen you.
-- Today: a takedown only works from behind or the side (Quick hands widens it).
-- Open questions: does it take longer or need several hits from the front? Does he get a chance to radio in or grab you first?
-
 ## Co-op
 
 ### 10. Co-op on every map
 - Today: co-op works on Quiet Hours, Business Hours, Night Deposit, Lunch Rush, Last Call, Brilliant Cut and Window Shopping. Not yet on the Winter Heart, House Edge, Dead Reckoning, Glass Ceiling and Whiteout.
 
 ### 11. Co-op career
-- A career for co-op with its **own save**, separate from the single-player career, and its **own export and import code** (item 2).
+- A career for co-op with its **own save**, separate from the single-player career, and its **own save code** (the save codes from item 2 already exist for the single-player career).
 - Each player has their own skills, and buys their own consumables.
 - The getaway driver is shared: only one player buys him.
 - **Decided:** cash is one shared pot that both players earn into and spend from (kit, gear, goals, the driver).
 - Open question: who chooses the job from the board? Only the host, or either player?
+
+## Done
+
+- **2. Export and import saves** (0.34.0): save codes in the safehouse, sealed with AES-GCM. Careers can also be named.
+- **3. Pistol and lockpicks become stash items** (0.34.0): the pistol and the drill are owned and come home after a clean job; a lockpick is used up per lock (doors, latches and safes). The drill is carried to the vault in its bag.
+- **8. Getting caught takes about 3 seconds** (0.34.0): six presses in 3 seconds break free, on every difficulty. Iron grip still wins once per job.
+- **9. Fight a guard from the front** (0.34.0): the first hit rocks him for 1.5 seconds, the second knocks him out.
+- **Throwing bags** (0.34.0, added on the way): range depends on what's in the bag; a bag thrown at the van is loaded.

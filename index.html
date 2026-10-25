@@ -275,6 +275,12 @@ body.coop-guest .diffs{pointer-events:none;opacity:.6}
 .node.avail{border-color:var(--sodium);cursor:pointer}.node.avail:hover{background:rgba(244,171,61,.1)}.node.avail .cost{color:var(--sodium)}
 .node.locked,.node.poor{opacity:.55;cursor:default}.node.cap{box-shadow:inset 3px 0 0 currentColor}
 .cr-foot{border-top:1px solid var(--line);padding-top:12px}
+.cr-btns{display:flex;flex-wrap:wrap;gap:8px}
+.cr-name{display:flex;gap:8px;align-items:center}.cr-name input{width:190px;background:rgba(0,0,0,.3);border:1px solid var(--line);color:var(--fg);font-size:15px;padding:6px 9px}
+.cr-name input:focus{outline:2px solid var(--sodium);outline-offset:0}
+.cr-save{display:grid;gap:8px;padding:12px;border:1px solid var(--line);background:rgba(255,255,255,.03)}
+.cr-save textarea{width:100%;min-height:84px;resize:vertical;background:rgba(0,0,0,.35);color:var(--fg);border:1px solid var(--line);font-family:var(--f-mono);font-size:12px;padding:8px;word-break:break-all}
+.cr-save .row{display:flex;flex-wrap:wrap;gap:8px;align-items:center}.cr-save .msg{font-size:14px}.cr-save .msg.bad{color:var(--alarm)}.cr-save .msg.good{color:var(--secure)}
 #endCareer{display:grid;grid-template-columns:1fr auto;gap:4px 16px;padding:10px 12px;border:1px solid var(--line);background:rgba(255,255,255,.03);font-family:var(--f-mono);font-size:13px}
 #endCareer dt{color:var(--dim)}#endCareer dd{margin:0;text-align:right;font-weight:700}
 #endCareer .lvl{grid-column:1/-1;color:var(--sodium);letter-spacing:.12em}
@@ -410,7 +416,8 @@ body.coop-guest .diffs{pointer-events:none;opacity:.6}
       </div>
       <div class="cr-tabs" role="tablist"><button type="button" role="tab" data-tab="jobs">Jobs</button><button type="button" role="tab" data-tab="shop">Shop</button><button type="button" role="tab" data-tab="skills" id="crTabSkills">Skills</button></div>
       <div id="crJobs"></div><div id="crShop" hidden></div><div id="crSkills" hidden></div>
-      <div class="cr-row cr-foot"><span class="lbl" id="crStats"></span><button type="button" class="btn ghost small" id="crNew">New career</button></div>
+      <div class="cr-row cr-foot"><label class="cr-name"><span class="lbl">Career</span><input id="crName" maxlength="24" placeholder="Name this career" autocomplete="off" spellcheck="false"></label><span class="lbl" id="crStats"></span><span class="cr-btns"><button type="button" class="btn ghost small" id="crExport">Save code</button><button type="button" class="btn ghost small" id="crImport">Load code</button><button type="button" class="btn ghost small" id="crNew">New career</button></span></div>
+      <div class="cr-save" id="crSave" hidden></div>
     </div>
     <div class="menu-body" id="freePanel">
       <div class="jobs" role="radiogroup" aria-label="Job">
@@ -598,7 +605,7 @@ body.coop-guest .diffs{pointer-events:none;opacity:.6}
 // Co-op: the same code runs for every player by swapping who P is. CTX.cur is the player whose turn it is (null = you);
 // HUD writes during another player's turn go to that player's copy of the HUD, which is sent to them.
 const CTX={cur:null,kind:null,pl:null};
-const GAME_VERSION="0.33.0";
+const GAME_VERSION="0.34.0";
 const NET={on:false,host:false,guest:false,send:null,close:null,code:"",busy:false,waiting:false,started:false,acc:0,remote:null,ending:false};
 const $=id=>(CTX.cur&&CTX.cur.dom&&CTX.cur.dom[id])||document.getElementById(id);
 // a timer started during another player's turn runs as that player
@@ -1029,7 +1036,7 @@ class Guard{
     this.x=this.route[0][0];this.z=this.route[0][1];this.wp=this.route.length>1?1:0;
     const n=this.route[this.wp];this.yaw=this.route.length>1?Math.atan2(n[0]-this.x,n[1]-this.z):0;
     this.seated=this.seatedDefault;this.pager=null;this.body.position.y=0;this.sprite.position.set(0,2.25,0);this.sprite.scale.set(0.42,0.42,0.42);
-    this.wait=0;this.down=false;this.sus=0;this.seeDist=-1;this.fall=0;this.chase=false;this.last=null;this.phase=0;this.speedNow=0;
+    this.wait=0;this.down=false;this.sus=0;this.seeDist=-1;this.fall=0;this.chase=false;this.last=null;this.phase=0;this.speedNow=0;this.stagger=0;this.grab=null;
     this.heard=null;this.wasSeeing=false;this.hp=2;this.dead=false;this.wounded=0;this.face=null;this.reportT=0;this.reportAt=null;
     this.bagged=false;this.bodyDist=-1;this.bodyAt=null;this.sawBody=false;this.root.visible=true;
     const r0=this.route[0];if(r0[2]!=null){this.face=r0[2];this.yaw=r0[2];this.wait=r0[3]||0;}
@@ -1073,6 +1080,18 @@ class Guard{
   update(dt,simOnly){
     if(this.down){this.fall=Math.min(1,this.fall+dt*2.6);this.body.rotation.x=this.fall*Math.PI/2*0.96;this.speedNow=0;this.sync(dt);return;}
     if(simOnly){this.seeDist=-1;this.bodyDist=-1;this.patrol(dt,1.45,false);this.sync(dt);return;}
+    // punched from the front: reeling for a moment (no walking, no radio, no grabbing)
+    if(this.stagger>0){
+      this.stagger-=dt;this.speedNow=0;this.seeDist=-1;this.bodyDist=-1;this.body.rotation.x=this.stagger>0?-0.28:0;
+      this.root.position.set(this.x,this.ly,this.z);this.root.rotation.y=this.yaw;return;
+    }
+    // holding someone while he tries to cuff them
+    if(this.grab){
+      const s=this.grab.struggle;
+      if(!s||s.g!==this){this.grab=null;}
+      else{this.speedNow=0;this.turn(Math.atan2(this.grab.x-this.x,this.grab.z-this.z),4,dt);this.armL.rotation.x=-1.4;
+        this.root.position.set(this.x,this.ly,this.z);this.root.rotation.y=this.yaw;return;}
+    }
     const radioing=this.wounded>0||this.reportT>0||(this.security&&G.secAlert>0);
     if(radioing&&!G.alarm){
       // wounded guard, a guard who spotted you, or the operator who saw something on camera: reaches for the radio.
@@ -1106,7 +1125,8 @@ class Guard{
       }else this.patrol(dt,1.9,true);
       if(!DEV.ghost&&this.level===P.level&&Math.hypot(P.x-this.x,P.z-this.z)<1.15){
         if(SK.iron&&!G.ironUsed){G.ironUsed=true;this.knockDown(false);G.takedowns++;SFX.takedown(this.x,this.z);toast("Iron grip: you broke free and floored him","good",2400);return;}
-        playerCaught("A guard caught you.");return;}
+        if(P.struggle){if(P.struggle.g!==this){P.struggle=null;playerCaught("A second guard got the cuffs on you.");}return;}
+        startStruggle(this);return;}
     }else{
       if(seeing){
         if(!this.wasSeeing)SFX.spot(this.x,this.z,this.level);
@@ -5330,7 +5350,7 @@ const vmKey=new THREE.DirectionalLight(0xffe2b8,0.6);vmKey.position.set(1,2,1);v
 addEventListener("resize",()=>{vmCam.aspect=innerWidth/innerHeight;vmCam.updateProjectionMatrix();});
 const viewBag=makeBag();viewBag.position.set(-0.36,-0.4,-0.62);viewBag.rotation.set(0.3,-0.5,-0.2);viewBag.scale.setScalar(0.8);viewBag.visible=false;vmScene.add(viewBag);
 const viewBody=makeBodyBag();viewBody.position.set(-0.42,-0.3,-0.5);viewBody.rotation.set(0.15,1.25,0.35);viewBody.scale.setScalar(0.55);viewBody.visible=false;vmScene.add(viewBody);
-function showCarry(){if(CTX.cur)return;viewBag.visible=!!P.carry&&P.carry.kind==="loot";viewBody.visible=!!P.carry&&P.carry.kind==="body";}
+function showCarry(){if(CTX.cur)return;viewBag.visible=!!P.carry&&(P.carry.kind==="loot"||P.carry.kind==="drill");viewBody.visible=!!P.carry&&P.carry.kind==="body";}
 
 const gunMat=phong(0x1c1e21,{shininess:50,specular:0x2a2a2a}),gunMat2=phong(0x2c2f33,{shininess:30});
 const gun=new THREE.Group();vmScene.add(gun);
@@ -6016,8 +6036,8 @@ const TIER_REQ={1:0,2:2,3:4,4:7};
 const GEAR=[
   {id:"mag",name:"Extended magazine",fx:"+6 rounds in every magazine",price:3000,lvl:1},
   {id:"shoes",name:"Soft-soled shoes",fx:"Your footsteps carry a third less far",price:8000,lvl:2},
-  {id:"rig",name:"Own drill rig",fx:"No more drill rental, and the drill works 25% faster",price:12000,lvl:3},
-  {id:"picks",name:"Pro lockpicks",fx:"No more lockpick rental, and locks, latches and safes open 20% faster",price:15000,lvl:3},
+  {id:"rig",name:"Drill tune-up",fx:"Your drill works 25% faster",price:12000,lvl:3},
+  {id:"picks",name:"Pro lockpicks",fx:"Locks, latches and safes open 20% faster, and only every other lock uses up a lockpick",price:15000,lvl:3},
   {id:"badge",name:"Fake staff badge",fx:"Unmasked in a staff area, you take 25% longer to get noticed",price:25000,lvl:5},
   {id:"booster",name:"Signal booster",fx:"Every jammer runs 50% longer",price:40000,lvl:7},
   {id:"silencer",name:"Better silencer",fx:"Gunshots carry half as far",price:60000,lvl:9}
@@ -6031,14 +6051,14 @@ const GOALS=[
   {id:"penthouse",name:"Penthouse",fx:"The finish line. Retire in style: the safehouse becomes the penthouse",price:750000,lvl:20}
 ];
 /* The kit for one career job. You go in with your mask and nothing else: everything here is bought before the job.
-   "job" items are hired or rented for one job. The rest are counted: what you don't use goes back to your stash,
-   and if you're busted the police keep everything you brought. */
+   The driver is hired for one job. Everything else is counted: what you don't use (and the pistol and drill, which
+   don't get used up) goes back to your stash, and if you're busted the police keep everything you brought. */
 const DRIVER_FEE={Short:1000,Medium:2000,Long:4000};
 const KIT=[
   {id:"driver",job:true,name:"Getaway driver",fx:"Waits with the van. Without one you leave on foot, with one bag at most"},
-  {id:"gun",job:true,name:"Silenced pistol",price:500,fx:"For one job, with one magazine loaded. Without it you only have your hands"},
-  {id:"picks",job:true,name:"Lockpick set",price:400,fx:"Pick locks, window latches and safes on this job",own:"picks"},
-  {id:"drill",job:true,name:"Drill rental",price:800,fx:"Opens the vault on the bank jobs",own:"rig",need:"drill"},
+  {id:"gun",name:"Silenced pistol",price:1500,max:1,fx:"Yours to keep, with one magazine loaded. Without it you only have your hands"},
+  {id:"pick",name:"Lockpick",price:100,max:10,fx:"One is used up on each lock you pick: doors, window latches, safes"},
+  {id:"drill",name:"Drill",price:3000,fx:"Yours to keep. It starts in a bag next to you: carry it to the vault",need:"drill"},
   {id:"duffel",name:"Duffel bag",price:200,max:10,fx:"One for each loot bag or gold bar you carry out"},
   {id:"bodybag",name:"Body bag",price:150,max:6,fx:"Bag a guard you've put down, to hide him in a bin"},
   {id:"tie",name:"Zip tie",price:100,max:12,fx:"Tie up one civilian"},
@@ -6064,7 +6084,7 @@ const TWISTS={
 const CAREER_KEY="cg-career-v1",LEN_STARS={Short:1,Medium:2,Long:3},LEN_LEVEL={Short:1,Medium:2,Long:4},LEN_MINS={Short:6,Medium:9,Long:13};
 const REFRESH_COST=500,RESPEC_COST=8000,BUST_FEE=0.15,MAX_LEVEL=30;
 let CAREER=null,MODE="career";
-function newCareer(){return {v:1,econ:2,cash:5000,xp:0,skills:{},gear:{},goals:{},stash:{},kit:null,board:[],active:null,stats:{jobs:0,clean:0,busts:0,earned:0,best:0}};}
+function newCareer(){return {v:1,econ:3,name:"",cash:8000,xp:0,skills:{},gear:{},goals:{},stash:{},kit:null,board:[],active:null,stats:{jobs:0,clean:0,busts:0,earned:0,best:0}};}
 function saveCareer(){try{localStorage.setItem(CAREER_KEY,JSON.stringify(CAREER));}catch(e){}}
 function loadCareer(){
   try{const s=localStorage.getItem(CAREER_KEY),raw=s?JSON.parse(s):null;CAREER=Object.assign(newCareer(),raw||{});if(raw&&!raw.econ)CAREER.econ=1;}catch(e){CAREER=newCareer();}
@@ -6085,6 +6105,8 @@ function migrateCareer(){
     if(g.bit){g.rig=true;delete g.bit;}
     C.econ=2;
   }
+  // 0.34: the pistol, lockpicks and drill became stash items; anyone who bought the old drill rig gets a drill
+  if(C.econ<3){if(C.gear.rig)C.stash.drill=Math.max(1,C.stash.drill||0);C.econ=3;}
 }
 const goal=id=>MODE==="career"&&!!(CAREER&&CAREER.goals&&CAREER.goals[id]);
 // what a kit item costs right now: the workshop halves everything but the driver, two skills halve their items
@@ -6113,7 +6135,7 @@ function returnKit(){
 // the counters on the job back into the kit (before a restart, at the end, when walking away)
 function syncKit(){
   const K=CAREER&&CAREER.kit;if(!K||!G.kitLive)return;
-  K.tie=P.ties;K.coins=G.coins;K.duffel=G.duffels;K.bodybag=G.bodyBags;K.bump=G.bumps;
+  K.tie=P.ties;K.coins=G.coins;K.duffel=G.duffels;K.bodybag=G.bodyBags;K.bump=G.bumps;K.pick=G.picksLeft;
   if(!(G.tw&&G.tw.light)){K.jammer=P.jammers;K.mag=K.gun?Math.floor(P.reserve/magSize()):0;}
 }
 const kitWord=(id,n)=>{const k=KIT.find(x=>x.id===id);const nm=id==="coins"?"coin":k.name.toLowerCase();return `${n} ${nm}${n===1?"":id==="coins"?"s":nm.endsWith("s")?"":"s"}`;};
@@ -6171,20 +6193,41 @@ function careerOnReset(){
   G.vanishUsed=false;G.masterUsed=false;G.ironUsed=false;G.coins=COINS+SK.coins;
   P.ties+=SK.ties;P.jammers=G.tw.light?0:P.jammers+SK.jammers;P.mag=magSize();P.reserve=G.tw.light?0:magSize()*3;
   // a career job: you have what you brought and nothing more (a restart keeps what's left of it)
-  G.kit=null;
+  G.kit=null;DRILLS.forEach(d=>LV.group.remove(d.mesh));DRILLS=[];
   if(c){
     if(G.kitLive)syncKit();
     const K=CAREER.kit||(CAREER.kit={map:c.map});
     G.kit=K;G.kitLive=true;
     P.hasGun=!!K.gun;P.ties=K.tie|0;P.jammers=G.tw.light?0:K.jammer|0;G.coins=K.coins|0;
     P.mag=K.gun?magSize():0;P.reserve=K.gun&&!G.tw.light?(K.mag|0)*magSize():0;
-    G.duffels=K.duffel|0;G.bodyBags=K.bodybag|0;G.bumps=K.bump|0;
+    G.duffels=K.duffel|0;G.bodyBags=K.bodybag|0;G.bumps=K.bump|0;G.picksLeft=K.pick|0;G.locksPicked=0;
+    placeDrillBags(K.drill|0);
     // what everything on the map is worth on average: your cut is the score measured against this
     const mid=r=>r?(r[0]+r[1])/2:0,d=LV.def;
     G.fullTake=bags.reduce((s,b)=>s+mid(b.gold?(d.goldValue||[80000,120000]):(d.bagValue||[30000,50000])),0)
       +CASH.reduce((s,x)=>s+mid(x.jewel?(d.jewelValue||[2000,8000]):x.chips?(d.chipValue||[1000,5000]):(d.cashValue||[300,2000])),0)+(d.diamondValue||0);
   }
   if(G.tw.fat)bags.forEach(b=>{b.value=Math.round(b.value*1.4/100)*100;});
+}
+// career: the drill you brought waits in its bag next to where you start; you carry it to the vault
+let DRILLS=[];
+const drillBagMat=phong(0x2a2d31,{shininess:30}),drillStripe=phong(0xe0a91c,{shininess:40});
+function makeDrillBag(){
+  const g=new THREE.Group();
+  const b=new THREE.Mesh(new THREE.BoxGeometry(0.72,0.34,0.36),drillBagMat);b.castShadow=true;g.add(b);
+  const st=new THREE.Mesh(new THREE.BoxGeometry(0.74,0.08,0.38),drillStripe);st.position.y=0.06;g.add(st);
+  const h=new THREE.Mesh(new THREE.TorusGeometry(0.11,0.02,6,12,Math.PI),drillStripe);h.position.y=0.17;g.add(h);
+  return g;
+}
+function placeDrillBags(n){
+  DRILLS.forEach(d=>LV.group.remove(d.mesh));DRILLS=[];
+  if(!n||!VAULT||VAULT.custom||VAULT.safe)return;
+  const sp=LV.def.spawn,lvl=sp.lvl||0,fx=-Math.sin(sp.yaw||0),fz=-Math.cos(sp.yaw||0);
+  for(let i=0;i<n;i++){
+    const p={x:sp.x+fz*1.1+fx*(0.8+i*0.8),z:sp.z-fx*1.1+fz*(0.8+i*0.8)};resolve(p,0.3,lvl);
+    const m=makeDrillBag();m.position.set(p.x,lvl*ROOF_Y+supportAt(p.x,p.z,0.2,lvl,0)+0.17,p.z);m.rotation.y=(sp.yaw||0)+0.4;lvAdd(m);
+    DRILLS.push({kind:"drill",state:"ground",mesh:m,level:lvl});
+  }
 }
 // is this a career job where the kit counts?
 const kitOn=()=>!!(G.kit&&G.contract);
@@ -6290,6 +6333,8 @@ function renderCareer(){
     $("crRespec").onclick=()=>{if(!skillSpent()||CAREER.cash<RESPEC_COST)return;CAREER.cash-=RESPEC_COST;CAREER.skills={};saveCareer();renderCareer();};
   }
   $("crNew").textContent=crConfirmNew?"Click again to wipe your career":"New career";
+  {const n=$("crName");if(n&&document.activeElement!==n&&n.value!==(CAREER.name||""))n.value=CAREER.name||"";}
+  setStampOnly();
 }
 function takeContract(id){
   const c=CAREER.board.find(x=>x.id===id);if(!c)return;
@@ -6316,8 +6361,8 @@ function planNeeds(){
   const {I,c}=PLAN,light=c.tw.includes("light"),r=[];
   r.push({id:"driver",n:1,need:true,why:"Without one you leave on foot with one bag"});
   r.push({id:"duffel",n:I.nb+I.gold,need:true,why:`${I.nb} loot bag${I.nb===1?"":"s"}${I.gold?` and ${I.gold} gold`:""}`});
-  if(I.drill)r.push({id:"drill",n:1,need:true,why:"The vault has to be drilled"});
-  if(I.pickDoors)r.push({id:"picks",n:1,need:true,why:`${I.pickDoors} locked door${I.pickDoors===1?"":"s"} to pick, plus latches and safes`});
+  if(I.drill)r.push({id:"drill",n:1,need:true,why:"The vault has to be drilled: carry it there in its bag"});
+  if(I.pickDoors)r.push({id:"pick",n:Math.min(10,I.pickDoors),need:true,why:`${I.pickDoors} locked door${I.pickDoors===1?"":"s"} to pick. Latches and safes take one each too`});
   if(I.civs)r.push({id:"tie",n:Math.min(12,Math.max(2,I.ties)),need:false,why:`${I.civs} civilian${I.civs===1?"":"s"} on site`});
   if(!light)r.push({id:"jammer",n:2,need:false,why:`${I.cams} camera${I.cams===1?"":"s"}, and every guard has a pager`});
   r.push({id:"bodybag",n:2,need:false,why:`${I.guards} guard${I.guards===1?"":"s"}, and bodies get found`});
@@ -6326,9 +6371,9 @@ function planNeeds(){
   r.push({id:"coins",n:3,need:false,why:"Lure a guard away"});
   return r;
 }
-const kitMax=(k)=>{const light=PLAN&&PLAN.c.tw.includes("light");if(light&&(k.id==="jammer"||k.id==="mag"))return 0;if(k.id==="mag"&&!PLAN.sel.gun)return 0;return k.max||1;};
+const kitMax=(k)=>{const light=PLAN&&PLAN.c.tw.includes("light");if(light&&(k.id==="jammer"||k.id==="mag"))return 0;if(k.id==="mag"&&!PLAN.sel.gun)return 0;if(k.id==="drill")return PLAN&&PLAN.I.drill?1:0;return k.max||1;};
 const kitOwned=k=>!!(k.own&&CAREER.gear[k.own]);
-function planFill(){const sel={};for(const n of planNeeds()){const k=KIT.find(x=>x.id===n.id);sel[n.id]=k.job?!kitOwned(k):n.n;}PLAN.sel=sel;}
+function planFill(){const sel={};PLAN.sel=sel;for(const n of planNeeds()){const k=KIT.find(x=>x.id===n.id);sel[n.id]=k.job?true:Math.min(n.n,kitMax(k));}}
 function planCovered(n){const k=KIT.find(x=>x.id===n.id);return k.job?(kitOwned(k)||!!PLAN.sel[n.id]):(PLAN.sel[n.id]||0)>=n.n;}
 function renderPlan(){
   const {c,I,sel}=PLAN,j=jobInfo(c.map)||{name:c.map,place:"",len:"Short"},cost=kitCost(sel,c),can=CAREER.cash>=cost,st=CAREER.stash;
@@ -6365,7 +6410,7 @@ function renderPlan(){
   root.querySelector("#planClear").onclick=()=>{PLAN.sel={};re();};
   root.querySelectorAll("[data-tog]").forEach(b=>b.onclick=()=>{const id=b.dataset.tog;sel[id]=!sel[id];if(id==="gun"&&!sel.gun)sel.mag=0;re();});
   root.querySelectorAll("[data-inc],[data-dec]").forEach(b=>b.onclick=()=>{const id=b.dataset.inc||b.dataset.dec,k=KIT.find(x=>x.id===id),st=k.step||1;
-    sel[id]=clamp((sel[id]||0)+(b.dataset.inc?st:-st),0,kitMax(k));re();});
+    sel[id]=clamp((sel[id]||0)+(b.dataset.inc?st:-st),0,kitMax(k));if(!sel.gun)sel.mag=0;re();});
   root.querySelector("#planGo").onclick=startPlan;
 }
 // pay, take from the stash, and go
@@ -6382,15 +6427,90 @@ function setMode(m){
   MODE=m;try{localStorage.setItem("cg-mode",m);}catch(e){}
   document.querySelectorAll(".modes button").forEach(b=>b.setAttribute("aria-selected",String(b.dataset.mode===m)));
   $("careerPanel").hidden=m!=="career";$("freePanel").hidden=m!=="free";
-  $("menuStamp").textContent=m==="career"?(goal("penthouse")?"THE PENTHOUSE · RETIRED IN STYLE":"THE SAFEHOUSE"):"FREE PLAY";
+  $("menuStamp").textContent=m==="career"?(goal("penthouse")?"THE PENTHOUSE · RETIRED IN STYLE":"THE SAFEHOUSE")+(CAREER&&CAREER.name?" · "+CAREER.name.toUpperCase():""):"FREE PLAY";
   $("menuIntro").textContent=m==="career"?`Take jobs off the board and plan them: you go in with your mask and whatever you buy, so hire a driver and bring bags, picks and the rest. Each job has a twist that changes how it plays and what it pays. Money buys gear and big upgrades; experience gives levels, and every level a skill point. Get busted and the police keep your kit, and the lawyers take ${goal("offshore")?5:15}% of your cash.`:
     "Any job, as it comes: no twists, no skills, no gear. Every bag and every stack of loose cash adds to your take, and you can leave whenever you like. Never set off the alarm: +30%. On jobs with civilians, nobody hurt: another +15%.";
   if(m==="career")renderCareer();
 }
+/* ---------- save codes: move a career between devices ----------
+   The career and your best scores, compressed and sealed with AES-GCM. The seal means a random or edited code
+   simply doesn't open; it isn't a vault (the key ships with the game), it just stops casual tampering. */
+const SAVE_PREFIX="CG1-",SAVE_SEAL="clean-getaway/save-code/v1/7f3c9a1e-quiet-hours";
+let saveKey=null;
+async function saveCodeKey(){
+  if(saveKey)return saveKey;
+  const h=await crypto.subtle.digest("SHA-256",new TextEncoder().encode(SAVE_SEAL));
+  return saveKey=await crypto.subtle.importKey("raw",h,"AES-GCM",false,["encrypt","decrypt"]);
+}
+async function squeeze(bytes,dir){
+  const S=dir==="in"?window.CompressionStream:window.DecompressionStream;if(!S)return null;
+  try{return new Uint8Array(await new Response(new Blob([bytes]).stream().pipeThrough(new S("deflate-raw"))).arrayBuffer());}catch(e){return null;}
+}
+const b64u={enc:u=>{let s="";for(let i=0;i<u.length;i+=0x8000)s+=String.fromCharCode.apply(null,u.subarray(i,i+0x8000));return btoa(s).replace(/\+/g,"-").replace(/\//g,"_").replace(/=+$/,"");},
+  dec:t=>{const s=atob(t.replace(/-/g,"+").replace(/_/g,"/")+"===".slice(0,(4-t.length%4)%4));const u=new Uint8Array(s.length);for(let i=0;i<s.length;i++)u[i]=s.charCodeAt(i);return u;}};
+function saveBundle(){
+  const bests={};for(const id of Object.keys(MAPS)){const v=readBest(id);if(v)bests[id]=v;}
+  const c=JSON.parse(JSON.stringify(CAREER));c.kit=null;c.active=null;
+  return {v:1,kind:"career",at:Date.now(),career:c,bests};
+}
+async function exportCode(){
+  const raw=new TextEncoder().encode(JSON.stringify(saveBundle()));
+  const z=await squeeze(raw,"in"),body=new Uint8Array(1+(z?z.length:raw.length));body[0]=z?1:0;body.set(z||raw,1);
+  const iv=crypto.getRandomValues(new Uint8Array(12));
+  const ct=new Uint8Array(await crypto.subtle.encrypt({name:"AES-GCM",iv},await saveCodeKey(),body));
+  const all=new Uint8Array(12+ct.length);all.set(iv);all.set(ct,12);
+  return SAVE_PREFIX+b64u.enc(all);
+}
+// returns the bundle, or null for anything that isn't a real code
+async function readCode(text){
+  try{
+    const t=String(text||"").replace(/\s+/g,"");if(!t.startsWith(SAVE_PREFIX))return null;
+    const all=b64u.dec(t.slice(SAVE_PREFIX.length));if(all.length<30)return null;
+    const body=new Uint8Array(await crypto.subtle.decrypt({name:"AES-GCM",iv:all.subarray(0,12)},await saveCodeKey(),all.subarray(12)));
+    const json=body[0]===1?await squeeze(body.subarray(1),"out"):body.subarray(1);if(!json)return null;
+    const b=JSON.parse(new TextDecoder().decode(json));
+    if(!b||b.kind!=="career"||!b.career||typeof b.career!=="object")return null;
+    return b;
+  }catch(e){return null;}
+}
+function importBundle(b){
+  CAREER=Object.assign(newCareer(),b.career);if(!b.career.econ)CAREER.econ=1;
+  migrateCareer();CAREER.kit=null;CAREER.active=null;CAREER.board=(CAREER.board||[]).filter(c=>MAPS[c.map]);fillBoard();saveCareer();
+  for(const [id,v] of Object.entries(b.bests||{}))if(MAPS[id]&&+v>readBest(id))try{localStorage.setItem("cg-best-"+id,String(+v));}catch(e){}
+  PLAN=null;showBests();
+}
+function saveUI(mode){
+  const box=$("crSave");if(!mode){box.hidden=true;box.innerHTML="";return;}
+  box.hidden=false;
+  if(mode==="export"){
+    box.innerHTML=`<div class="lbl">${CAREER.name?`Save code for “${CAREER.name.replace(/[<>&"]/g,"")}”`:"Your save code"} · paste it into Load code on another device</div><textarea id="crCode" readonly>Making the code…</textarea>
+      <div class="row"><button type="button" class="btn small" id="crCopy">Copy</button>${navigator.share?`<button type="button" class="btn ghost small" id="crShare">Share</button>`:""}<button type="button" class="btn ghost small" id="crSaveClose">Close</button><span class="msg" id="crSaveMsg"></span></div>`;
+    exportCode().then(code=>{const ta=$("crCode");if(ta)ta.value=code;}).catch(()=>{const m=$("crSaveMsg");if(m){m.textContent="This browser can't make save codes";m.className="msg bad";}});
+    $("crCopy").onclick=async()=>{const ta=$("crCode"),m=$("crSaveMsg");try{await navigator.clipboard.writeText(ta.value);m.textContent="Copied";m.className="msg good";}catch(e){ta.select();try{document.execCommand("copy");m.textContent="Copied";m.className="msg good";}catch(e2){m.textContent="Select the code and copy it";m.className="msg";}}};
+    if($("crShare"))$("crShare").onclick=()=>{try{navigator.share({title:"Clean Getaway save",text:$("crCode").value});}catch(e){}};
+  }else{
+    box.innerHTML=`<div class="lbl">Load a save code · it replaces the career on this device</div><textarea id="crCode" placeholder="CG1-…" spellcheck="false" autocomplete="off"></textarea>
+      <div class="row"><button type="button" class="btn small" id="crCheck">Check the code</button><button type="button" class="btn ghost small" id="crSaveClose">Close</button><span class="msg" id="crSaveMsg"></span></div>`;
+    $("crCheck").onclick=async()=>{
+      const m=$("crSaveMsg"),b=await readCode($("crCode").value);
+      if(!b){m.textContent="That code isn't valid";m.className="msg bad";return;}
+      const c=b.career,L=levelInfo(c.xp||0).level;
+      const nm=String(c.name||"").replace(/[<>&"]/g,"").slice(0,24);
+      m.innerHTML=`${nm?`<b>${nm}</b> · `:""}Level ${L} · ${money(c.cash||0)} · ${(c.stats&&c.stats.jobs)||0} jobs paid. <button type="button" class="btn small" id="crReplace">Replace my career</button>`;m.className="msg good";
+      $("crReplace").onclick=()=>{importBundle(b);saveUI(null);renderCareer();toast("Career loaded","good",1800);};
+    };
+  }
+  $("crSaveClose").onclick=()=>saveUI(null);
+}
+function setStampOnly(){if(MODE==="career")$("menuStamp").textContent=(goal("penthouse")?"THE PENTHOUSE · RETIRED IN STYLE":"THE SAFEHOUSE")+(CAREER&&CAREER.name?" · "+CAREER.name.toUpperCase():"");}
 function initCareerUI(){
   loadCareer();
   document.querySelectorAll(".modes button").forEach(b=>b.onclick=()=>setMode(b.dataset.mode));
   document.querySelectorAll(".cr-tabs button").forEach(b=>b.onclick=()=>{crTab=b.dataset.tab;crConfirmNew=false;renderCareer();});
+  $("crName").oninput=e=>{CAREER.name=e.target.value.replace(/\s+/g," ").slice(0,24);saveCareer();setStampOnly();};
+  $("crName").onchange=e=>{CAREER.name=e.target.value.trim().replace(/\s+/g," ").slice(0,24);e.target.value=CAREER.name;saveCareer();setStampOnly();};
+  $("crExport").onclick=()=>saveUI("export");
+  $("crImport").onclick=()=>saveUI("import");
   $("crNew").onclick=()=>{if(!crConfirmNew){crConfirmNew=true;renderCareer();return;}crConfirmNew=false;CAREER=newCareer();fillBoard();saveCareer();renderCareer();};
   setMode(MODE);
 }
@@ -6398,7 +6518,7 @@ function initCareerUI(){
 function resetGame(){
   const sp=LV.def.spawn;
   Object.assign(P,{x:sp.x,z:sp.z,yaw:sp.yaw||0,level:sp.lvl||0,y:(sp.lvl||0)*ROOF_Y,climb:null,ladder:null,onStair:false,jh:0,vy:0,gnd:0,fiddle:0,pitch:0,crouch:false,eye:1.65,bobT:0,carry:null,sprinting:false,kick:0,
-    masked:false,maskT:0,mag:MAG,reserve:MAG*3,reload:0,fireCD:0,aim:false,aimT:0,recoil:0,raise:0,wasRestricted:false,ties:LV.def.zipTies||0,shoutCD:0,jammers:JAMMERS,hasCard:false,hasGun:true});
+    masked:false,maskT:0,mag:MAG,reserve:MAG*3,reload:0,fireCD:0,aim:false,aimT:0,recoil:0,raise:0,wasRestricted:false,ties:LV.def.zipTies||0,shoutCD:0,jammers:JAMMERS,hasCard:false,hasGun:true,struggle:null});
   Object.assign(G,{time:0,susp:0,unseen:0,alarm:false,alarmT:ALARM_TIME,drill:0,drillWas:false,vaultOpen:false,doorAnim:0,secured:0,takedowns:0,kills:0,camsShot:0,shots:0,everAlarm:false,noise:0,shotNoise:0,blipT:0,bodies:[],secAlert:0,bagT:0,binned:0,
     loud:0,trail:[],trailBase:0,tieT:0,tied:0,civKills:0,callLine:-9,bodyHost:false,lastSpotter:null,secMsg:"",jamT:0,jamsUsed:0,jamBeep:0,loopHold:0,loops:0,picks:0,picking:false,pickScr:0,bang:null,civWatched:false});
   cams.forEach(c=>{c.dead=false;c.loopT=0;c.civDist=-1;c.cone.visible=true;c.spot.intensity=1.6;c.head.rotation.set(0.24,0,0);c.body.material=M.camBody;});
@@ -6418,7 +6538,7 @@ function resetGame(){
   if(VAULT.openCol){const i=colliders.indexOf(VAULT.openCol);if(i>=0)colliders.splice(i,1);}if(VAULT.screen)VAULT.screen.color.setHex(0x3aff8a);
   {const n=LV.def.codeLen||4;G.safeCode=String(Math.floor(10**(n-1)+Math.random()*9*10**(n-1)));}G.knowCode=false;G.safeFails=0;G.keypad=false;KP.entry="";$("keypad").hidden=true;placeCodeNote();
   G.hasDiamond=false;G.diamondVal=0;P.ladder=null;P.onStair=false;
-  G.coins=COINS+(SK.coins||0);G.throws=0;THROWN.forEach(f=>LV.group.remove(f.m));THROWN=[];guards.forEach(g=>{if(g.route0)g.route=g.route0;g.invest=null;});
+  G.coins=COINS+(SK.coins||0);G.throws=0;THROWN.forEach(f=>LV.group.remove(f.m));THROWN=[];FLYING=[];guards.forEach(g=>{if(g.route0)g.route=g.route0;g.invest=null;});
   if(LV.def.reset)LV.def.reset();
   hatches.forEach(h=>{h.open=false;h.t=0;h.piv.rotation.z=0;});
   DEV.ghost=false;
@@ -6631,6 +6751,11 @@ function startClimb(tr){
   }
 }
 function updatePlayer(dt){
+  if(P.struggle){
+    updateStruggle(dt);G.noise=0;P.sprinting=false;
+    camera.position.set(P.x,P.y+P.eye,P.z);camera.rotation.set(P.pitch,P.yaw,0);
+    return;
+  }
   if(P.climb){
     // ladder / hatch: no control while climbing
     const c=P.climb;c.t=Math.min(1,c.t+dt/c.dur);const e=c.t*c.t*(3-2*c.t);
@@ -6818,12 +6943,14 @@ function tryJump(){
 // lockpicking: hold E, five pins click into place one by one; progress stays if you let go
 function pickTick(o,total,dt){
   if(o.pickT>=total)return true;
-  if(kitOn()&&!G.kit.picks){G.noPicks=true;return false;}
+  if(kitOn()&&G.picksLeft<=0){G.noPicks=true;return false;}
   if(!G.picking&&o.pickT===0)SFX.pick();
   const b=Math.floor(o.pickT/total*PINS);o.pickT=Math.min(total,o.pickT+dt*SK.pick);const a=Math.floor(o.pickT/total*PINS);
   if(a>b&&a<PINS)SFX.pin();
   G.pickScr-=dt;if(G.pickScr<=0){SFX.pick();G.pickScr=0.1+Math.random()*0.22;}
   P.fiddle=0.3;G.picking=true;
+  // career: the lockpick snaps once the lock gives (with pro lockpicks, only every other one)
+  if(o.pickT>=total&&kitOn()){G.locksPicked=(G.locksPicked||0)+1;if(!(CAREER.gear.picks&&G.locksPicked%2===0))G.picksLeft--;}
   return o.pickT>=total;
 }
 const pinTxt=(o,total)=>`Picking the lock… pin ${Math.min(PINS,Math.floor(o.pickT/total*PINS)+1)}/${PINS}`;
@@ -6854,6 +6981,7 @@ function windowAhead(){
 }
 function pressF(){
   if(NET.guest)return netAct("pressF");
+  if(P.struggle){struggleHit();return;}
   if(P.locked||P.climb)return;
   {const w=windowAhead();if(w&&!takedownTarget()){P.kick=1;breakWindow(w);return;}}
   if(!civs.length||takedownTarget()){tryTakedown();return;}
@@ -6885,6 +7013,7 @@ let THROWN=[];
 function throwCoin(){
   if(NET.guest)return netAct("throwCoin");
   if(P.locked||P.climb||P.ladder||state!=="playing"||G.keypad)return;
+  if(P.carry){throwBag();return;}
   if(G.coins<=0){toast("No coins left","bad",1200);return;}
   G.coins--;G.throws++;P.kick=Math.max(P.kick,0.35);
   const cp=Math.cos(P.pitch),fx=-Math.sin(P.yaw)*cp,fz=-Math.cos(P.yaw)*cp,fy=Math.sin(P.pitch);
@@ -6893,7 +7022,57 @@ function throwCoin(){
   if(NET.host)netEvAll(["coin",r3(m.position.x),r3(m.position.y),r3(m.position.z),r3(fx*10),r3(fy*10+2.4),r3(fz*10),P.level]);
   SFX.whiff();
 }
+// a loot bag into the van (or another getaway): carried there, or thrown in
+function loadBag(b,gwy){
+  const gw=gwy.name||LV.def.getaway||"van";let slot,y;
+  if(gwy===SECURE){slot=VAN_SLOTS[G.vanN%VAN_SLOTS.length];y=VAN_Y+Math.floor(G.vanN/VAN_SLOTS.length)*0.42;G.vanN++;}
+  else{slot=gwy.slots[gwy.n%gwy.slots.length];y=gwy.y+Math.floor(gwy.n/gwy.slots.length)*0.42;gwy.n++;}
+  b.state="secured";b.mesh.visible=true;b.mesh.position.set(slot[0],y,slot[1]);b.mesh.rotation.set(0,G.secured*0.9,0);
+  G.secured++;G.vanTake+=b.value;SFX.load();
+  if(G.secured>=bags.length)toast(`Every bag is loaded · ${money(G.vanTake+G.pocket)}. Hold E here to ${gwy.verb||LV.def.leaveVerb||"drive off"}`,"good",3200);
+  else toast(`Bag in the ${gw} · +${money(b.value)} · take ${money(G.vanTake+G.pocket)}`,"good",2200);
+}
+/* ---------- throwing a bag: how far depends on what's in it, and a heavy one lands with a thud guards can hear ---------- */
+const BAG_THROW={loot:{v:7.5,hear:3.5},drill:{v:4.5,hear:7},gold:{v:2.8,hear:9},body:{v:2.4,hear:6}};
+let FLYING=[];
+function throwBag(){
+  const it=P.carry;if(!it)return;
+  const kind=it.kind==="loot"?(it.gold?"gold":"loot"):it.kind,T=BAG_THROW[kind]||BAG_THROW.loot;
+  const fx=-Math.sin(P.yaw),fz=-Math.cos(P.yaw),pit=clamp(P.pitch,-0.4,0.9);
+  let p={x:P.x+fx*0.45,z:P.z+fz*0.45};if(blocked(P.x,P.z,p.x,p.z,1.2,P.level))p={x:P.x,z:P.z};
+  it.mesh.visible=true;it.mesh.position.set(p.x,P.y+1.25,p.z);it.state="flying";it.level=P.level;
+  P.carry=null;showCarry();P.kick=Math.max(P.kick,0.6);SFX.whiff();
+  FLYING.push({it,kind,hear:T.hear,vx:fx*T.v*Math.cos(pit),vz:fz*T.v*Math.cos(pit),vy:1.8+T.v*Math.sin(pit)*0.8,lvl:P.level,t:0});
+}
+function updateFlying(dt){
+  for(const f of FLYING){
+    if(f.done)continue;
+    f.t+=dt;const m=f.it.mesh,p=m.position;
+    const nx=p.x+f.vx*dt,nz=p.z+f.vz*dt;f.vy-=15*dt;let ny=p.y+f.vy*dt;
+    const base=f.lvl*ROOF_Y;
+    if(blocked(p.x,p.z,nx,nz,Math.max(0.05,p.y-base),f.lvl)){f.vx*=-0.15;f.vz*=-0.15;}else{p.x=nx;p.z=nz;}
+    const c=LV.def.ceil?LV.def.ceil(p.x,p.z,f.lvl):null;if(c!=null&&ny>base+c-0.2){ny=base+c-0.2;f.vy=-Math.abs(f.vy)*0.2;}
+    m.rotation.y+=dt*3;
+    const floorY=base+supportAt(p.x,p.z,0.2,f.lvl,0)+(f.it.kind==="body"?0.2:f.it.kind==="drill"?0.17:0.22);
+    if(ny<=floorY||f.t>4){
+      ny=floorY;f.done=true;p.y=ny;m.rotation.set(0,m.rotation.y,0);
+      f.it.state="ground";f.it.level=f.lvl;
+      const s=spatial(p.x,p.z,26,f.lvl)||{vol:.2,pan:0};noiseHit({type:"lowpass",freq:f.kind==="gold"?260:420,dur:.18,vol:(f.kind==="loot"?0.25:0.55)*s.vol+0.03,pan:s.pan});
+      // a loot bag that lands at the van is in the van
+      if(f.it.kind==="loot"){
+        const list=LV.def.extraGetaways?[SECURE].concat(LV.def.extraGetaways()):[SECURE];
+        const gwy=list.find(g=>(g.lvl||0)===f.lvl&&Math.hypot(g.x-p.x,g.z-p.z)<1.9);
+        const full=G.kit&&G.contract&&!G.kit.driver&&G.secured>=1;
+        if(gwy&&!full){loadBag(f.it,gwy);continue;}
+      }
+      distract(p.x,p.z,f.lvl,f.hear);
+    }
+    p.y=ny;
+  }
+  FLYING=FLYING.filter(f=>!f.done);
+}
 function updateThrows(dt){
+  if(FLYING.length)updateFlying(dt);
   for(const f of THROWN){
     if(f.done)continue;
     f.t+=dt;const p=f.m.position,base=f.lvl*ROOF_Y;
@@ -6906,12 +7085,12 @@ function updateThrows(dt){
   }
 }
 function coinClink(x,z,lvl,v){const s=spatial(x,z,24,lvl)||{vol:.15,pan:0};tone({type:"square",f0:2600,f1:2300,dur:.05,vol:.08*s.vol*v+.01,pan:s.pan,lp:s.lp||6000});tone({type:"sine",f0:3800,dur:.12,vol:.05*s.vol*v,pan:s.pan,delay:.04});}
-function distract(x,z,lvl){
-  if(G.alarm)return;
+function distract(x,z,lvl,radius){
+  if(G.alarm)return;const R=radius||11;
   let walkers=0,lookers=0;
   for(const g of guards){
     if(g.down||(g.level||0)!==lvl||g.reportT>0||g.wounded>0||g.seeDist>=0||(g.security&&g.seated))continue;
-    const d=Math.hypot(g.x-x,g.z-z);if(d>11)continue;
+    const d=Math.hypot(g.x-x,g.z-z);if(d>R)continue;
     SFX.hear(g.x,g.z,g.level);
     if(d>0.9&&!blocked(g.x,g.z,x,z,0.6,lvl)){
       if(!g.invest)g.invest={saved:g.route,wp:g.wp};
@@ -6959,6 +7138,22 @@ function updateJammer(dt){
   if(j){j.ledMat.color.setHex(Math.floor(G.world*6)%2?0x40ff80:0x0f3a1c);if(G.jamBeep<=0){SFX.jamTick(j.x,j.z,G.jamT<4);G.jamBeep=G.jamT<4?0.35:1.0;}}
   if(G.jamT<=0){SFX.jamOff();toast("The jammer burned out","warn",1800);}
 }
+/* ---------- grabbed: about three seconds to break free before the cuffs go on ---------- */
+const STRUGGLE_TIME=3,STRUGGLE_HITS=6;
+function startStruggle(g){
+  P.struggle={g,t:STRUGGLE_TIME,n:0};g.grab=P;g.speedNow=0;P.carry&&dropCarry();P.aim=false;
+  SFX.whiff();toast(`${g.name||"A guard"} has you! Mash ${inputSrc()==="touch"?"BREAK FREE":inputSrc()==="pad"?"Y":"F"} to break free`,"bad",1800);
+}
+function updateStruggle(dt){
+  const s=P.struggle;if(!s)return;
+  if(s.g.down){P.struggle=null;return;}
+  s.t-=dt;
+  if(s.t<=0){P.struggle=null;s.g.grab=null;playerCaught("A guard got the cuffs on you.");}
+}
+function struggleHit(){
+  const s=P.struggle;s.n++;P.kick=1;SFX.whiff();
+  if(s.n>=STRUGGLE_HITS){const g=s.g;P.struggle=null;g.grab=null;g.knockDown(false);G.takedowns++;SFX.takedown(g.x,g.z);toast("You broke free and floored him","good",2000);}
+}
 function tryTakedown(){
   if(!P.masked){toast("Put on your mask first. Hold G","warn");return;}
   const fx=-Math.sin(P.yaw),fz=-Math.cos(P.yaw);
@@ -6969,11 +7164,20 @@ function tryTakedown(){
   if(!best){SFX.whiff();return;}
   const tx=(P.x-best.x)/bd,tz=(P.z-best.z)/bd;
   const facing=Math.sin(best.yaw)*tx+Math.cos(best.yaw)*tz;
-  if(facing<(SK.hands?0.3:-0.15)&&!blocked(P.x,P.z,best.x,best.z,0.9,P.level)){
-    best.knockDown(false);G.takedowns++;
+  if(blocked(P.x,P.z,best.x,best.z,0.9,P.level)){SFX.whiff();return;}
+  const behind=facing<(SK.hands?0.3:-0.15);
+  if(behind||best.stagger>0||SK.hands){
+    // from behind, a second hit on a reeling guard, or quick hands: out cold
+    best.stagger=0;best.body.rotation.x=0;best.knockDown(false);G.takedowns++;
     SFX.takedown(best.x,best.z);
+    if(!behind){G.shotNoise=Math.max(G.shotNoise,3.5);G.loud=Math.max(G.loud,5);}
     toast("Guard knocked out","good");
-  }else{SFX.whiff();toast("Get behind them first","warn");}
+  }else{
+    // from the front: the first hit only rocks him. Hit him again before he recovers
+    best.stagger=1.5;best.chase=false;SFX.takedown(best.x,best.z);
+    G.shotNoise=Math.max(G.shotNoise,3.5);G.loud=Math.max(G.loud,5);
+    toast("He's reeling. Hit him again!","warn",1300);
+  }
 }
 
 /* ================= silenced pistol ================= */
@@ -6982,6 +7186,7 @@ const _v2=new THREE.Vector2();
 function shoot(){
   if(NET.guest){guestShoot();return;}
   if(P.locked||P.climb)return;
+  if(P.struggle){struggleHit();return;}
   if(P.hasGun===false){if(takedownTarget())tryTakedown();else toast("No pistol on this job. Take guards down from behind with F","warn",1600);return;}
   if(!P.masked){toast("Put on your mask first. Hold G","warn",1400);return;}
   if(P.raise<0.9||P.reload>0||P.fireCD>0)return;
@@ -7211,10 +7416,11 @@ function updateInteraction(dt){
     const inRange=d>=0&&P.z>VAULT.z+0.2;
     if(inRange&&G.drilling){prompt=`Drill running · ${Math.round(G.drill*100)}%`;prog=G.drill;}
     else if(inRange&&!P.masked){prompt="Put on your mask to set up the drill. Hold <kbd>G</kbd>";}
-    else if(inRange&&kitOn()&&!G.kit.drill){prompt="The vault needs a drill, and you didn't bring one";}
+    else if(inRange&&kitOn()&&!(P.carry&&P.carry.kind==="drill")){prompt=G.kit.drill?"Bring the drill bag here: it's where you started":"The vault needs a drill, and you didn't bring one";}
     else if(inRange){
       prompt="Press <kbd>E</kbd> to set up the drill";
       if(pressedE){
+        if(P.carry&&P.carry.kind==="drill"){const d=P.carry;d.state="used";d.mesh.visible=false;P.carry=null;showCarry();}
         G.drilling=true;VAULT.drillGroup.visible=true;SFX.drillSet();
         toast("Drill running. Guards nearby will hear it","warn",2400);
       }
@@ -7325,12 +7531,12 @@ function updateInteraction(dt){
   if(!P.carry){
     // pick up loot or a body bag lying around
     let best=null,bd=1e9;
-    const items=[...bags,...npcs().map(g=>g.item)];
+    const items=[...bags,...npcs().map(g=>g.item),...DRILLS];
     for(const it of items){if(it.state!=="ground"||(it.level||0)!==P.level)continue;const d=facing(it.mesh.position.x,it.mesh.position.z,2.0);if(d>=0&&d<bd){best=it;bd=d;}}
     if(best&&!prompt&&!P.masked)prompt="Put on your mask first. Hold <kbd>G</kbd>";
     else if(best&&!prompt&&best.kind==="loot"&&!best.duffel&&kitOn()&&G.duffels<=0)prompt=`No duffel bag for this ${best.gold?"gold":"loot"}. You didn't bring enough`;
     else if(best&&!prompt){
-      prompt=best.kind==="body"?"Press <kbd>E</kbd> to pick up the body bag":"Press <kbd>E</kbd> to pick up the loot";
+      prompt=best.kind==="body"?"Press <kbd>E</kbd> to pick up the body bag":best.kind==="drill"?"Press <kbd>E</kbd> to pick up the drill":"Press <kbd>E</kbd> to pick up the loot";
       if(pressedE){
         best.state="carried";best.mesh.visible=false;P.carry=best;showCarry();SFX.pickup();
         if(best.kind==="loot"&&!best.duffel&&kitOn()){best.duffel=true;G.duffels--;}
@@ -7357,16 +7563,10 @@ function updateInteraction(dt){
       prompt=`Press <kbd>E</kbd> to load the bag into the ${gw}`;
       if(kitOn()&&!G.kit.driver&&G.secured>=1)prompt="No driver: on foot you can only run with one bag. Drop it with <kbd>Q</kbd>";
       else if(pressedE){
-        const b=P.carry;let slot,y;
-        if(gwy===SECURE){slot=VAN_SLOTS[G.vanN%VAN_SLOTS.length];y=VAN_Y+Math.floor(G.vanN/VAN_SLOTS.length)*0.42;G.vanN++;}
-        else{slot=gwy.slots[gwy.n%gwy.slots.length];y=gwy.y+Math.floor(gwy.n/gwy.slots.length)*0.42;gwy.n++;}
-        b.state="secured";b.mesh.visible=true;b.mesh.position.set(slot[0],y,slot[1]);b.mesh.rotation.set(0,G.secured*0.9,0);
-        P.carry=null;showCarry();G.secured++;G.vanTake+=b.value;G.leaveBlock=true;SFX.load();
-        if(G.secured>=bags.length)toast(`Every bag is loaded · ${money(G.vanTake+G.pocket)}. Hold E here to ${gwy.verb||LV.def.leaveVerb||"drive off"}`,"good",3200);
-        else toast(`Bag in the ${gw} · +${money(b.value)} · take ${money(G.vanTake+G.pocket)}`,"good",2200);
+        const b=P.carry;P.carry=null;showCarry();loadBag(b,gwy);G.leaveBlock=true;
       }
     }
-  }else{
+  }else if(P.carry.kind==="body"){
     // carrying a body: find a bin
     let bin=null,bd=1e9;
     for(const b of bins){if(P.level!==0)break;const reach=Math.max(b.w,b.d)/2+1.2;const d=facing(b.x,b.z,reach);if(d>=0&&d<bd){bin=b;bd=d;}}
@@ -7472,8 +7672,9 @@ function updateInteraction(dt){
       }
     }
   }
-  if(G.noPicks){G.noPicks=false;prompt="You didn't bring lockpicks. Find a key, a keycard or another way in";prog=null;}
+  if(G.noPicks){G.noPicks=false;prompt="No lockpicks left. Find a key, a keycard or another way in";prog=null;}
   if(P.climb||G.keypad)prompt=null;
+  if(P.struggle){const s=P.struggle;prompt=`BREAK FREE! Mash <kbd>${inputSrc()==="touch"?"BREAK FREE":"F"}</kbd> · ${Math.max(0,STRUGGLE_HITS-s.n)} more`;prog=s.n/STRUGGLE_HITS;}
   if(wasPicking&&!G.picking)G.pickScr=0;
   if(!P.masked&&P.maskT>0){prompt="Putting on your mask…";prog=P.maskT/(MASK_TIME*SK.mask);}
   else if(P.reload>0&&!prompt){prompt="Reloading…";prog=1-P.reload/RELOAD_TIME;}
@@ -7601,6 +7802,7 @@ function updateHUD(){
   else if(!P.masked&&!G.vaultOpen)obj=restricted(P.x,P.z)?(LV.day&&P.level===0?`You're in a staff area of ${LV.def.place}. Staff and guards who see you back here will get suspicious.`:`You're ${onRoof()?"on the roof of":LV.def.multi&&!LV.def.isInside(P.x,P.z)?"on the grounds of":"inside"} ${LV.def.place} without a mask. Anyone who sees you will raise the alarm.`):LV.def.text.case;
   else if(!G.vaultOpen&&VAULT.safe)obj=G.knowCode?`Open the safe in the owner's office. The code is ${G.safeCode}.`:LV.def.text.vault;
   else if(!G.vaultOpen)obj=G.drilling?`Drill running: ${Math.round(G.drill*100)}%. Keep guards away from the vault.`:G.drill===0?LV.def.text.vault:`Drill stopped at ${Math.round(G.drill*100)}%.`;
+  else if(P.carry&&P.carry.kind==="drill")obj="Carry the drill to the vault and set it up. Q drops it.";
   else if(P.carry)obj=LV.def.text.van;
   else if(G.secured>=bags.length)obj=`Every bag is in the ${LV.def.getaway||"van"}. Hold E at the ${LV.def.getaway||"van"} to ${LV.def.leaveVerb||"drive off"}, or grab some loose cash first.`;
   else obj=(VAULT.safe?"Grab a loot bag from the safe.":"Grab a loot bag from the vault.")+(G.secured?` Or hold E at the ${LV.def.getaway||"van"} to ${LV.def.leaveVerb||"drive off"} with what you have.`:"");
@@ -7611,7 +7813,7 @@ function updateHUD(){
   {const tk=G.vanTake+G.pocket+G.diamondVal,t=G.pocket+G.diamondVal>0?`${money(tk)} (${money(G.pocket+G.diamondVal)} on you)`:money(G.vanTake);if($("takeVal").textContent!==t)$("takeVal").textContent=t;}
   $("stance").textContent=DEV.ghost?"NOCLIP":P.ladder?"ON A LADDER":(P.jh>P.gnd+0.05?"JUMPING":P.crouch?"CROUCHED · SILENT":P.sprinting?"SPRINTING · LOUD":P.gnd>0.1?"STANDING ON SOMETHING":"STANDING")+(musicCovers()&&!P.crouch?" · MUSIC COVERS YOU":"");
   const cc=$("carry");cc.hidden=!P.carry;
-  if(P.carry){const t=P.carry.kind==="body"?"CARRYING BODY · Q DROP":`CARRYING ${P.carry.gold?"GOLD":"LOOT"} ${money(P.carry.value)} · Q DROP`;if(cc.textContent!==t)cc.textContent=t;}
+  if(P.carry){const t=P.carry.kind==="body"?"CARRYING BODY · Q DROP":P.carry.kind==="drill"?"CARRYING THE DRILL · Q DROP":`CARRYING ${P.carry.gold?"GOLD":"LOOT"} ${money(P.carry.value)} · Q DROP`;if(cc.textContent!==t)cc.textContent=t;}
   {const el=$("mateChip"),me=CTX.pl||ME,mate=NET.host?PLAYERS.find(q=>q!==me):null;el.hidden=!mate;
     if(mate){const q=mate.P,d=Math.round(Math.hypot(q.x-P.x,q.z-P.z));const t=mate.out?"PARTNER · CAUGHT":`PARTNER · ${q.carry?"CARRYING":q.masked?"MASKED":"UNMASKED"} · ${d} M${q.level!==P.level?(q.level>P.level?" ↑":" ↓"):""}`;
       if(el.textContent!==t)el.textContent=t;el.className="chip "+(mate.out?"bad":q.masked?"warn":"");}}
@@ -7628,7 +7830,7 @@ function updateHUD(){
   {const cc=$("codeChip");const t=LV.def.chip?LV.def.chip():(G.knowCode&&!G.vaultOpen?`SAFE CODE ${G.safeCode}`:"");cc.hidden=!t;if(t&&cc.textContent!==t)cc.textContent=t;}
   {const lc=$("loopChip"),lp=cams.filter(c=>c.loopT>0&&!c.dead);lc.hidden=!lp.length||G.alarm;
    if(!lc.hidden){const m=Math.min(...lp.map(c=>c.loopT)),t=`CAM LOOP${lp.length>1?" ×"+lp.length:""} · ${Math.ceil(m)} s`;if(lc.textContent!==t)lc.textContent=t;lc.className=m<6?"chip warn":"chip ok";}}
-  {const kc=$("kitChip");kc.hidden=!(P.masked&&kitOn());if(!kc.hidden){const t=`DUFFELS ${G.duffels}`+(G.bodyBags?` · BODY BAGS ${G.bodyBags}`:"")+(G.bumps?` · BUMP KEYS ${G.bumps}`:"")+(G.kit.driver?"":" · ON FOOT");if(kc.textContent!==t)kc.textContent=t;kc.className=G.duffels?"chip":"chip warn";}}
+  {const kc=$("kitChip");kc.hidden=!(P.masked&&kitOn());if(!kc.hidden){const t=`DUFFELS ${G.duffels} · PICKS ${G.picksLeft}`+(G.bodyBags?` · BODY BAGS ${G.bodyBags}`:"")+(G.bumps?` · BUMP KEYS ${G.bumps}`:"")+(G.kit.driver?"":" · ON FOOT");if(kc.textContent!==t)kc.textContent=t;kc.className=G.duffels?"chip":"chip warn";}}
   const tc=$("tieChip");tc.hidden=!(P.masked&&civs.length);
   if(!tc.hidden){const nf=civs.filter(c=>c.follow&&!c.dead).length;const t=`ZIP TIES ${P.ties}`+(nf?` · ${nf} FOLLOWING`:"");if(tc.textContent!==t)tc.textContent=t;tc.className=P.ties===0?"chip bad":"chip";}
   // phones: the OBJ button folds the objective away; a new objective still shows for a few seconds, and an urgent warning always does
@@ -8516,11 +8718,11 @@ function touchHUD(){
   const on=IN.src==="touch"&&state==="playing"&&!G.keypad;$("touch").hidden=!on;if(!on){if(G.keypad){IN.fwd=IN.right=IN.mag=0;TP.clear();}return;}
   const vis=(act,v)=>{const b=document.querySelector(`.tb[data-act="${act}"]`);if(b&&b.hidden!==!v)b.hidden=!v;};
   vis("mask",!P.masked);vis("fire",P.masked&&P.hasGun!==false);vis("aim",P.masked&&P.hasGun!==false);vis("reload",P.masked&&P.hasGun!==false&&P.mag<magSize()&&P.reserve>0);
-  vis("drop",!!P.carry);vis("coin",G.coins>0);vis("jam",P.masked&&P.jammers>0);
+  vis("drop",!!P.carry);vis("coin",G.coins>0||!!P.carry);vis("jam",P.masked&&P.jammers>0);
   const cnt=(act,lbl,n)=>{const b=document.querySelector(`.tb[data-act="${act}"]`),h=`${lbl}<small>${n}</small>`;if(b.innerHTML!==h)b.innerHTML=h;};
-  cnt("coin","COIN",G.coins);cnt("jam","JAM",P.jammers);
+  if(P.carry){const b=document.querySelector('.tb[data-act="coin"]');if(b.innerHTML!=="THROW")b.innerHTML="THROW";}else cnt("coin","COIN",G.coins);cnt("jam","JAM",P.jammers);
   {const gb=$("tGhost");const show=DEV.on&&!NET.on;if(gb.hidden!==!show)gb.hidden=!show;gb.classList.toggle("on",!!DEV.ghost);}
-  const f=document.querySelector('.tb[data-act="f"]'),tl=takedownTarget()?"TAKE DOWN":windowAhead()?"SMASH":civs.length&&P.masked?"SHOUT":"ACTION";if(f.textContent!==tl)f.textContent=tl;
+  const f=document.querySelector('.tb[data-act="f"]'),tl=P.struggle?"BREAK FREE":takedownTarget()?"TAKE DOWN":windowAhead()?"SMASH":civs.length&&P.masked?"SHOUT":"ACTION";if(f.textContent!==tl)f.textContent=tl;
   document.querySelector('.tb[data-act="use"]').classList.toggle("ready",!$("prompt").hidden);
   document.querySelector('.tb[data-act="crouch"]').classList.toggle("on",P.crouch);
   document.querySelector('.tb[data-act="aim"]').classList.toggle("on",P.aim);

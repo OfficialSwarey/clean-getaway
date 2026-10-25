@@ -5,6 +5,18 @@ feature round bumps MINOR, a bug-fix-only update bumps PATCH, and 1.0.0 is
 the first "finished" release. Up to 0.30.0, MINOR is the version number the
 claude.ai artifact had. Releases are tagged `v0.30.0` and so on.
 
+## 0.34.0 — save codes, owned kit, fighting back, throwing bags
+- **Save codes:** in the safehouse, *Save code* gives you a code to copy (or share on a phone), and *Load code* on another device shows what's in it before it replaces that career. The code holds your career and your best scores, sealed so a random or edited code doesn't open.
+- **Name your career:** type a name in the safehouse. It shows at the top and in save codes.
+- **The pistol, lockpicks and the drill are yours:** you buy them into your stash instead of renting them for one job. The pistol ($1,500) and the drill ($3,000) come home after a clean job; the police keep them, like the rest of your kit, if you're busted.
+  - **Lockpicks** cost $100 each, and one is used up on every lock you pick: doors, window latches and safes. With pro lockpicks only every other lock uses one up.
+  - **The drill** starts in a bag next to you. Carry it to the vault yourself and set it up. You can bring as many as the job has drill vaults.
+  - Old saves with the drill rig get a drill in their stash; the rig is now a tune-up that makes the drill 25% faster.
+- **Fight from the front:** hitting a guard who faces you rocks him for about 1.5 seconds (no walking, no radio). Hit him again before he recovers and he's out. Fights are noisier than a quiet takedown from behind. Quick hands still knocks a guard out in one hit, from any side.
+- **Break free:** when a guard grabs you during an alarm, you have 3 seconds to break free. Mash F, BREAK FREE on a touch screen or Y on a controller six times and you floor him. A second guard arriving cuffs you straight away. Iron grip still wins once per job by itself.
+- **Throw bags:** T (THROW on a touch screen, RB on a controller) throws what you're carrying. Cash bags fly furthest, the drill about half as far, gold and bodies only a short heave. A bag that lands next to the van is loaded; a heavy one lands with a thud guards nearby come to check.
+- New careers start with $8,000.
+
 ## 0.33.0 — career economy
 Career only: free play and co-op are unchanged. Old careers keep their cash, levels, skills and gear.
 - **Pay by job size:** your cut is now the job's score measured against what that job is worth. A full, clean take on Normal with a ×1.00 contract pays $7,000 (Quiet Hours), $8,000 (Business Hours), $14,000–18,000 (medium jobs) and $30,000–42,000 (long jobs). Twists, stealth, difficulty and partial takes still count. Offers show what the whole job pays.
