@@ -23,6 +23,8 @@ const put=(x,z,l,extra)=>G.evaluate(([x,z,l,e])=>{const P=__qh.P;P.x=x;P.z=z;P.l
 for(let i=0;i<only.length;i++){
   const m=only[i];if(i>0)await switchMap(m);
   await clear();await wait(500);
+  // the guest's game must be in play (not on the pause screen) for key presses to count
+  for(let k=0;k<5&&await G.evaluate(()=>__qh.state!=='playing');k++){await G.evaluate(()=>document.getElementById('resumeBtn').click());await wait(600);}
   const r={};
   if(m==="manor"){
     // the bookcase leaf is a wall the map keeps for later: it has to reach the guest too
