@@ -5,7 +5,7 @@ const PAGE=process.argv[2]||'test.html';
 const p=await b.newPage({viewport:{width:800,height:450}});const errs=[];p.on('pageerror',e=>errs.push('PAGEERR '+e.message+' | '+(e.stack||'').split('\n').slice(0,3).join(' | ')));
 await p.goto('file://'+__dirname+'/'+PAGE);await p.waitForTimeout(1000);
 const H=require('fs').readFileSync(__dirname+'/twH.js','utf8');const run=src=>p.evaluate(new Function(H+src));
-for(const m of ["harbor","harborDay","meridian","meridianDay","club","jewel","jewelDay","manor","casino","port","tower","whiteout"]){
+for(const m of ["spin","harbor","harborDay","meridian","meridianDay","club","jewel","jewelDay","manor","casino","port","tower","whiteout"]){
   console.log(m,JSON.stringify(await run(`q.setMode("free");q.pickMap("${m}");q.resetGame();q.setState("playing");q.guards.forEach(g=>{g.route=[[200,200],[200,201]];g.x=200;g.z=200;});q.civs.forEach(c=>{c.x=300;c.z=300;c.route=[[300,300]];});
     q.P.masked=true;const sp=q.LV.def.spawn,fx=-Math.sin(sp.yaw||0),fz=-Math.cos(sp.yaw||0);
     // a trail: ten metres in from the start

@@ -2,7 +2,7 @@
 // plus how much the host sends per second.
 const {setup,wait}=require('./coopH');
 (async()=>{
-const maps=(process.argv[2]||"harbor,harborDay,meridian,meridianDay,club,jewel,jewelDay").split(",");
+const maps=(process.argv[2]||"spin,harbor,harborDay,meridian,meridianDay,club,jewel,jewelDay").split(",");
 const {H,G,errs,close,T}=await setup(maps[0]);
 const out={};
 for(let i=0;i<maps.length;i++){

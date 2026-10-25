@@ -5,6 +5,13 @@ feature round bumps MINOR, a bug-fix-only update bumps PATCH, and 1.0.0 is
 the first "finished" release. Up to 0.30.0, MINOR is the version number the
 claude.ai artifact had. Releases are tagged `v0.30.0` and so on.
 
+## 0.36.0 — Spin Cycle
+- **New short job, Spin Cycle:** Suds & Spin, a 24-hour laundromat a loan shark washes his money through. It's open all night: walk in with the night customers; the drying room and the office in the back are staff only.
+  - Two of the five big dryers in the drying room are stuffed with cash. A pick-up ticket pinned up somewhere (a new spot every run) says which two. Open an empty one and its door buzzer goes off: guards nearby come to look.
+  - The third bag is in the office safe; the code is on a note somewhere.
+  - Ways in: the staff door from the front room, the locked back door from the alley, the locked office door, or the office window on the side street. The man on the monitors sits with his back to the window.
+  - 3 guards, 3 civilians, 2 cameras, 3 bags. Works in career (a full, clean take pays $7,500), free play and co-op.
+
 ## 0.35.0 — main menu, bag the loot, no driver no van, police waves
 - **Main menu:** the game opens on a start screen with Singleplayer (career and free play), Co-op, Settings, and Controls and tips. Each screen has a back button; Escape and B on a controller go back too.
 - **Co-op has its own screen:** host or join at the top, then the host picks a job. Leaving the co-op screen leaves co-op. The "Co-op · Dev" button on phones is gone.

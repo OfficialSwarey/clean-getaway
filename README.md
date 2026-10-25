@@ -26,6 +26,7 @@ The host's game runs the whole job: guards, civilians, cameras, the map and what
 | Job | Place | Length |
 |---|---|---|
 | Quiet Hours / Business Hours | Harbor Savings & Loan | Short |
+| Spin Cycle | Suds & Spin Laundromat | Short |
 | Night Deposit / Lunch Rush | Meridian Trust | Medium |
 | Last Call | Club Halo | Medium |
 | Brilliant Cut / Window Shopping | Lindqvist & Daughters | Medium |

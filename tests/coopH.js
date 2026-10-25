@@ -16,7 +16,7 @@ const wait=ms=>new Promise(r=>setTimeout(r,ms));
 // opts.peer: "host:port" of a PeerJS server and the path of peerjs.min.js: test the real WebRTC connection instead of the tab-to-tab one
 async function setup(map,viewport,opts){
   opts=opts||{};
-  const srv=await serve(),url=`http://127.0.0.1:${srv.address().port}/${opts.page||'test.html'}?`+(opts.peer?`peer=${opts.peer}`:`net=local`)+'&screen=coop';
+  const srv=await serve(),url=`http://127.0.0.1:${srv.address().port}/${opts.page||process.env.QA_PAGE||'test.html'}?`+(opts.peer?`peer=${opts.peer}`:`net=local`)+'&screen=coop';
   const b=await chromium.launch({executablePath:'/opt/pw-browsers/chromium',args:['--use-gl=swiftshader','--enable-unsafe-swiftshader','--autoplay-policy=no-user-gesture-required','--disable-features=WebRtcHideLocalIpsWithMdns']});
   const ctx=await b.newContext({viewport:viewport||{width:800,height:450}});
   if(opts.peerjs)await ctx.route('**/peerjs.min.js',r=>r.fulfill({body:fs.readFileSync(opts.peerjs),contentType:'text/javascript'}));

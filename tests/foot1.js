@@ -6,7 +6,7 @@ const PAGE=process.argv[2]||'test.html';
 const p=await b.newPage({viewport:{width:900,height:520}});const errs=[];p.on('pageerror',e=>errs.push('PAGEERR '+e.message+' | '+(e.stack||'').split('\n').slice(0,3).join(' | ')));
 await p.goto('file://'+__dirname+'/'+PAGE);await p.waitForTimeout(1000);
 const H=require('fs').readFileSync(__dirname+'/twH.js','utf8');const run=src=>p.evaluate(new Function(H+src));
-const maps=["harbor","harborDay","meridian","meridianDay","club","jewel","jewelDay","manor","casino","port","tower","whiteout"];
+const maps=["spin","harbor","harborDay","meridian","meridianDay","club","jewel","jewelDay","manor","casino","port","tower","whiteout"];
 const out={};
 for(const m of maps){
   out[m]=await run(`const C=q.newCareer();C.cash=99999;C.xp=99999999;q.CAREER=C;C.board[0]={id:"f1",map:"${m}",tw:[],pay:1,xp:1,stars:1,mins:9};q.fillBoard();q.setMode("career");

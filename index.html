@@ -476,6 +476,13 @@ body.coop-guest .diffs{pointer-events:none;opacity:.6}
           <span class="job-stats"><span class="st">4 guards</span> · <span class="st">8 civilians</span> · <span class="st">2 cameras</span> · <span class="st">3 bags</span></span>
           <span class="job-desc" hidden>The same bank, open for business. Walk in with the customers. Everything behind the teller counter is staff only.</span>
         </button>
+        <button class="job" type="button" role="radio" aria-checked="false" data-map="spin" data-len="Short">
+          <span class="job-tags"><span class="tag night">NIGHT · 03:10</span><span class="tag open">OPEN</span></span>
+          <span class="job-name">Spin Cycle</span>
+          <span class="job-place">Suds &amp; Spin Laundromat</span>
+          <span class="job-stats"><span class="st">3 guards</span> · <span class="st">3 civilians</span> · <span class="st">2 cameras</span> · <span class="st">3 bags</span></span>
+          <span class="job-desc" hidden>A 24-hour laundromat a loan shark washes his money through. Walk in with the night customers. Two of the big dryers in the back are stuffed with cash (a pick-up ticket says which) and the rest is in the office safe.</span>
+        </button>
         <div class="job-group" role="presentation">Medium jobs</div>
         <button class="job" type="button" role="radio" aria-checked="false" data-map="meridian" data-len="Medium">
           <span class="job-tags"><span class="tag night">NIGHT · 03:15</span></span>
@@ -644,7 +651,7 @@ body.coop-guest .diffs{pointer-events:none;opacity:.6}
 // Co-op: the same code runs for every player by swapping who P is. CTX.cur is the player whose turn it is (null = you);
 // HUD writes during another player's turn go to that player's copy of the HUD, which is sent to them.
 const CTX={cur:null,kind:null,pl:null};
-const GAME_VERSION="0.35.0";
+const GAME_VERSION="0.36.0";
 const NET={on:false,host:false,guest:false,send:null,close:null,code:"",busy:false,waiting:false,started:false,acc:0,remote:null,ending:false};
 const $=id=>(CTX.cur&&CTX.cur.dom&&CTX.cur.dom[id])||document.getElementById(id);
 // a timer started during another player's turn runs as that player
@@ -1684,6 +1691,187 @@ const MAP_HARBOR_DAY=Object.assign({},MAP_HARBOR,{
     van:MAP_HARBOR.text.van,bins:MAP_HARBOR.text.bins
   }
 });
+
+/* ================= MAP · Spin Cycle · Suds & Spin Laundromat =================
+   A 24-hour laundromat that a loan shark runs his money through. The front room is public all night; the drying room
+   and the office behind it are staff only. Two of the five industrial dryers are stuffed with cash (a pick-up ticket
+   pinned up somewhere says which; an empty dryer's door buzzer is loud), and the third bag sits in the office safe. */
+const spinTile=floorMat((g,w,h)=>{g.fillStyle="#cfd6d3";g.fillRect(0,0,w,h);g.fillStyle="#9fb3ad";for(let i=0;i<4;i++)for(let j=0;j<4;j++)if((i+j)%2)g.fillRect(i*w/4,j*h/4,w/4,h/4);g.strokeStyle="rgba(0,0,0,.12)";for(let i=0;i<=4;i++){g.beginPath();g.moveTo(i*w/4,0);g.lineTo(i*w/4,h);g.stroke();g.beginPath();g.moveTo(0,i*h/4);g.lineTo(w,i*h/4);g.stroke();}},10,8,{shininess:40,specular:0x222222});
+const MAP_SPIN={
+  id:"spin",job:"Spin Cycle",place:"Suds & Spin Laundromat",time:"03:10",day:true,night:true,zipTies:4,
+  bagValue:[24000,42000],cashValue:[150,1300],
+  cash:[[7.4,1.17,1.9],[9.45,1.66,3.4],[0.4,0.96,2.7],[7.6,0.86,-4.1],[-2.6,1.06,-8.3]],
+  spawn:{x:3,z:15,yaw:0},moon:30,
+  // 0: the office safe; 1 and 2: whichever dryers the loan shark loaded tonight (placed in reset)
+  bagSpots:[{x:8.5,z:-8.5,y:0.3,ry:0},{x:-9.3,z:-8,y:0.95,ry:Math.PI/2,box:"dryer"},{x:-9.3,z:-5,y:0.95,ry:Math.PI/2,box:"dryer"}],
+  isInside:(x,z)=>x>-10&&x<10&&z>-9&&z<7,
+  // staff only: the drying room, the office, and behind the attendant's counter
+  isStaff(x,z){return this.isInside(x,z)&&(z<-1||(x>5&&z<2.2));},
+  surface(x,z){if(!(x>-10&&x<10&&z>-9&&z<7))return "asphalt";if(x>0&&z<-1)return "carpet";return "tile";},
+  fly(a){camera.position.set(Math.sin(a)*6+3,5,19+Math.cos(a)*2);camera.lookAt(0,1.6,4);},
+  text:{
+    case:"Suds & Spin never closes, and neither does the loan shark who washes his money through it. Walk in like any night customer: the front room is public, the drying room and the office in the back are staff only. Two of the five big dryers are full of cash, and the pick-up ticket pinned up somewhere says which. The third bag is in the office safe; the code is written down somewhere. The back door is locked (hold E to pick it), and so is the office, which also has a window on the side street. Hold G to put on your mask when you're ready.",
+    vault:"Find the safe code: it's on a note somewhere. Then open the safe in the office.",
+    van:"Carry the bag to the van in the back alley.",
+    bins:"Dump the body in a bin: the dumpster in the back alley or the laundry cart in the drying room. Q drops it."
+  },
+  DRYER_Z:[-8,-6.5,-5,-3.5,-2],
+  build(){
+    const H=4,IW=3.2;
+    const teal=phong(0x6f9a94),white=phong(0xe6e9e7,{shininess:50,specular:0x333333}),chrome=phong(0x9aa3a8,{shininess:90,specular:0x666666});
+    const porthole=phong(0x1a2328,{shininess:90,specular:0x556677}),orange=phong(0xe07a2a),towel=[phong(0xd8d0c4),phong(0x7aa0c8),phong(0xc87a7a)];
+    const fm={ground:floorMat(drawAsphalt,16,16,{polygonOffset:true,polygonOffsetFactor:2,polygonOffsetUnits:2}),office:floorMat(drawCarpet,4,3)};
+    // street, sidewalk, alley, boundary
+    floor(-20,-18,20,22,fm.ground,0);
+    addBox(-20,10.6,20,11.4,0.12,phong(0x4a4c4c),{collide:false,cast:false});
+    for(let x=-18;x<20;x+=5){const d=new THREE.Mesh(new THREE.PlaneGeometry(2.4,0.18),M.line);d.rotation.x=-Math.PI/2;d.position.set(x,0.02,16);lvAdd(d);}
+    wallZ(-20,-18,22,2.6,M.brick);wallZ(20,-18,22,2.6,M.brick);wallX(-18,-20,20,2.6,M.brick);wallX(22,-20,20,2.6,M.brick);
+    // the shell: the shop front is mostly glass
+    wallX(7,-10.2,-9.6,H,M.outer);windowX(7,-9.6,-3,H);wallX(7,-3,-1.2,H,M.outer);wallX(7,1.2,3,H,M.outer);windowX(7,3,9.6,H);wallX(7,9.6,10.2,H,M.outer);
+    lintelX(7,-1.2,1.2,2.6,H,M.outer);
+    wallZ(-10,-9.2,7.2,H,M.outer);
+    wallZ(10,-9.2,-6,H,M.outer);windowOZ(10,-6,-4,H,M.outer,"office window");wallZ(10,-4,7.2,H,M.outer);
+    wallX(-9,-10.2,-8,H,M.outer);wallX(-9,-6.5,10.2,H,M.outer);lintelX(-9,-8,-6.5,2.4,H,M.outer);
+    addBox(-10.1,-9.1,10.1,7.1,3.4,M.ceil,{y0:3.2,collide:false});
+    plaque(signTex("SUDS & SPIN · OPEN 24H",1024,136,"#0d2a2c","#bfe8df","bold 72px 'Arial Narrow', Arial, sans-serif"),8,1.0,0,3.4,7.215);
+    plaque(LV.sunny?openTex():signTex("OPEN ALL NIGHT",256,96,"#e9fff6","#1f6b4a","bold 40px Arial, sans-serif"),0.9,0.34,2.2,1.7,7.215);
+    // interior walls: front room | drying room (west) and office (east)
+    wallX(-1,-10,-6,IW,teal);wallX(-1,-4.6,4,IW,teal);wallX(-1,5.4,10,IW,teal);
+    lintelX(-1,-6,-4.6,2.4,IW,teal);lintelX(-1,4,5.4,2.4,IW,teal);
+    wallZ(0,-9,-6,IW,teal);wallZ(0,-4.6,-1,IW,teal);lintelZ(0,-6,-4.6,2.4,IW,teal);
+    floor(-10,-1,10,7,spinTile);floor(-10,-9,0,-1,spinTile);floor(0,-9,10,-1,fm.office);
+    // doors
+    makeDoor(-1.2,1.2,7,2.58,{glass:true,name:"front door",dayOpen:true});
+    makeDoor(-6,-4.6,-1,2.38,{mat:staffDoorMat,name:"staff door"});
+    makeDoor(4,5.4,-1,2.38,{name:"office door",pick:true});
+    makeDoorZ(0,-6,-4.6,2.38,{name:"office side door"});
+    makeDoor(-8,-6.5,-9,2.38,{mat:staffDoorMat,name:"back door",pick:true});
+    plaque(staffTex(),0.75,0.28,-5.3,2.62,-0.78);plaque(staffTex(),0.75,0.28,-7.25,2.62,-9.22,Math.PI);
+    // front room: a row of washers on the west wall, an island of them, a folding table, benches, the change machine
+    const washer=(x1,z1,x2,z2,face)=>{addBox(x1,z1,x2,z2,0.95,white);addBox(x1,z1,x2,z2,1.02,chrome,{y0:0.95,collide:false});
+      const p=new THREE.Mesh(new THREE.CylinderGeometry(0.22,0.22,0.04,18),porthole);p.rotation[face==="x"?"z":"x"]=Math.PI/2;
+      p.position.set(face==="x"?x2+0.02:(x1+x2)/2,0.55,face==="x"?(z1+z2)/2:z2+0.02);lvAdd(p);};
+    for(let z=0.3;z<6.2;z+=0.8)washer(-9.8,z,-9.05,z+0.72,"x");
+    for(let x=-6.4;x<-2.6;x+=0.8){washer(x,2.0,x+0.72,2.75,"z");}
+    addBox(-1,2.0,2,3.4,0.9,phong(0x9aa29e));addBox(-1.05,1.95,2.05,3.45,0.94,white,{y0:0.9,collide:false});
+    for(const [x,z,c] of [[-0.4,2.6,0],[1.2,2.9,1]]){addBox(x-0.3,z-0.2,x+0.3,z+0.2,1.06,towel[c],{y0:0.94,collide:false});}
+    addBox(4,5.9,8,6.5,0.45,M.bench);addBox(4,6.35,8,6.5,0.9,M.bench,{y0:0.45,collide:false});
+    addBox(9.2,3.0,9.9,3.8,1.6,phong(0x8a8f93,{shininess:40}));plaque(signTex("CHANGE",256,64,"#111","#f4c84a","bold 40px Arial"),0.5,0.14,9.18,1.35,3.4,-Math.PI/2);
+    addBox(9.2,4.2,9.9,5.2,1.9,phong(0x2a4b7a));plaque(signTex("SOAP · SOFTENER",256,64,"#fff","#2a4b7a","bold 30px Arial"),0.8,0.2,9.18,1.6,4.7,-Math.PI/2);
+    // the attendant's counter (staff behind it)
+    addBox(5,1.6,9.6,2.2,1.05,M.counter);addBox(4.95,1.55,9.65,2.25,1.11,M.counterTop,{y0:1.05,collide:false});
+    addBox(9.4,-0.6,9.9,1.4,1.8,M.cabinet);
+    // drying room: five big dryers on the west wall, laundry shelves, a laundry cart
+    this.X={dryers:[]};
+    for(let i=0;i<5;i++){
+      const zc=this.DRYER_Z[i],z1=zc-0.65,z2=zc+0.65;
+      addBox(-10,z1,-9.6,z2,1.95,white,{collide:false});
+      addBox(-9.6,z1,-9.0,z2,0.55,white,{collide:false});addBox(-9.6,z1,-9.0,z2,1.95,white,{y0:1.35,collide:false});
+      addBox(-9.6,z1,-9.0,zc-0.4,1.35,white,{y0:0.55,collide:false});addBox(-9.6,zc+0.4,-9.0,z2,1.35,white,{y0:0.55,collide:false});
+      addBox(-9.62,zc-0.4,-9.58,zc+0.4,1.35,phong(0x23292c),{y0:0.55,collide:false});
+      colliders.push({minX:-10,maxX:-9.0,minZ:z1,maxZ:z2,h:1.95,lvl:0});
+      plaque(signTex("D"+(i+1),128,64,"#111","#f4ab3d","bold 40px Arial"),0.32,0.16,-8.98,1.65,zc,Math.PI/2);
+      // the door swings out on a hinge at its north edge
+      const piv=new THREE.Group();piv.position.set(-8.97,0.95,zc-0.42);lvAdd(piv);
+      const door=new THREE.Mesh(new THREE.CylinderGeometry(0.4,0.4,0.06,24),chrome);door.rotation.z=Math.PI/2;door.position.set(0,0,0.42);piv.add(door);
+      const glass=new THREE.Mesh(new THREE.CylinderGeometry(0.28,0.28,0.07,20),porthole);glass.rotation.z=Math.PI/2;glass.position.set(0,0,0.42);piv.add(glass);
+      this.X.dryers.push({z:zc,piv});
+    }
+    for(const z of [-8.6,-7.4]){addBox(-1.0,z-0.25,-0.25,z+0.25,1.9,M.cabinet);}
+    for(let i=0;i<5;i++)addBox(-0.95,-8.85+i*0.06,-0.3,-8.8+i*0.06,0.45+i*0.18,towel[i%3],{y0:0.4+i*0.18,collide:false});
+    addBox(-3.2,-8.6,-2.0,-8.0,1.0,M.counter);
+    makeBin(-2.4,-5.6,1.2,0.8,1.0,cartMat,cartLid,"LINEN");
+    // the office: desk with monitors, the safe, a pinboard
+    addBox(6.2,-4.6,8.6,-3.6,0.8,M.desk);
+    const monTex=signTex("CAM 01   CAM 02",256,64,"#9fc4ff","#0d1a2c","bold 24px monospace");
+    for(let i=0;i<2;i++){const s=new THREE.Mesh(new THREE.BoxGeometry(0.7,0.5,0.1),[M.cabinet,M.cabinet,M.cabinet,M.cabinet,M.cabinet,new THREE.MeshBasicMaterial({map:monTex})]);s.position.set(6.9+i*0.9,1.1,-3.85);s.rotation.y=Math.PI;lvAdd(s);}
+    addBox(0.4,-8.8,2.2,-8.2,1.8,M.cabinet);
+    addBox(3,-1.25,5,-1.2,2.1,phong(0x8a6a4a),{y0:1.2,collide:false});
+    makeSafe(8.5,-7.95,"COUNTED");
+    makeCodeNote([[3.4,1.62,-1.27,Math.PI],[9.78,1.5,-2.2,-Math.PI/2],[0.22,1.5,-3.2,Math.PI/2],[7.6,1.5,-0.78,0],[-0.22,1.5,-2.4,-Math.PI/2]]);
+    // the pick-up ticket: which dryers are loaded tonight (a new spot each run)
+    {const c=document.createElement("canvas");c.width=128;c.height=160;const t=new THREE.CanvasTexture(c);
+     const m=new THREE.Mesh(new THREE.PlaneGeometry(0.2,0.25),new THREE.MeshBasicMaterial({map:t}));m.userData.noHit=true;lvAdd(m);
+     const glint=new THREE.Sprite(new THREE.SpriteMaterial({map:GLINT,transparent:true,depthWrite:false,blending:THREE.AdditiveBlending,opacity:.6}));glint.scale.set(0.3,0.3,0.3);glint.userData.noHit=true;glint.position.z=0.02;m.add(glint);
+     this.X.ticket={mesh:m,canvas:c,tex:t,spots:[[4.4,1.55,-1.27,Math.PI],[-0.22,1.55,-7.6,-Math.PI/2],[8.4,1.55,-0.78,0],[9.78,1.45,-7.0,-Math.PI/2]]};}
+    // back alley: the dumpster and the van
+    makeBin(2.4,-10.7,1.8,1.2,1.3,M.dumpster,lidMat,"WASTE");
+    addBox(12,-12,13.2,-10.8,1.2,M.crate);addBox(-15,-11,-13.8,-9.8,1.1,M.crate);
+    makeVan(9,-14.5,-1);
+    // street: a parked car
+    {const car=addBox(-8,12.4,-3.5,14.2,0.95,M.car);car.col.h=1.4;addBox(-7,12.55,-4.6,14.05,1.45,M.glass,{y0:0.95,collide:false});}
+    // lights
+    lamp(-9,11.6,0xffb050);lamp(9,11.6,0xffb050);lamp(-3,-17.2,0xffa848);
+    pointLight(-5,3,3,0xf4fff8,1.0,11,true);pointLight(4,3,3,0xf4fff8,1.0,11,true);
+    pointLight(-5,3,-5,0xd8e8ff,0.55,8,true);pointLight(5,3,-5,0xffe6c8,0.5,8,true);pointLight(-7.25,2.9,-9.6,0xd8e2ff,0.5,6);
+    // cameras: the front room from the corner over the counter, and the back alley
+    makeCam(9.6,2.85,6.6,-3*Math.PI/4,0.6,8,0,13,0.45);
+    makeCam(1.5,2.85,-9.3,-2.3,0.55,9,1.2,12,0.45);
+    if(LV.sunny){}
+    // night customers and the attendant (public front room)
+    new Civilian([[6.2,6.15,Math.PI,0]],0,{seated:true,label:"A night customer"});
+    new Civilian([[0.5,3.95,Math.PI,8],[-6.6,1.6,Math.PI,6],[0.5,3.95,Math.PI,8]],2,{label:"A customer"});
+    new Civilian([[7.3,0.9,0,6],[9.0,0.9,0,3]],2,{worker:true,label:"The attendant"});
+    // guards: one walks the front room and the drying room, one the back alley, one watches the monitors in the office
+    new Guard([[-7.5,5],[3.2,4.6],[3.2,0.4],[-5.3,0.4],[-5.3,-3.5],[-3,-6.8,null,2],[-5.3,-3.5],[-5.3,0.4],[-7.5,0.6]],1.0,{name:"Rocco"});
+    new Guard([[-7.25,-12],[-7.25,-6.5,null,3],[-7.25,-12],[-14,-12],[-14,-16],[6,-16],[6,-12]],1.1,{name:"Dino"});
+    new Guard([[7.4,-5.3,0,0]],0,{security:true,seated:true,name:"Vic",flashShadow:false});
+  },
+  reset(){
+    const X=this.X;if(!X)return;
+    // tonight's two loaded dryers, and where the pick-up ticket is pinned
+    const ids=[0,1,2,3,4];for(let i=4;i>0;i--){const j=Math.random()*(i+1)|0;[ids[i],ids[j]]=[ids[j],ids[i]];}
+    const loaded=ids.slice(0,2).sort((a,b)=>a-b);
+    G.lf={open:[false,false,false,false,false],loaded,ticket:false};
+    X.dryers.forEach(d=>d.piv.rotation.y=0);
+    let k=0;bags.forEach(b=>{if(b.box!=="dryer")return;const i=loaded[k++];b.dryer=i;b.mesh.position.set(-9.3,0.95,this.DRYER_Z[i]);b.mesh.rotation.set(0,Math.PI/2,0);});
+    const T=X.ticket,g=T.canvas.getContext("2d");
+    g.fillStyle="#f6f1e2";g.fillRect(0,0,128,160);g.fillStyle="#c0392b";g.fillRect(0,0,128,26);g.fillStyle="#fff";g.font="bold 15px Arial";g.textAlign="center";g.fillText("PICK-UP",64,18);
+    g.fillStyle="#2a2416";g.font="bold 15px 'Segoe Print','Comic Sans MS',cursive";g.fillText("dryers",64,62);
+    g.font="bold 38px 'Segoe Print','Comic Sans MS',cursive";g.fillText(`${loaded[0]+1} & ${loaded[1]+1}`,64,112);
+    g.font="12px Arial";g.fillText("before 6am",64,146);T.tex.needsUpdate=true;
+    const sp=T.spots[Math.random()*T.spots.length|0];T.mesh.position.set(sp[0],sp[1],sp[2]);T.mesh.rotation.set(0,sp[3],(Math.random()-0.5)*0.2);T.mesh.visible=true;T.spot=sp;
+  },
+  tick(dt){const X=this.X,L=G.lf;if(!X||!L)return;X.dryers.forEach((d,i)=>{const want=L.open[i]?1.75:0;d.piv.rotation.y+=(want-d.piv.rotation.y)*Math.min(1,dt*7);});},
+  interact(dt,facing){
+    const X=this.X,L=G.lf;if(!X||!L||P.level!==0)return null;
+    // the pick-up ticket
+    const T=X.ticket,tp=T.mesh.position;
+    if(!L.ticket&&facing(tp.x,tp.z,1.8)>=0&&!blocked(P.x,P.z,tp.x,tp.z,1.5,0)){
+      if(pressedE){L.ticket=true;SFX.paper();toast(`A pick-up ticket: "dryers ${L.loaded[0]+1} & ${L.loaded[1]+1}". That's where the money is`,"good",3200);}
+      return {p:"Press <kbd>E</kbd> to read the pick-up ticket"};
+    }
+    // the dryers: open one up (an empty one buzzes)
+    for(let i=0;i<5;i++){
+      if(L.open[i])continue;const zc=this.DRYER_Z[i];
+      if(P.x>-9.0&&P.x<-7.4&&Math.abs(P.z-zc)<0.6&&facing(-9.0,zc,1.6)>=0){
+        if(P.carry)return {p:"Drop what you're carrying to open the dryer. <kbd>Q</kbd>"};
+        if(pressedE){
+          L.open[i]=true;
+          if(L.loaded.includes(i)){bags.forEach(b=>{if(b.dryer===i&&b.state==="locked")b.state="ground";});SFX.unlock();toast(`Dryer ${i+1}: bricks of cash, still warm`,"good",2200);}
+          else{SFX.denied();G.loud=Math.max(G.loud,7);distract(-8.6,zc,0,9);toast(`Dryer ${i+1}: just towels, and the door buzzer went off`,"warn",2400);}
+        }
+        return {p:`Press <kbd>E</kbd> to open dryer ${i+1}${L.ticket?(L.loaded.includes(i)?" · on the ticket":" · not on the ticket"):""}`};
+      }
+    }
+    return null;
+  },
+  chip(){const L=G.lf,p=[];if(L&&L.ticket){const left=L.loaded.filter(i=>!L.open[i]).map(i=>i+1);if(left.length)p.push("DRYERS "+left.join(" · "));}
+    if(G.knowCode&&!G.vaultOpen)p.push("SAFE "+G.safeCode);return p.join(" · ");},
+  objective(){
+    const L=G.lf||{open:[],loaded:[]};
+    if(P.carry&&P.carry.kind==="loot")return this.text.van;
+    if(!P.masked)return restricted(P.x,P.z)?"You're in the back of Suds & Spin without a mask. Anyone who sees you back here will raise the alarm.":this.text.case;
+    const ground=bags.some(b=>b.state==="ground"&&!b.bagged);
+    if(ground)return "Bag the cash (hold E) and get it to the van in the back alley.";
+    const dry=L.loaded.filter(i=>!L.open[i]);
+    const parts=[];
+    if(dry.length)parts.push(L.ticket?`Open dryer${dry.length>1?"s":""} ${dry.map(i=>i+1).join(" and ")} in the drying room.`:"Two of the dryers in the drying room are full of cash. The pick-up ticket says which; an empty one buzzes.");
+    if(!G.vaultOpen)parts.push(G.knowCode?`Open the office safe. The code is ${G.safeCode}.`:"The office safe needs a code: it's on a note somewhere.");
+    if(!parts.length)return G.secured?`Every bag is out. Hold E at the van to drive off.`:"Grab a bag and get it to the van.";
+    return parts.join(" ");
+  }
+};
 
 /* ================= MAP 2 · Night Deposit · Meridian Trust ================= */
 const MAP_MERIDIAN={
@@ -5288,7 +5476,7 @@ const MAP_WHITEOUT={
   }
 };
 
-const MAPS={whiteout:MAP_WHITEOUT,harbor:MAP_HARBOR,meridian:MAP_MERIDIAN,harborDay:MAP_HARBOR_DAY,meridianDay:MAP_MERIDIAN_DAY,club:MAP_CLUB,manor:MAP_MANOR,casino:MAP_CASINO,port:MAP_PORT,tower:MAP_TOWER,jewel:MAP_JEWEL,jewelDay:MAP_JEWEL_DAY};
+const MAPS={spin:MAP_SPIN,whiteout:MAP_WHITEOUT,harbor:MAP_HARBOR,meridian:MAP_MERIDIAN,harborDay:MAP_HARBOR_DAY,meridianDay:MAP_MERIDIAN_DAY,club:MAP_CLUB,manor:MAP_MANOR,casino:MAP_CASINO,port:MAP_PORT,tower:MAP_TOWER,jewel:MAP_JEWEL,jewelDay:MAP_JEWEL_DAY};
 
 // night: moonlight and sodium lamps. day: sun, blue sky, light haze
 function setSky(day){
@@ -5364,6 +5552,7 @@ function envTree(x,z,s,rnd){
 }
 const ENV={
   // b = the boundary wall [minX,minZ,maxX,maxZ]; per side: [offset from the wall, min height, max height]
+  spin:{b:[-20.2,-18.2,20.2,22.2],n:[0.4,10,20],e:[0.4,10,20],w:[0.4,10,20],s:[6,12,22],street:"s"},
   harbor:{b:[-24.2,-22.2,24.2,24.2],n:[0.4,12,22],e:[0.4,10,20],w:[0.4,10,20],s:[7,12,22],street:"s"},
   meridian:{b:[-34.2,-30.2,34.2,28.2],n:[0.4,14,26],e:[0.4,12,24],w:[0.4,12,24],s:[13,14,26],street:"s"},
   club:{b:[-28.2,-24.2,28.2,30.2],n:[0.4,12,24],e:[0.4,10,22],w:[0.4,10,22],s:[6,12,24],street:"s"},
@@ -6154,7 +6343,7 @@ const KIT=[
 ];
 const KIT_COUNT=KIT.filter(k=>!k.job).map(k=>k.id);
 // what a full, clean take pays you on Normal with a ×1.00 contract: your cut is the score scaled to this
-const MAP_PAY={harbor:7000,harborDay:8000,meridian:14000,meridianDay:15500,club:16000,jewel:17000,jewelDay:18000,whiteout:30000,port:32000,manor:35000,casino:38000,tower:42000};
+const MAP_PAY={harbor:7000,harborDay:8000,spin:7500,meridian:14000,meridianDay:15500,club:16000,jewel:17000,jewelDay:18000,whiteout:30000,port:32000,manor:35000,casino:38000,tower:42000};
 const TWISTS={
   tight:{name:"Tight schedule",desc:c=>`Out within ${c.mins} minutes, or someone tips off the police`,pay:1.3,xp:1.25,hard:true},
   jumpy:{name:"Jumpy dispatch",desc:()=>"Only one pager answer before dispatch sends units",pay:1.25,xp:1.2,hard:true},
@@ -8190,7 +8379,7 @@ let last=performance.now();
    the host runs the guest's actions as the guest (P is swapped for the guest's state while their turn runs) and sends
    back how the world moved, the guest's HUD, sounds and messages. Both build the same map from the same random seed,
    so every object can be referred to by its place in the scene. */
-const COOP_MAPS=new Set(["harbor","harborDay","meridian","meridianDay","club","jewel","jewelDay"]);
+const COOP_MAPS=new Set(["spin","harbor","harborDay","meridian","meridianDay","club","jewel","jewelDay"]);
 const NET_HZ=20,PEER_PREFIX="cleangetaway-v1-";
 const SWAP_G=["noise","shotNoise","loud","keypad","picking","pickScr","ladderTip","coins","leaveT","tieT","loopHold","bagT","lootT","leaveBlock","trail","trailBase"];
 const SWAP_IN=["fwd","right","mag","sprint","src","objHide","objPeek","objKey"];

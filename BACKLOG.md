@@ -6,7 +6,7 @@ Each item says what's wanted, then what the game does today and any open questio
 ## Co-op
 
 ### 10. Co-op on every map
-- Today: co-op works on Quiet Hours, Business Hours, Night Deposit, Lunch Rush, Last Call, Brilliant Cut and Window Shopping. Not yet on the Winter Heart, House Edge, Dead Reckoning, Glass Ceiling and Whiteout.
+- Today: co-op works on Quiet Hours, Business Hours, Spin Cycle, Night Deposit, Lunch Rush, Last Call, Brilliant Cut and Window Shopping. Not yet on the Winter Heart, House Edge, Dead Reckoning, Glass Ceiling and Whiteout.
 - Also: the police waves (item 7) and the driver leaving (item 6) don't run in co-op yet; there the job still ends when the police arrive.
 
 ### 11. Co-op career
