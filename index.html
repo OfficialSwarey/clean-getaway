@@ -605,7 +605,7 @@ body.coop-guest .diffs{pointer-events:none;opacity:.6}
       <p class="lbl">Touch</p>
       <p>Left thumb: the joystick appears where you touch (push past the ring to sprint). Drag anywhere on the right to look. The buttons on the right change with what you can do; USE glows when there's something to use. Tap the keypad keys directly. OBJ (under the pause button) folds the objective away; a new objective still pops up for a few seconds, and urgent warnings always show.</p>
       <p class="lbl">Co-op</p>
-      <p>Two players, each on their own device. One presses <b>Host</b> and tells the other the code; the other types it and presses <b>Join</b>. The host picks the job and starts it. Guards and cameras notice both of you, and the detection meter, the alarm and the take are shared. If a guard catches one of you, the other can still finish the job. The getaway waits until you're both there. When the police come, each of you has your own health; whoever goes down is in custody and the other plays on. Co-op works on the bank, club, laundromat and jeweller's jobs for now.</p>
+      <p>Two players, each on their own device. One presses <b>Host</b> and tells the other the code; the other types it and presses <b>Join</b>. The host picks the job and starts it. Guards and cameras notice both of you, and the detection meter, the alarm and the take are shared. If a guard catches one of you, the other can still finish the job. The getaway waits until you're both there. When the police come, each of you has your own health; whoever goes down is in custody and the other plays on. Co-op works on every job.</p>
       <ul class="tips">
         <li>Outside without a mask you're just someone on the street. Inside a closed building, in a staff-only area or on a roof, anyone who sees you fills the detection meter, mask or not.</li>
         <li>Day jobs: the public areas are open, so walk in unmasked and look around. Behind counters and staff doors is off limits, and staff and guards notice you back there.</li>
@@ -2323,7 +2323,7 @@ const MAN_F=[-20,-12,20,12],MAN_ATTIC=[0,-12,20,0],MAN_BALC=[-6,12,6,14.5];
 const MAN_BASE=[[-20,-9,-17,0],[-17,-2,-10,0],[-10,-14,-7,0],[-13,-21,-4,-14],[6,-12,20,-2]];
 const inR=(x,z,r)=>x>r[0]&&x<r[2]&&z>r[1]&&z<r[3];
 const MAP_MANOR={
-  id:"manor",job:"The Winter Heart",place:"Blackwood Manor",time:"03:50",multi:true,levels:[-1,2],codeLen:6,zipTies:4,
+  id:"manor",st:"m",job:"The Winter Heart",place:"Blackwood Manor",time:"03:50",multi:true,levels:[-1,2],codeLen:6,zipTies:4,
   needDiamond:"the Winter Heart",diamondValue:350000,
   spawn:{x:0,z:37,yaw:0},moon:60,
   bagValue:[30000,55000],goldValue:[90000,140000],cashValue:[400,2500],jewelValue:[3000,12000],
@@ -2669,6 +2669,11 @@ const MAP_MANOR={
       n.mesh.position.set(s[0],s[1],s[2]);if(s[3]==="flat")n.mesh.rotation.set(-Math.PI/2,0,(Math.random()-0.5)*0.6);else n.mesh.rotation.set(0,s[3],(Math.random()-0.5)*0.2);
     });
   },
+  // tripping a beam (run as each player)
+  tickP(dt){
+    const X=this.X,m=G.m;if(!X||!m||state!=="playing")return;
+    if(!(G.laserOff||m.powerOff)&&!DEV.ghost&&!G.alarm&&P.level===-1&&P.x>-10&&P.x<-7)for(const z of X.lzs)if(Math.abs(P.z-z)<0.3){triggerAlarm("You walked into the laser grid. Alarm!");break;}
+  },
   tick(dt){
     const X=this.X,m=G.m;if(!X||!m)return;
     X.diamond.rotation.y+=dt*0.8;X.replica.rotation.y+=dt*0.6;X.dGlint.material.opacity=0.5+0.3*Math.sin(G.world*3);
@@ -2678,8 +2683,6 @@ const MAP_MANOR={
     if(X.ss.open&&X.ss.t<1){X.ss.t=Math.min(1,X.ss.t+dt/1.0);X.ss.pivot.rotation.y=-1.7*(1-Math.pow(1-X.ss.t,3));}
     X.BOOKS.forEach(k=>{if(k.tilt>0){k.tilt=Math.max(0,k.tilt-dt);k.mesh.rotation.z=k===m.book&&m.secretOpen?0.35:Math.min(1,k.tilt*2)*0.35;}});
     if(state!=="playing")return;
-    // tripping a beam
-    if(armed&&!DEV.ghost&&!G.alarm&&P.level===-1&&P.x>-10&&P.x<-7)for(const z of X.lzs)if(Math.abs(P.z-z)<0.3){triggerAlarm("You walked into the laser grid. Alarm!");break;}
     // after a power cut someone goes down to check the fuse box
     const br=X.brennan;
     if(m.powerOff&&!G.alarm&&!br.down){
@@ -2806,7 +2809,7 @@ const drawCasino=(g,w,h)=>{g.fillStyle="#3a0f16";g.fillRect(0,0,w,h);g.strokeSty
 const drawFelt=(g,w,h)=>{g.fillStyle="#1d5a34";g.fillRect(0,0,w,h);noise(g,w,h,3000,.08);g.strokeStyle="#e8e2cc";g.lineWidth=3;g.beginPath();g.arc(w/2,0,h*0.8,0.2,Math.PI-0.2);g.stroke();};
 const CAS_F=[-24,-16,24,16],CAS_ATR=[-10,1,10,10],CAS_DUCT=[-15,-15.8,-6,-14.7],CAS_LAND=[24.2,-10,26.2,-5];
 const MAP_CASINO={
-  id:"casino",job:"House Edge",place:"the Golden Lotus",time:"23:40",day:true,night:true,multi:true,levels:[-1,2],zipTies:10,
+  id:"casino",st:"c",job:"House Edge",place:"the Golden Lotus",time:"23:40",day:true,night:true,multi:true,levels:[-1,2],zipTies:10,
   spawn:{x:0,z:26,yaw:0},moon:46,
   music:{x:0,z:6},musicStyle:"lounge",
   bagValue:[35000,60000],goldValue:[90000,130000],cashValue:[400,2500],chipValue:[1000,6000],jewelValue:[4000,12000],
@@ -2833,13 +2836,13 @@ const MAP_CASINO={
     if(lvl===1)return inR(x,z,[-24,-16,-12,-5])||inR(x,z,[-2,-16,4,-5])||inR(x,z,CAS_DUCT);
     return inR(x,z,[16,2,24,12])||inR(x,z,[-14,-16,-2,-5]);
   },
-  restricted(x,z,lvl){if(this.secure(x,z,lvl))return true;if(!this.staff(x,z,lvl))return false;return !(G.c&&G.c.disguise);},
+  restricted(x,z,lvl){if(this.secure(x,z,lvl))return true;if(!this.staff(x,z,lvl))return false;return !P.uniform;},
   musicLoud(x,z){return P.level===0&&x>-24&&x<16&&z>-2&&z<16;},
   trespassMsg(){return this.secure(P.x,P.z,P.level)?"Secure area. Nobody's supposed to be in here, not even staff":"Staff only. Don't let anyone see you back here";},
   maskLabel(r){
     if(r)return null;
-    if(G.c&&G.c.disguise&&this.staff(P.x,P.z,P.level))return ["UNMASKED · IN UNIFORM","ok"];
-    if(P.level===0&&inR(P.x,P.z,CAS_F))return [G.c&&G.c.disguise?"UNMASKED · IN UNIFORM":"UNMASKED · BLENDING IN","ok"];
+    if(P.uniform&&this.staff(P.x,P.z,P.level))return ["UNMASKED · IN UNIFORM","ok"];
+    if(P.level===0&&inR(P.x,P.z,CAS_F))return [P.uniform?"UNMASKED · IN UNIFORM":"UNMASKED · BLENDING IN","ok"];
     return null;
   },
   hasFloor(x,z,lvl){
@@ -3112,20 +3115,25 @@ const MAP_CASINO={
     X.grilles.forEach(g=>{g.open=false;g.mesh.visible=true;if(!colliders.includes(g.col))colliders.push(g.col);});
     X.tlScreen.color.setHex(0xff3a30);X.sensLed.color.setHex(0xff3030);
   },
+  // motion sensors in the vault anteroom: anything faster than a crouch-walk trips them (run as each player)
+  tickP(dt){
+    const c=G.c;if(!c||state!=="playing")return;
+    if(!c.sensorsOff&&!DEV.ghost&&!G.alarm&&P.level===-1&&inR(P.x,P.z,[-14,-16,12,-6])){
+      tipOnce("casSensor","Motion sensors down here. Crouch-walk or they'll trip","warn",2600);
+      const moving=keys.KeyW||keys.KeyA||keys.KeyS||keys.KeyD||IN.mag>0.1;
+      if(moving&&!P.crouch)c.sensorHit=Math.max(c.sensorHit||0,P.sprinting?3:1);
+    }
+  },
   tick(dt){
     const X=this.X,c=G.c;if(!X||!c)return;
     if(this.wheel)this.wheel.rotation.y+=dt*1.6;
     if(state!=="playing")return;
     // slot machine chimes now and then
     if(!G.alarm){c.chime-=dt;if(c.chime<=0){c.chime=0.8+Math.random()*2.2;const x=-22+Math.random()*8,z=[2,6,10][Math.random()*3|0];const s=spatial(x,z,22,0);if(s){const b=[1046,1318,1568,2093];for(let i=0;i<(Math.random()*4|0)+2;i++)tone({type:"square",f0:b[(i+(Math.random()*2|0))%4],dur:.09,vol:.03*s.vol+.004,pan:s.pan,lp:s.lp||3800,delay:i*.09});}}}
-    // motion sensors in the vault anteroom: anything faster than a crouch-walk trips them
-    const armed=!c.sensorsOff;
-    if(armed&&!DEV.ghost&&!G.alarm&&P.level===-1&&inR(P.x,P.z,[-14,-16,12,-6])){
-      if(!c.sensorTip){c.sensorTip=true;toast("Motion sensors down here. Crouch-walk or they'll trip","warn",2600);}
-      const moving=keys.KeyW||keys.KeyA||keys.KeyS||keys.KeyD||IN.mag>0.1;
-      if(moving&&!P.crouch)c.sensorT+=dt*(P.sprinting?3:1);else c.sensorT=Math.max(0,c.sensorT-dt);
-      if(c.sensorT>0.5){triggerAlarm("The motion sensors picked you up. Alarm!");}
-    }
+    // motion sensors: tickP noted the fastest player in the anteroom this frame
+    if(c.sensorHit)c.sensorT+=dt*c.sensorHit;else c.sensorT=Math.max(0,c.sensorT-dt);
+    c.sensorHit=0;
+    if(c.sensorT>0.5&&!c.sensorsOff&&!G.alarm){triggerAlarm("The motion sensors picked you up. Alarm!");}
     // the time lock
     if(c.timer!=null){
       if(G.alarm){c.timer=null;c.lockdown=true;X.tlScreen.color.setHex(0xff3a30);toast("Alarm! The vault went into lockdown","bad",3000);}
@@ -3144,9 +3152,9 @@ const MAP_CASINO={
     };
     const lv=P.level;
     // lockers: a uniform
-    if(lv===0&&!c.disguise&&!P.masked&&inR(P.x,P.z,[-24,-16,-14,-12.5])){
+    if(lv===0&&!P.uniform&&!P.masked&&inR(P.x,P.z,[-24,-16,-14,-12.5])){
       const r=hold("locker",3,"Picking a locker…");
-      if(r==="done"){c.disguise=true;SFX.unlock();toast("You change into a Golden Lotus staff uniform. Staff areas are fine now; secure areas still aren't","good",3600);return null;}
+      if(r==="done"){P.uniform=true;c.disguise=true;SFX.unlock();toast("You change into a Golden Lotus staff uniform. Staff areas are fine now; secure areas still aren't","good",3600);return null;}
       return r||{p:"Hold <kbd>E</kbd> to pick a locker and borrow a staff uniform"};
     }
     // the manager's override key: lift it from his pocket, or take it if he's down
@@ -3194,7 +3202,7 @@ const MAP_CASINO={
   },
   chip(){
     const c=G.c;if(!c)return "";const p=[];
-    if(c.disguise)p.push("UNIFORM");
+    if(P.uniform)p.push("UNIFORM");
     if(c.key&&!G.vaultOpen)p.push("OVERRIDE KEY");
     if(c.sensorsOff&&!G.vaultOpen)p.push("SENSORS OFF");
     if(c.timer!=null)p.push(`TIME LOCK ${fmt(c.timer)}`);
@@ -3223,7 +3231,7 @@ const chainTex=tex(64,64,(g,w,h)=>{g.clearRect(0,0,w,h);g.strokeStyle="#9aa0a6";
 const PORT_HOLD=[-34,24.4,18,37.6],PORT_DECK=[-34,24,18,38],PORT_SUP=[10,25,18,37],PORT_CAB=[-10.9,14,-7.4,18.6],PORT_CULV=[-30.6,-22,-29.4,-18],PORT_OFF=[-44,-14,-30,-2],PORT_HATCH=[-11,26,-3.5,36];
 const PORT_ROWS=[27.2,31,34.8],PORT_DROP=[6,9.5,13];
 const MAP_PORT={
-  id:"port",job:"Dead Reckoning",place:"Port Halvard",time:"01:10",multi:true,levels:[0,3],codeLen:6,zipTies:5,
+  id:"port",st:"p",job:"Dead Reckoning",place:"Port Halvard",time:"01:10",multi:true,levels:[0,3],codeLen:6,zipTies:5,
   spawn:{x:0,z:-26,yaw:Math.PI},moon:60,getaway:"boat",leaveVerb:"cast off",
   bagValue:[30000,55000],goldValue:[100000,150000],cashValue:[300,2200],jewelValue:[3000,10000],
   bagSpots:[
@@ -3543,6 +3551,10 @@ const MAP_PORT={
     X.cr.trolley.position.set(-7.25,15.1,14);X.cr.spreader.position.set(-7.25,14.4,14);this.cable();
     X.leverM.forEach(l=>l.rotation.x=0);
   },
+  // co-op: the guest needs to know when the hold's hatch is open (it's a hole in the deck)
+  netState(){const p=G.p;return p?[p.hatchOpen?1:0]:null;},
+  netApply(m){if(G.p&&m)G.p.hatchOpen=!!m[0];},
+  guestView(){if(this.X&&G.p)this.cable();},
   cable(){const c=this.X.cr,top=15.0,bot=c.spreader.position.y+0.12;c.cable.position.set(c.spreader.position.x,(top+bot)/2,c.spreader.position.z);c.cable.scale.y=Math.max(0.05,top-bot);},
   tick(dt){
     const X=this.X,p=G.p;if(!X||!p)return;
@@ -3694,7 +3706,7 @@ function jwDates(){
 }
 const JW_MONTHS=["January","February","March","April","May","June","July","August","September","October","November","December"];
 const MAP_JEWEL={
-  id:"jewel",job:"Brilliant Cut",place:"Lindqvist & Daughters",time:"03:10",multi:true,levels:[-1,1],codeLen:4,zipTies:3,
+  id:"jewel",st:"j",job:"Brilliant Cut",place:"Lindqvist & Daughters",time:"03:10",multi:true,levels:[-1,1],codeLen:4,zipTies:3,
   spawn:{x:-24,z:17,yaw:-Math.PI/2},moon:30,needDiamond:"the North Star",diamondValue:260000,
   bagValue:[25000,45000],goldValue:[70000,110000],cashValue:[300,1800],jewelValue:[3000,9000],
   cardMsg:"A keycard? This shop doesn't use them",
@@ -3987,14 +3999,20 @@ const MAP_JEWEL={
     for(const d of doors){if(((d.name==="back door"&&!LV.day)||d.sr)&&d.open&&!j.tripped.has(d)){j.tripped.add(d);if(j.delay<=0){j.delay=30;toast("Beep… beep… Entry delay: type the alarm code at the panel in the back hallway within 30 seconds","warn",3600);}}}
     if(j.delay>0){j.delay-=dt;j.beep-=dt;if(j.beep<=0){j.beep=j.delay<10?0.25:0.5;const s=spatial(9.7,-4,24,0);tone({type:"square",f0:2600,dur:.06,vol:.05*(s?s.vol:0.25)+.01});}
       if(j.delay<=0)triggerAlarm("Nobody typed the code. The alarm went off!");}
-    // motion sensors on the shop floor
+    // motion sensors: tickP noted who they saw moving this frame
+    if(j.sensorHit)j.sensorT+=dt*j.sensorHit;else j.sensorT=Math.max(0,j.sensorT-dt);
+    j.sensorHit=0;
+    if(j.sensorT>0.6)triggerAlarm("A motion sensor picked you up. Alarm!");
+  },
+  // motion sensors on the shop floor (run as each player)
+  tickP(dt){
+    const X=this.X,j=G.j;if(!X||!j||state!=="playing"||G.alarm||!j.armed)return;
     if(!LV.day&&!DEV.ghost&&P.level===0&&inR(P.x,P.z,JW_FLOOR)){
-      if(!j.sensorTip){j.sensorTip=true;toast("Motion sensors in here. Crouch-walk and keep your distance, or disarm the alarm first","warn",3000);}
+      tipOnce("jwSensor","Motion sensors in here. Crouch-walk and keep your distance, or disarm the alarm first","warn",3000);
       const moving=keys.KeyW||keys.KeyA||keys.KeyS||keys.KeyD||IN.mag>0.1;let seen=false;
       for(const p of X.pirs){const dx=P.x-p.x,dz=P.z-p.z,d=Math.hypot(dx,dz);const reach=P.crouch?2.6:9;
         if(d<reach&&Math.abs(wrap(Math.atan2(dx,dz)-p.yaw))<0.85&&!blocked(p.x,p.z,P.x,P.z,1.3,0)){seen=true;p.lm.color.setHex(moving&&Math.floor(G.world*8)%2?0xffd040:0xff3a30);}else p.lm.color.setHex(0xff3a30);}
-      if(seen&&moving)j.sensorT+=dt*(P.sprinting?3:1);else j.sensorT=Math.max(0,j.sensorT-dt);
-      if(j.sensorT>0.6)triggerAlarm("A motion sensor picked you up. Alarm!");
+      if(seen&&moving)j.sensorHit=Math.max(j.sensorHit||0,P.sprinting?3:1);
     }
   },
   interact(dt,facing){
@@ -4163,7 +4181,7 @@ const twRack=new THREE.MeshPhongMaterial({map:tex(64,128,(g,w,h)=>{g.fillStyle="
 const twScreens=new THREE.MeshBasicMaterial({map:tex(256,64,(g,w,h)=>{g.fillStyle="#06090c";g.fillRect(0,0,w,h);for(let i=0;i<4;i++){const x0=i*64+3;g.fillStyle="#0b1622";g.fillRect(x0,3,58,h-6);g.strokeStyle=i%2?"#3aff8a":"#ff5a4a";g.lineWidth=2;g.beginPath();let y=h/2;g.moveTo(x0+2,y);for(let x=x0+2;x<x0+58;x+=4){y=Math.max(8,Math.min(h-8,y+(Math.random()-.5)*10));g.lineTo(x,y);}g.stroke();}})});
 const twArt=[0x8a3a2a,0x2a4a7a,0x3a6a3a,0xb88a3a,0x5b4a7a].map((c,i)=>new THREE.MeshBasicMaterial({map:tex(128,96,(g,w,h)=>{const col="#"+c.toString(16).padStart(6,"0");g.fillStyle="#d8cfb8";g.fillRect(0,0,w,h);g.fillStyle=col;for(let k=0;k<5+i;k++){g.globalAlpha=0.35+Math.random()*0.5;if(Math.random()<.5)g.fillRect(Math.random()*w,Math.random()*h,10+Math.random()*60,10+Math.random()*50);else{g.beginPath();g.arc(Math.random()*w,Math.random()*h,8+Math.random()*30,0,7);g.fill();}}g.globalAlpha=1;g.strokeStyle="#6a5228";g.lineWidth=8;g.strokeRect(0,0,w,h);})}));
 const MAP_TOWER={
-  id:"tower",job:"Glass Ceiling",place:"Halcyon Tower",time:"02:20",multi:true,levels:[0,6],codeLen:6,zipTies:5,
+  id:"tower",st:"t",job:"Glass Ceiling",place:"Halcyon Tower",time:"02:20",multi:true,levels:[0,6],codeLen:6,zipTies:5,
   spawn:{x:-3,z:27,yaw:0},moon:44,cardMsg:"Keycard. It opens the server room on floor 2",
   bagValue:[35000,60000],goldValue:[110000,160000],cashValue:[400,2400],jewelValue:[4000,12000],
   bagSpots:[
@@ -4648,6 +4666,25 @@ const MAP_TOWER={
     if(this.firePanel)this.firePanel.color.setHex(0x3aff8a);
     toast(by==="you"?"You silenced the fire alarm. The stairwell doors stay unlocked":"Security silenced the fire alarm from the lobby","good",2800);
   },
+  rails(){const X=this.X,g=G.t.gon;X.gonRails.forEach(c=>c.lvl=g.moving||(c.gate&&g.lvl===0)?-9:g.lvl);},
+  // riding the car or the gondola: the host moves a guest who is aboard (so they ride along exactly)
+  hostDrive(){const X=this.X,t=G.t;if(!X||!t)return false;return (t.el.moving&&this.aboard(TW_CAR,X.car))||(t.gon.moving&&this.aboard(TW_GON,X.gon));},
+  netState(){const t=G.t;return t?[t.el.lvl,t.el.moving?1:0,t.gon.lvl,t.gon.moving?1:0]:null;},
+  netApply(m){const t=G.t;if(!t||!m)return;t.el.lvl=m[0];t.el.moving=!!m[1];t.gon.lvl=m[2];t.gon.moving=!!m[3];this.rails();},
+  guestView(){if(this.X&&G.t)this.cable();},
+  // run as each player: stay inside a moving car, hear Vane on the phone
+  tickP(dt){
+    const X=this.X,t=G.t;if(!X||!t)return;
+    const e=t.el,g=t.gon;
+    if(e.moving&&this.aboard(TW_CAR,X.car))this.keepAboard([-4.8,-2.0,-1.8,1.0]);
+    if(g.moving&&this.aboard(TW_GON,X.gon))this.keepAboard(TW_GON);
+    if(state!=="playing")return;
+    const v=X.vane,c=t.call;if(!c.on||v.dead||v.gone)return;
+    const d=Math.hypot(P.x-v.x,P.z-v.z);if(P.level!==5||d>=12)return;
+    if(c.ring)toast("Vane's phone is ringing","",1400);
+    c.hear=true;
+    if(d<5.5&&!blocked(P.x,P.z,v.x,v.z,1.5,5)&&!t.voice){c.rec=true;tipOnce("twRec","Your recorder is picking up Vane's voice. Stay close","good",2200);}
+  },
   tick(dt){
     const X=this.X,t=G.t;if(!X||!t)return;
     const Y=ROOF_Y,e=t.el,g=t.gon;
@@ -4659,16 +4696,14 @@ const MAP_TOWER={
       if(u>=1){e.lvl=e.target;e.moving=false;e.ghostDur=0;tone({type:"sine",f0:1320,dur:.35,vol:.05});}
     }else X.car.position.y=e.lvl*Y;
     // shaft doors: open on the car's floor while it isn't moving and someone wants them open
-    const want=!e.moving&&((P.level===e.lvl&&(Math.hypot(P.x+5.0,P.z+0.5)<2.8||inR(P.x,P.z,TW_CAR)))||(e.fire&&e.lvl===0));
+    const want=!e.moving&&(allP().some(p=>p.level===e.lvl&&(Math.hypot(p.x+5.0,p.z+0.5)<2.8||inR(p.x,p.z,TW_CAR)))||(e.fire&&e.lvl===0));
     X.shaftDoors.forEach((d,l)=>{const open=want&&e.lvl===l;d.t=clamp(d.t+(open?dt:-dt)/0.7,0,1);
       d.a.position.z=-0.85-d.t*0.66;d.b.position.z=-0.15+d.t*0.66;
       const i=colliders.indexOf(d.col);if(d.t>0.85&&i>=0)colliders.splice(i,1);else if(d.t<0.85&&i<0)colliders.push(d.col);});
     // gondola
     if(g.moving&&g.ghostDur){g.ghostT+=dt;const u=clamp(g.ghostT/g.ghostDur,0,1),s=u*u*(3-2*u);X.gon.position.y=(g.from+(g.target-g.from)*s)*Y;if(u>=1){g.lvl=g.target;g.moving=false;g.ghostDur=0;}}
     else X.gon.position.y=g.lvl*Y;
-    X.gonRails.forEach(c=>c.lvl=g.moving||(c.gate&&g.lvl===0)?-9:g.lvl);
-    if(e.moving&&this.aboard(TW_CAR,X.car))this.keepAboard([-4.8,-2.0,-1.8,1.0]);
-    if(g.moving&&this.aboard(TW_GON,X.gon))this.keepAboard(TW_GON);
+    this.rails();
     {const i=colliders.indexOf(X.gonChain),dock=!g.moving&&g.lvl===6;if(dock&&i>=0)colliders.splice(i,1);else if(!dock&&i<0)colliders.push(X.gonChain);X.chainG.visible=!dock;}
     {const tg=!g.moving&&g.lvl===0?1:0;if(X.gateT!==tg){X.gateT=clamp((X.gateT||0)+(tg?dt:-dt)/0.6,0,1);X.gate.rotation.y=X.gateT*Math.PI/2;}}
     this.cable();
@@ -4685,17 +4720,18 @@ const MAP_TOWER={
     if(v.dead||v.gone||v.state!=="idle"||G.alarm){if(c.on){c.on=false;v.talk=false;}}
     else{
       c.next-=dt;
-      if(!c.on&&c.next<=0){c.on=true;c.t=13;v.talk=true;c.line=(c.line+1+(Math.random()*3|0))%VANE_CALLS.length;c.sub=0;
-        if(P.level===5&&Math.hypot(P.x-v.x,P.z-v.z)<12)toast("Vane's phone is ringing","",1400);}
+      c.ring=false;
+      if(!c.on&&c.next<=0){c.on=true;c.t=13;v.talk=true;c.line=(c.line+1+(Math.random()*3|0))%VANE_CALLS.length;c.sub=0;c.ring=true;}
       if(c.on){
         c.t-=dt;c.sub-=dt;
-        const d=Math.hypot(P.x-v.x,P.z-v.z),near=P.level===5&&d<5.5&&!blocked(P.x,P.z,v.x,v.z,1.5,5);
-        if(P.level===5&&d<12&&c.sub<=0){c.sub=6.5;speak(1.8,VOICE_VANE);showSub("V",VANE_CALLS[c.line],6000,"VICTOR VANE · ON THE PHONE");c.line=(c.line+1)%VANE_CALLS.length;}
-        if(near&&!t.voice){t.rec+=dt;if(!t.recTip){t.recTip=true;toast("Your recorder is picking up Vane's voice. Stay close","good",2200);}
-          if(t.rec>=8){t.voice=true;SFX.kpOk();toast("Got enough of Vane's voice for the vault's voice lock","good",2800);}}
+        // tickP noted who is close enough to hear him, and whose recorder picks him up
+        if(c.hear&&c.sub<=0){c.sub=6.5;speak(1.8,VOICE_VANE);showSub("V",VANE_CALLS[c.line],6000,"VICTOR VANE · ON THE PHONE");c.line=(c.line+1)%VANE_CALLS.length;}
+        if(c.rec&&!t.voice){t.rec+=dt;
+          if(t.rec>=8){t.voice=true;SFX.kpOk();toastAll("Got enough of Vane's voice for the vault's voice lock","good",2800);}}
         if(c.t<=0){c.on=false;v.talk=false;c.next=28+Math.random()*16;}
       }
     }
+    c.hear=false;c.rec=false;
     // fire alarm: bells, strobes, evacuation, and the clock
     const f=t.fire;
     if(f.on){
@@ -4901,7 +4937,7 @@ const drawSnow=(g,w,h)=>{g.fillStyle="#dfe5ec";g.fillRect(0,0,w,h);for(let i=0;i
 const drawPacked=(g,w,h)=>{g.fillStyle="#8a95a3";g.fillRect(0,0,w,h);noise(g,w,h,5000,.12);g.fillStyle="rgba(90,100,115,.18)";for(let y=4;y<h;y+=12){g.fillRect(0,y,w,3);}};
 
 const MAP_WHITEOUT={
-  id:"whiteout",job:"Whiteout",place:"Halden Peak Observatory",time:"03:20",multi:true,levels:[0,1],codeLen:4,zipTies:4,
+  id:"whiteout",st:"w",job:"Whiteout",place:"Halden Peak Observatory",time:"03:20",multi:true,levels:[0,1],codeLen:4,zipTies:4,
   spawn:{x:-35.5,z:0,yaw:-Math.PI/2},moon:50,needDiamond:"the Halden Meteorite",diamondValue:320000,
   getaway:"cable car",leaveVerb:"send the cable car down",
   bagValue:[22000,42000],goldValue:[60000,90000],cashValue:[200,1600],jewelValue:[2500,7000],
@@ -5268,7 +5304,7 @@ const MAP_WHITEOUT={
     lvAdd(prints);
     const SN=1400,sp=new Float32Array(SN*3);for(let i=0;i<SN;i++){sp[i*3]=(Math.random()-0.5)*44;sp[i*3+1]=Math.random()*16;sp[i*3+2]=(Math.random()-0.5)*44;}
     const sg=new THREE.BufferGeometry();sg.setAttribute("position",new THREE.BufferAttribute(sp,3));
-    const snow=new THREE.Points(sg,new THREE.PointsMaterial({color:0xe6eef8,size:0.07,transparent:true,opacity:.85,depthWrite:false}));snow.frustumCulled=false;snow.userData.dyn=1;snow.userData.noHit=true;lvAdd(snow);
+    const snow=new THREE.Points(sg,new THREE.PointsMaterial({color:0xe6eef8,size:0.07,transparent:true,opacity:.85,depthWrite:false}));snow.frustumCulled=false;snow.userData.dyn=1;snow.userData.noHit=true;snow.userData.local=true;lvAdd(snow);
 
     Object.assign(self,{X:{lanes,dome,scope,meteor,mGlint,casePiv,kpScr,conM,catKeyM,logM,dsafe,relayLeds,mastLamp,prints,FP_N,snow,sp,SN,halv,ruud,
       catGw:self.catGw,routes:new Map()}});
@@ -5291,10 +5327,56 @@ const MAP_WHITEOUT={
     VAULT.onCode=()=>{openSafe();toast("The case unlocks. The Halden Meteorite is yours for the taking","good",2600);};
   },
   addPrint(x,z,yaw){
-    const w=G.w,X=this.X;const i=w.fpI;w.fpI=(w.fpI+1)%X.FP_N;
+    const w=G.w,X=this.X;netEvAll(["map","print",r3(x),r3(z),r3(yaw)]);const i=w.fpI;w.fpI=(w.fpI+1)%X.FP_N;
     const p={x,z,yaw,age:0,seq:++w.fpSeq,i};w.prints=w.prints.filter(q=>q.i!==i);w.prints.push(p);
     const m=new THREE.Matrix4().compose(new THREE.Vector3(x,0.012,z),new THREE.Quaternion().setFromEuler(new THREE.Euler(0,yaw,0)),new THREE.Vector3(1,1,1));
     X.prints.setMatrixAt(i,m);X.prints.instanceMatrix.needsUpdate=true;
+  },
+  // what only the one looking sees: the wind, the fog, the snow falling around the camera (the host's and the guest's own)
+  view(dt){
+    const X=this.X,w=G.w;
+    scene.fog.density=0.022+w.k*0.075;
+    if(state==="playing"){w.windSnd-=dt;if(w.windSnd<=0){w.windSnd=w.k>0.2?0.55:1.8;noiseHit({type:"lowpass",freq:300+w.k*500,dur:w.k>0.2?1.0:2.2,vol:(woOutdoor(P.x,P.z,P.level)?1:0.35)*(0.025+w.k*0.11),attack:0.4});}}
+    // falling snow around the camera (drifts sideways in a gust); hidden indoors
+    {const s=X.sp,cx=camera.position.x,cy=camera.position.y,cz=camera.position.z,fall=1.2+w.k*1.6,drift=0.6+w.k*7;
+      X.snow.visible=!(P.level===0&&this.isInside(P.x,P.z))&&!(P.level===1&&inR(P.x,P.z,WO_OB)&&!inR(P.x,P.z,WO_BAL));
+      for(let i=0;i<X.SN;i++){let x=s[i*3]-dt*drift,y=s[i*3+1]-dt*fall*(0.8+(i%5)*0.1),z=s[i*3+2]+dt*drift*0.3;
+        if(y<cy-6||y<-0.2){y=cy+10+Math.random()*4;}if(x<cx-22)x+=44;if(x>cx+22)x-=44;if(z<cz-22)z+=44;if(z>cz+22)z-=44;
+        s[i*3]=x;s[i*3+1]=y;s[i*3+2]=z;}
+      X.snow.geometry.attributes.position.needsUpdate=true;X.snow.material.size=0.07+w.k*0.05;}
+  },
+  // footprints fade (much faster in a gust)
+  fade(dt){
+    const X=this.X,w=G.w;
+    if(w.prints.length){const snowC=new THREE.Color(0xdfe5ec),fpC=new THREE.Color(0x7a889c),c=new THREE.Color();let dirty=false;
+      w.prints=w.prints.filter(p=>{p.age+=dt*(1+w.k*6);const t=Math.min(1,p.age/110);c.copy(fpC).lerp(snowC,t*t);X.prints.setColorAt(p.i,c);dirty=true;
+        if(t>=1){X.prints.setMatrixAt(p.i,new THREE.Matrix4().makeScale(0,0,0));X.prints.instanceMatrix.needsUpdate=true;return false;}return true;});
+      if(dirty)X.prints.instanceColor.needsUpdate=true;}
+  },
+  // co-op: the guest gets the storm and the footprints from the host
+  netState(){const w=G.w;return w?[r3(w.k)]:null;},
+  netApply(m){if(G.w&&m)G.w.k=m[0];},
+  netEvent(e){if(e[0]==="print"&&this.X&&G.w)this.addPrint(e[1],e[2],e[3]);},
+  guestView(dt){if(this.X&&G.w){this.view(dt);this.fade(dt);}},
+  // run as each player: the laser lanes, and the prints you leave in fresh snow
+  tickP(dt){
+    const X=this.X,w=G.w;if(!X||!w||state!=="playing")return;
+    // the laser lanes: any lit beam between your feet and the top of your head trips the alarm
+    if(!w.lasersOff&&!DEV.ghost&&!G.alarm&&P.level===0&&inR(P.x,P.z,WO_HALL)){
+      if(P.x<4.1)tipOnce("woLaser","Laser lanes. Each one cycles: low beam (jump it), high beams (crouch under), all on (wait), all off (walk)","warn",4200);
+      const feet=P.jh,head=P.jh+P.eye+0.1;
+      for(const L of X.lanes){if(Math.abs(P.x-L.x)>0.3)continue;
+        for(const b of L.beams)if(b.b.visible&&b.y>feet&&b.y<head){triggerAlarm("You walked into a laser beam. Alarm!");break;}
+        if(G.alarm)break;}
+    }
+    // leave prints in fresh snow
+    if(!DEV.ghost&&!P.climb&&woOutdoor(P.x,P.z,P.level)&&!woOnPath(P.x,P.z)&&P.jh<0.1){
+      if(P.fpX==null){P.fpX=P.x;P.fpZ=P.z;}
+      const d=Math.hypot(P.x-P.fpX,P.z-P.fpZ);
+      if(d>0.62){const yaw=Math.atan2(P.x-P.fpX,P.z-P.fpZ),s=w.fpSide=-w.fpSide;
+        this.addPrint(P.x+Math.cos(yaw)*0.12*s,P.z-Math.sin(yaw)*0.12*s,yaw);P.fpX=P.x;P.fpZ=P.z;
+        tipOnce("woPrints","You're leaving footprints in the fresh snow. Guards who find them will follow them","warn",3200);}
+    }else{P.fpX=null;}
   },
   tick(dt){
     const X=this.X,w=G.w;if(!X||!w)return;
@@ -5309,43 +5391,15 @@ const MAP_WHITEOUT={
       if(w.windT<=3.2&&!w.warned){w.warned=true;if(state==="playing")noiseHit({type:"lowpass",freq:380,dur:2.6,vol:.08,attack:1.4});}
       if(w.windT<=0){w.gust=true;w.warned=false;w.gustT=10+Math.random()*5;w.gustN++;
         if(state==="playing"&&!w.gustTip){w.gustTip=true;toast("A gust hits the summit. Nobody outside can see far: move now","good",3000);}}}
-    scene.fog.density=0.022+w.k*0.075;
-    if(state==="playing"){w.windSnd-=dt;if(w.windSnd<=0){w.windSnd=w.k>0.2?0.55:1.8;noiseHit({type:"lowpass",freq:300+w.k*500,dur:w.k>0.2?1.0:2.2,vol:(woOutdoor(P.x,P.z,P.level)?1:0.35)*(0.025+w.k*0.11),attack:0.4});}}
-    // falling snow around the camera (drifts sideways in a gust); hidden indoors
-    {const s=X.sp,cx=camera.position.x,cy=camera.position.y,cz=camera.position.z,fall=1.2+w.k*1.6,drift=0.6+w.k*7;
-      X.snow.visible=!(P.level===0&&this.isInside(P.x,P.z))&&!(P.level===1&&inR(P.x,P.z,WO_OB)&&!inR(P.x,P.z,WO_BAL));
-      for(let i=0;i<X.SN;i++){let x=s[i*3]-dt*drift,y=s[i*3+1]-dt*fall*(0.8+(i%5)*0.1),z=s[i*3+2]+dt*drift*0.3;
-        if(y<cy-6||y<-0.2){y=cy+10+Math.random()*4;}if(x<cx-22)x+=44;if(x>cx+22)x-=44;if(z<cz-22)z+=44;if(z>cz+22)z-=44;
-        s[i*3]=x;s[i*3+1]=y;s[i*3+2]=z;}
-      X.snow.geometry.attributes.position.needsUpdate=true;X.snow.material.size=0.07+w.k*0.05;}
+    this.view(dt);
     // lasers
     const P5=4.8;
     for(const L of X.lanes){
       let st="off";if(!w.lasersOff){const ph=((G.world+L.off)%P5+P5)%P5;st=ph<1.2?"low":ph<2.4?"full":ph<3.6?"high":"off";}
       if(st!==L.state){L.state=st;for(const b of L.beams)b.b.visible=st==="full"||(st==="low"&&b.y<0.5)||(st==="high"&&b.y>1.0);L.led.color.setHex(w.lasersOff?0x40ff80:st==="off"?0x3a0808:0xff3a30);}
     }
-    // footprints fade (much faster in a gust)
-    if(w.prints.length){const snowC=new THREE.Color(0xdfe5ec),fpC=new THREE.Color(0x7a889c),c=new THREE.Color();let dirty=false;
-      w.prints=w.prints.filter(p=>{p.age+=dt*(1+w.k*6);const t=Math.min(1,p.age/110);c.copy(fpC).lerp(snowC,t*t);X.prints.setColorAt(p.i,c);dirty=true;
-        if(t>=1){X.prints.setMatrixAt(p.i,new THREE.Matrix4().makeScale(0,0,0));X.prints.instanceMatrix.needsUpdate=true;return false;}return true;});
-      if(dirty)X.prints.instanceColor.needsUpdate=true;}
+    this.fade(dt);
     if(state!=="playing")return;
-    // the laser lanes: any lit beam between your feet and the top of your head trips the alarm
-    if(!w.lasersOff&&!DEV.ghost&&!G.alarm&&P.level===0&&inR(P.x,P.z,WO_HALL)){
-      if(!w.laserTip&&P.x<4.1){w.laserTip=true;toast("Laser lanes. Each one cycles: low beam (jump it), high beams (crouch under), all on (wait), all off (walk)","warn",4200);}
-      const feet=P.jh,head=P.jh+P.eye+0.1;
-      for(const L of X.lanes){if(Math.abs(P.x-L.x)>0.3)continue;
-        for(const b of L.beams)if(b.b.visible&&b.y>feet&&b.y<head){triggerAlarm("You walked into a laser beam. Alarm!");break;}
-        if(G.alarm)break;}
-    }
-    // leave prints in fresh snow
-    if(!DEV.ghost&&!P.climb&&woOutdoor(P.x,P.z,P.level)&&!woOnPath(P.x,P.z)&&P.jh<0.1){
-      if(w.lastX==null){w.lastX=P.x;w.lastZ=P.z;}
-      const d=Math.hypot(P.x-w.lastX,P.z-w.lastZ);
-      if(d>0.62){const yaw=Math.atan2(P.x-w.lastX,P.z-w.lastZ),s=w.fpSide=-w.fpSide;
-        this.addPrint(P.x+Math.cos(yaw)*0.12*s,P.z-Math.sin(yaw)*0.12*s,yaw);w.lastX=P.x;w.lastZ=P.z;
-        if(!w.fpTip){w.fpTip=true;toast("You're leaving footprints in the fresh snow. Guards who find them will follow them","warn",3200);}}
-    }else{w.lastX=null;}
     // guards who come across fresh prints follow the trail
     if(!G.alarm)for(const g of guards){
       if(g.down||g.level!==0||g.security||g===w.fixer)continue;
@@ -6852,7 +6906,7 @@ function initCareerUI(){
 function resetGame(){
   const sp=LV.def.spawn;
   Object.assign(P,{x:sp.x,z:sp.z,yaw:sp.yaw||0,level:sp.lvl||0,y:(sp.lvl||0)*ROOF_Y,climb:null,ladder:null,onStair:false,jh:0,vy:0,gnd:0,fiddle:0,pitch:0,crouch:false,eye:1.65,bobT:0,carry:null,sprinting:false,kick:0,
-    masked:false,maskT:0,mag:MAG,reserve:MAG*3,reload:0,fireCD:0,aim:false,aimT:0,recoil:0,raise:0,wasRestricted:false,ties:LV.def.zipTies||0,shoutCD:0,jammers:JAMMERS,hasCard:false,hasGun:true,struggle:null,hp:PLAYER_HP,hurtT:9});
+    masked:false,maskT:0,mag:MAG,reserve:MAG*3,reload:0,fireCD:0,aim:false,aimT:0,recoil:0,raise:0,wasRestricted:false,ties:LV.def.zipTies||0,shoutCD:0,jammers:JAMMERS,hasCard:false,hasGun:true,struggle:null,hp:PLAYER_HP,hurtT:9,uniform:false,tips:{},fpX:null,fpZ:null});
   Object.assign(G,{time:0,lootT:0,susp:0,unseen:0,alarm:false,alarmT:ALARM_TIME,drill:0,drillWas:false,vaultOpen:false,doorAnim:0,secured:0,takedowns:0,kills:0,camsShot:0,shots:0,everAlarm:false,noise:0,shotNoise:0,blipT:0,bodies:[],secAlert:0,bagT:0,binned:0,
     loud:0,trail:[],trailBase:0,tieT:0,tied:0,civKills:0,callLine:-9,bodyHost:false,lastSpotter:null,secMsg:"",jamT:0,jamsUsed:0,jamBeep:0,loopHold:0,loops:0,picks:0,picking:false,pickScr:0,bang:null,civWatched:false});
   cams.forEach(c=>{c.dead=false;c.loopT=0;c.civDist=-1;c.cone.visible=true;c.spot.intensity=1.6;c.head.rotation.set(0.24,0,0);c.body.material=M.camBody;});
@@ -8355,7 +8409,7 @@ function stepGame(dt){
     if(!jamming())G.secAlert-=dt;
     if(G.secAlert<=0){G.secAlert=0;triggerAlarm(G.secMsg||"The security guard raised the alarm.");}
   }
-  if(LV.def.tick)tickMap(dt);
+  if(LV.def.tick||LV.def.tickP)tickMap(dt);
   careerTick(dt);if(!running())return;
   updateInvestigations(dt);
   updateCams(dt,false);
@@ -8401,7 +8455,7 @@ let last=performance.now();
    the host runs the guest's actions as the guest (P is swapped for the guest's state while their turn runs) and sends
    back how the world moved, the guest's HUD, sounds and messages. Both build the same map from the same random seed,
    so every object can be referred to by its place in the scene. */
-const COOP_MAPS=new Set(["spin","harbor","harborDay","meridian","meridianDay","club","jewel","jewelDay"]);
+const COOP_MAPS=new Set(Object.keys(MAPS));
 // moving things go 30 times a second on a lossy channel (a late update is useless, so it's never resent or waited for);
 // everything settles over the reliable channel 20 times a second once it stops changing
 const NET_HZ=20,FAST_HZ=30,HOT_T=0.6,SETTLE_T=0.3,PEER_PREFIX="cleangetaway-v1-";
@@ -8420,8 +8474,12 @@ function withPlayer(pl,kind,fn){
   try{return fn();}
   finally{saveTurn(pl);loadTurn(cur);CTX.pl=cur===ME?null:cur;CTX.cur=cur.local?null:cur;CTX.kind=pk;}
 }
-function saveTurn(pl){pl.P=P;pl.keys=keys;pl.pressedE=pressedE;pl.KP=KP;pl.cam=camera;for(const f of SWAP_G)pl.g[f]=G[f];for(const f of SWAP_IN)pl.in[f]=IN[f];}
-function loadTurn(pl){P=pl.P;keys=pl.keys;pressedE=pl.pressedE;KP=pl.KP;camera=pl.cam;for(const f of SWAP_G)G[f]=pl.g[f];for(const f of SWAP_IN)IN[f]=pl.in[f];}
+function saveTurn(pl){pl.P=P;pl.keys=keys;pl.pressedE=pressedE;pl.KP=KP;pl.cam=camera;for(const f of SWAP_G)pl.g[f]=G[f];for(const f of SWAP_IN)pl.in[f]=IN[f];
+  const ms=mapState();if(ms){pl.g.mHoldT=ms.holdT;pl.g.mHoldId=ms.holdId;}}
+function loadTurn(pl){P=pl.P;keys=pl.keys;pressedE=pl.pressedE;KP=pl.KP;camera=pl.cam;for(const f of SWAP_G)G[f]=pl.g[f];for(const f of SWAP_IN)IN[f]=pl.in[f];
+  const ms=mapState();if(ms){ms.holdT=pl.g.mHoldT||0;ms.holdId=pl.g.mHoldId||"";}}
+// the map's own state (G.m on the manor, G.t in the tower, ...): what a player is holding E on is kept per player
+function mapState(){const k=LV.def&&LV.def.st;return k?G[k]:null;}
 function others(){return PLAYERS.filter(p=>!p.local);}
 function active(){return PLAYERS.filter(p=>!p.out);}
 function eachPlayer(fn){if(!NET.host||PLAYERS.length<2){fn();return;}for(const pl of active())withPlayer(pl,"sim",fn);}
@@ -8451,12 +8509,17 @@ function seeAny(o,x,z,yaw,half,range,lvl){
   for(const pl of active()){const d=withPlayer(pl,"sim",()=>canSee(x,z,yaw,half,range,lvl));if(d>=0&&(bd<0||d<bd)){bd=d;o.focus=pl;}}
   return bd;
 }
-// the map runs once per frame; in co-op it runs half a frame as each player so its checks (lasers, sensors, ...) see both
+// the map's world runs once per frame (tick); its checks on a player (lasers, sensors, footprints: tickP) run as each player first
 function tickMap(dt){
-  if(!NET.host||PLAYERS.length<2){LV.def.tick(dt);return;}
-  for(const pl of others())if(!pl.out)withPlayer(pl,"sim",()=>LV.def.tick(dt/2));
-  LV.def.tick(dt/2);
+  const d=LV.def;
+  if(!NET.host||PLAYERS.length<2){if(d.tickP)d.tickP(dt);if(d.tick)d.tick(dt);return;}
+  if(d.tickP)for(const pl of active())withPlayer(pl,"sim",()=>d.tickP(dt));
+  if(d.tick)d.tick(dt);
 }
+// every player still in the job (just you in single player)
+function allP(){return NET.host&&PLAYERS.length>1?active().map(pl=>pl.P):[P];}
+// a tip shown once per player per job
+function tipOnce(k,msg,tone,ms){const t=P.tips||(P.tips={});if(t[k])return;t[k]=true;toast(msg,tone,ms);}
 function playerCaught(msg){
   if(!NET.on||PLAYERS.length<2){endGame(false,msg);return;}
   const pl=CTX.pl||ME;if(pl.out)return;
@@ -8493,13 +8556,13 @@ function resetRemote(pl,i){
   const sp=LV.def.spawn,a=(sp.yaw||0)+Math.PI/2,off=1.3*i;
   const p={x:sp.x+Math.cos(a)*off*-1,z:sp.z+Math.sin(a)*off};resolve(p,0.35,sp.lvl||0);
   Object.assign(pl.P,{x:p.x,z:p.z,yaw:sp.yaw||0,level:sp.lvl||0,y:(sp.lvl||0)*ROOF_Y,climb:null,ladder:null,onStair:false,jh:0,vy:0,gnd:0,fiddle:0,pitch:0,crouch:false,eye:1.65,bobT:0,carry:null,sprinting:false,kick:0,
-    masked:false,maskT:0,mag:MAG,reserve:MAG*3,reload:0,fireCD:0,aim:false,aimT:0,recoil:0,raise:0,wasRestricted:false,ties:LV.def.zipTies||0,shoutCD:0,jammers:JAMMERS,hasCard:false,locked:false,hp:PLAYER_HP,hurtT:9,struggle:null,hasGun:true});
-  Object.assign(pl.g,{hurtFlash:0,noise:0,shotNoise:0,loud:0,keypad:false,picking:false,pickScr:0,ladderTip:false,coins:COINS+(SK.coins||0),leaveT:0,tieT:0,loopHold:0,bagT:0,leaveBlock:false,trail:[],trailBase:0});
-  pl.KP={entry:"",busy:false};pl.out=false;pl.hd=false;pl.hdSeq++;pl.keys={};pl.pressedE=false;pl.hudLast={};pl.dom=hudClone();pl.lx=p.x;pl.lz=p.z;
+    masked:false,maskT:0,mag:MAG,reserve:MAG*3,reload:0,fireCD:0,aim:false,aimT:0,recoil:0,raise:0,wasRestricted:false,ties:LV.def.zipTies||0,shoutCD:0,jammers:JAMMERS,hasCard:false,locked:false,hp:PLAYER_HP,hurtT:9,struggle:null,hasGun:true,uniform:false,tips:{},fpX:null,fpZ:null});
+  Object.assign(pl.g,{hurtFlash:0,noise:0,shotNoise:0,loud:0,keypad:false,picking:false,pickScr:0,ladderTip:false,coins:COINS+(SK.coins||0),leaveT:0,tieT:0,loopHold:0,bagT:0,leaveBlock:false,trail:[],trailBase:0,mHoldT:0,mHoldId:""});
+  pl.KP={entry:"",busy:false};pl.out=false;pl.hd=false;pl.hdSeq++;pl.keys={};pl.pressedE=false;pl.hudLast={};pl.msLast=null;pl.dom=hudClone();pl.lx=p.x;pl.lz=p.z;
   if(pl.avatar)pl.avatar.root.visible=true;
 }
 function coopReset(){
-  ME.out=false;
+  ME.out=false;if(ME.g){ME.g.mHoldT=0;ME.g.mHoldId="";}
   if(NET.host)others().forEach((pl,i)=>resetRemote(pl,i+1));
   if(NET.guest){const pl={P:P,g:{}};resetSelfAsGuest();}
   for(const a of AVATARS.values())a.root.visible=true;
@@ -8514,7 +8577,7 @@ function hostPlayers(dt){
     if(pl.out)continue;
     withPlayer(pl,"act",()=>{
       // paths and ladders are driven here, the rest of the walking happens on the guest's device
-      const hd=!!(P.climb||P.ladder);
+      const hd=!!(P.climb||P.ladder||(LV.def.hostDrive&&LV.def.hostDrive()));
       if(P.struggle)updateStruggle(dt);
       if(hd){updatePlayer(dt);if(!pl.hd)pl.hdSeq++;}
       else if(pl.hd)pl.hdSeq++;
@@ -8626,9 +8689,17 @@ function syncBuild(){
   SYNC.objMat=SYNC.objs.map(o=>o.material&&!Array.isArray(o.material)?(SYNC.matIndex.get(o.material)??-1):-1);
   SYNC.last=SYNC.objs.map((o,i)=>[...objState(o),SYNC.objMat[i]]);SYNC.cur=SYNC.last.map(a=>a.slice());
   const cs=new Set(colliders);doors.forEach(d=>cs.add(d.col));if(VAULT&&VAULT.openCol)cs.add(VAULT.openCol);if(VAULT&&VAULT.col)cs.add(VAULT.col);
+  if(LV.def.X)scanCols(LV.def.X,cs,0);
   SYNC.cols=[...cs];SYNC.colIndex=new Map(SYNC.cols.map((c,i)=>[c,i]));SYNC.colKey=colKey();
   SYNC.doorLast=doors.map(doorState);SYNC.npcLast=npcs().map(npcState);SYNC.npcCur=SYNC.npcLast.map(a=>a.slice());SYNC.npcChg=SYNC.npcLast.map(()=>-9);
   SYNC.target=new Map();SYNC.built=true;
+}
+// walls the map keeps for later (in its X) are found the same way on both screens
+function scanCols(o,cs,depth){
+  if(!o||typeof o!=="object"||depth>3||o.isObject3D||o.isMaterial||o.isTexture||o.isBufferGeometry||ArrayBuffer.isView(o)||o instanceof Map||o instanceof Set)return;
+  if(Array.isArray(o)){for(const v of o)scanCols(v,cs,depth+1);return;}
+  if(typeof o.minX==="number"&&typeof o.maxZ==="number"){cs.add(o);return;}
+  for(const k of Object.keys(o))scanCols(o[k],cs,depth+1);
 }
 const r3=v=>Math.round(v*1000)/1000;
 function objState(o){return [r3(o.position.x),r3(o.position.y),r3(o.position.z),r3(o.rotation.x),r3(o.rotation.y),r3(o.rotation.z),r3(o.scale.x),o.isLight?1:(o.visible?1:0),o.isLight?r3(o.intensity):0];}
@@ -8944,6 +9015,7 @@ function hostSend(){
     p:[p.masked?1:0,p.carry?(p.carry.kind==="body"?2:p.carry.gold?3:1):0,p.mag,p.reserve,r3(p.reload),p.ties,p.jammers,p.locked?1:0,p.hasCard?1:0,pl.out?1:0,pl.hd?1:0,pl.hdSeq,
        r3(p.x),r3(p.y),r3(p.z),p.level,r3(p.jh),p.ladder?LADDERS.indexOf(p.ladder.l):-1,p.ladder?r3(p.ladder.y):0,p.climb?1:0,r3(p.maskT),p.struggle?1:0,Math.ceil(p.hp??PLAYER_HP)],
     a:poseOf(LP,ME.out),h:hudPacket(pl),e:pl.ev.splice(0)};
+  if(LV.def.netState){const ms=LV.def.netState(),k=JSON.stringify(ms);if(k!==pl.msLast){pl.msLast=k;snap.m=ms;}}
   NET.send(snap);
 }
 function guestSend(){
@@ -9011,11 +9083,13 @@ function guestSnap(d){
   showCarry();
   GS.pose=d.a;
   for(const [id,v] of Object.entries(d.h||{})){const e=document.getElementById(id);if(!e)continue;if(v[0]>=0)e.hidden=!!v[0];e.className=v[1];if(v[2]!=null)e.innerHTML=v[2];e.style.cssText=v[3];}
+  if(d.m&&LV.def.netApply)LV.def.netApply(d.m);
   for(const e of d.e||[])guestEvent(e);
 }
 function guestEvent(e){
   switch(e[0]){
     case "toast":toast(e[1],e[2],e[3]);break;
+    case "map":if(LV.def.netEvent)LV.def.netEvent(e.slice(1));break;
     case "sfx":if(SFX0[e[1]])SFX0[e[1]](...e[2]);break;
     case "pshot":partnerShot(e[1],e[2],e[3]);break;
     case "sub":showSub(e[1],e[2],e[3],e[4]);break;
@@ -9036,6 +9110,7 @@ function guestStep(dt){
     if(pressedE){netAct("E");pressedE=false;}
   }
   syncGlide(dt);
+  if(LV.def.guestView)LV.def.guestView(dt);
   updateThrows(dt);
   for(const s of sparks){if(!s.visible)continue;s.life-=dt;s.material.opacity=clamp(s.life*8,0,1);if(s.life<=0)s.visible=false;}
   // sounds the host's game makes by itself
