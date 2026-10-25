@@ -19,11 +19,13 @@ await G.keyboard.down('KeyG');
 await H.waitForFunction(()=>__qh.PLAYERS[1].P.masked,null,{timeout:T}).catch(()=>{});
 await G.keyboard.up('KeyG');
 await G.waitForFunction(()=>__qh.P.masked&&__qh.P.raise>0.95,null,{timeout:T}).catch(()=>{});
-const tgt=await H.evaluate(()=>{const q=__qh,p=q.PLAYERS[1].P,g=q.guards[1];g.route=[[p.x,p.z]];g.wait=99;g.level=p.level;
-  const fx=-Math.sin(p.yaw),fz=-Math.cos(p.yaw);g.x=p.x+fx*3;g.z=p.z+fz*3;g.yaw=p.yaw;return {x:g.x,z:g.z};});
+const tgt=await H.evaluate(()=>{const q=__qh,p=q.PLAYERS[1].P,g=q.guards[1];g.wait=99;g.level=p.level;
+  const fx=-Math.sin(p.yaw),fz=-Math.cos(p.yaw);g.x=p.x+fx*3;g.z=p.z+fz*3;g.yaw=p.yaw;g.route=[[g.x,g.z]];return {x:g.x,z:g.z};});
 await G.evaluate(s=>{const P=__qh.P;P.yaw=Math.atan2(-(s.x-P.x),-(s.z-P.z));P.pitch=-0.05;},tgt);
 await wait(1500);
 await H.evaluate(t=>{const g=__qh.guards[1];g.x=t.x;g.z=t.z;},tgt);
+// the guest's shot is judged against where the guard was on their screen: let him stand there a moment (host time)
+{const t0=await H.evaluate(()=>__qh.G.time);await H.waitForFunction(t=>__qh.G.time>t+0.6,t0,{timeout:T}).catch(()=>{});}
 await G.evaluate(()=>__qh.shoot());
 await H.waitForFunction(()=>__qh.guards[1].hp<2||__qh.guards[1].down,null,{timeout:T}).catch(()=>{});
 out.shot={hp:await H.evaluate(()=>__qh.guards[1].hp),hostMag:await H.evaluate(()=>__qh.PLAYERS[1].P.mag)};

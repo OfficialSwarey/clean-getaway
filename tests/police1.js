@@ -13,8 +13,8 @@ const setup=`q.setMode("free");q.pickMap("harbor");q.resetGame();q.setState("pla
   q.G.vanTake=40000;q.G.secured=1;`;
 out.arrive=await run(setup+`q.triggerAlarm("test");q.G.alarmT=0.05;step(3);
   const r={police:!!q.G.police,banked:q.G.banked,onFoot:q.onFoot(),vanHidden:q.VAN_PARTS.every(o=>!o.visible),toast:toastT(),clock:document.getElementById("clockLbl").textContent};
-  step(100);r.cops=q.COPS.length;r.wave=q.G.police.wave;r.clockVal=document.getElementById("clockVal").textContent;
-  const d0=Math.min(...q.COPS.map(c=>Math.hypot(c.x-q.P.x,c.z-q.P.z)));step(300);const d1=Math.min(...q.COPS.map(c=>Math.hypot(c.x-q.P.x,c.z-q.P.z)));
+  step(100);r.cops=q.activeCops().length;r.wave=q.G.police.wave;r.clockVal=document.getElementById("clockVal").textContent;
+  const d0=Math.min(...q.activeCops().map(c=>Math.hypot(c.x-q.P.x,c.z-q.P.z)));step(300);const d1=Math.min(...q.activeCops().map(c=>Math.hypot(c.x-q.P.x,c.z-q.P.z)));
   r.closing=[+d0.toFixed(1),+d1.toFixed(1)];r.hp=Math.round(q.P.hp);r.hpChip=document.getElementById("hpChip").textContent;r.state=q.state;return r;`);
 // shoot an officer: three body hits
 out.shootCop=await run(setup+`q.triggerAlarm("t");q.G.alarmT=0.05;step(3);step(100);const c=q.COPS[0];c.x=q.P.x;c.z=q.P.z-4;c.level=0;c.fireT=99;q.P.yaw=0;q.P.pitch=-0.12;q.P.raise=1;q.P.mag=12;step(2);

@@ -11,9 +11,9 @@ for(const m of ["spin","harbor","harborDay","meridian","meridianDay","club","jew
     // a trail: ten metres in from the start
     for(let i=0;i<34;i++)q.G.trail.push({x:sp.x+fx*i*0.3,z:sp.z+fz*i*0.3,l:sp.lvl||0});go(sp.x+fx*10,sp.z+fz*10,sp.lvl||0,sp.yaw||0);
     q.G.vanTake=30000;q.G.secured=1;q.triggerAlarm("t");q.G.alarmT=0.05;step(3);
-    const r={onFoot:q.onFoot(),banked:q.G.banked,spawn:q.G.police.spawn};step(120);r.cops=q.COPS.length;
-    const d0=Math.min(...q.COPS.map(c=>Math.hypot(c.x-q.P.x,c.z-q.P.z)));step(240);const d1=Math.min(...q.COPS.map(c=>Math.hypot(c.x-q.P.x,c.z-q.P.z)));
+    const r={onFoot:q.onFoot(),banked:q.G.banked,spawn:q.G.police.spawn};step(120);r.cops=q.activeCops().length;
+    const d0=Math.min(...q.activeCops().map(c=>Math.hypot(c.x-q.P.x,c.z-q.P.z)));step(240);const d1=Math.min(...q.activeCops().map(c=>Math.hypot(c.x-q.P.x,c.z-q.P.z)));
     r.dist=[+d0.toFixed(1),+d1.toFixed(1)];r.hp=Math.round(q.P.hp);r.state=q.state;
-    q.P.hp=100;q.G.police.next=0;step(2);r.wave2=q.COPS.length;return r;`)));
+    q.P.hp=100;q.G.police.next=0;step(2);r.wave2=q.activeCops().length;return r;`)));
 }
 console.log(errs.join("\n")||"no errors");await b.close();})();

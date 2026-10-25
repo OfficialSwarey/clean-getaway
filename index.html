@@ -722,7 +722,7 @@ const colliders=[],doors=[],bins=[],cams=[],guards=[],civs=[],bags=[],transition
 const minLevel=()=>(LV.def.levels||[0,0])[0],maxLevel=()=>(LV.def.levels||[0,0])[1];
 const onRoof=()=>!LV.def.multi&&P.level===1;
 const levelOfY=y=>Math.floor((y+0.5)/ROOF_Y);
-function npcs(){return civs.length?guards.concat(civs):guards;}
+function npcs(){return guards.concat(civs,COPS);}
 let VAN_Y=0.82;
 let secGuard=null,VAULT=null,SECURE={x:0,z:0},VAN_SLOTS=[],BAG_SPOTS=[],DRILL_POS={x:0,z:0},ring=null;
 const DRILL_NOISE=6;
@@ -1105,7 +1105,7 @@ class Guard{
     return null;
   }
   knockDown(killed){
-    this.down=true;this.dead=killed;this.wounded=0;this.reportT=0;this.spot.intensity=0;this.sprite.visible=false;this.seeDist=-1;this.bodyDist=-1;this.heard=null;
+    this.down=true;this.downAt=G.world;this.dead=killed;this.wounded=0;this.reportT=0;this.spot.intensity=0;this.sprite.visible=false;this.seeDist=-1;this.bodyDist=-1;this.heard=null;
     this.seated=false;this.body.position.y=0;
     if(!G.alarm)this.pager={state:"pending",t:PAGER_DELAY,beepT:0}; // dispatch will check in on him
     if(this.security&&!G.alarm){G.secAlert=0;toast("Security guard down. The cameras are offline","good",2400);}
@@ -1204,6 +1204,12 @@ class Guard{
   // police: follow the trail you left until they can see you, then shoot
   copUpdate(dt){
     this.seeDist=-1;this.bodyDist=-1;this.sprite.visible=false;
+    // in co-op the player he's after can change: pick up that player's trail where he can see it
+    const owner=CTX.pl||ME;
+    if(this.tiOwner!==owner){
+      if(this.tiOwner){let best=-1,bd=1e9;for(let i=G.trail.length-1;i>=0&&i>G.trail.length-250;i--){const t=G.trail[i];if((t.l||0)!==this.level)continue;const dd=Math.hypot(t.x-this.x,t.z-this.z);if(dd<bd&&!blocked(this.x,this.z,t.x,t.z,0.5,this.level)){bd=dd;best=i;}}this.ti=best>=0?G.trailBase+best:G.trailBase+Math.max(0,G.trail.length-1);}
+      this.tiOwner=owner;
+    }
     const d=Math.hypot(P.x-this.x,P.z-this.z);
     const vis=!DEV.ghost&&!P.out&&this.level===P.level&&d<26&&!blocked(this.x,this.z,P.x,P.z,1.3,this.level);
     if(vis){
@@ -5609,6 +5615,7 @@ function buildMap(id){
   for(const s of BAG_SPOTS){const m=makeLoot(s.gold);m.userData.noHit=true;lvAdd(m);bags.push({kind:"loot",mesh:m,state:"ground",level:s.lvl||0,gold:!!s.gold,box:s.box||null,bagged:false});}
   for(const sp of (def.cash||[]))makeCashPile(sp);
   for(const g of guards.concat(civs)){const m=makeBodyBag();m.visible=false;m.userData.noHit=true;lvAdd(m);g.item={kind:"body",guard:g,mesh:m,state:"none",level:g.level};}
+  makeCopPool();
   const mb=def.moon||32;Object.assign(moon.shadow.camera,{left:-mb,right:mb,top:mb,bottom:-mb});moon.shadow.camera.updateProjectionMatrix();
   sbBuild();lmBuild();
   rebuildHitList();
@@ -6020,6 +6027,7 @@ function stepSound(x,z,vol,pan,lp,lvl){
   if(s.ping)tone({type:"sine",f0:1900+Math.random()*300,f1:1700,dur:.12,vol:vol*0.1,pan,lp});
 }
 const SFX={
+  copShot(x,z,lvl){const s=spatial(x,z,45,lvl)||{vol:.3,pan:0};noiseHit({freq:1500,q:.7,dur:.16,vol:.5*s.vol+.08,pan:s.pan});tone({type:"square",f0:170,f1:50,dur:.14,vol:.22*s.vol+.02,pan:s.pan});},
   takedown(x,z){const s=spatial(x,z,20)||{pan:0};noiseHit({type:"lowpass",freq:180,dur:.25,vol:.9,pan:s.pan});tone({type:"sine",f0:120,f1:45,dur:.3,vol:.6,pan:s.pan});noiseHit({freq:600,q:.8,dur:.12,vol:.3,delay:.05,pan:s.pan});},
   whiff(){noiseHit({type:"highpass",freq:1800,q:.6,dur:.14,vol:.18,attack:.03});},
   hear(x,z,l){const s=spatial(x,z,25,l);if(!s)return;tone({type:"triangle",f0:170,f1:250,dur:.3,vol:.3*s.vol+.05,pan:s.pan,lp:s.lp||1200});},
@@ -7283,7 +7291,7 @@ const pinTxt=(o,total)=>`Picking the lock… pin ${Math.min(PINS,Math.floor(o.pi
 // F: take down a guard right in front of you, otherwise (day jobs) shout at civilians
 function takedownTarget(){
   const fx=-Math.sin(P.yaw),fz=-Math.cos(P.yaw);let best=null,bd=1e9;
-  for(const g of guards){if(g.down||g.level!==P.level)continue;const dx=g.x-P.x,dz=g.z-P.z,d=Math.hypot(dx,dz);
+  for(const g of guards.concat(activeCops())){if(g.down||g.level!==P.level)continue;const dx=g.x-P.x,dz=g.z-P.z,d=Math.hypot(dx,dz);
     if(d<(SK.hands?2.5:2.0)&&(dx*fx+dz*fz)/d>0.45&&d<bd){best=g;bd=d;}}
   return best;
 }
@@ -7470,7 +7478,7 @@ function startStruggle(g){
   SFX.whiff();toast(`${g.name||"A guard"} has you! Mash ${inputSrc()==="touch"?"BREAK FREE":inputSrc()==="pad"?"Y":"F"} to break free`,"bad",1800);
 }
 function updateStruggle(dt){
-  const s=P.struggle;if(!s)return;
+  const s=P.struggle;if(!s||NET.guest)return;
   if(s.g.down){P.struggle=null;return;}
   s.t-=dt;
   if(s.t<=0){P.struggle=null;s.g.grab=null;playerCaught("A guard got the cuffs on you.");}
@@ -7483,7 +7491,7 @@ function tryTakedown(){
   if(!P.masked){toast("Put on your mask first. Hold G","warn");return;}
   const fx=-Math.sin(P.yaw),fz=-Math.cos(P.yaw);
   let best=null,bd=1e9;
-  for(const g of guards){if(g.down||g.level!==P.level)continue;const dx=g.x-P.x,dz=g.z-P.z,d=Math.hypot(dx,dz);
+  for(const g of guards.concat(activeCops())){if(g.down||g.level!==P.level)continue;const dx=g.x-P.x,dz=g.z-P.z,d=Math.hypot(dx,dz);
     if(d<(SK.hands?2.5:2.0)&&(dx*fx+dz*fz)/d>0.45&&d<bd){best=g;bd=d;}}
   P.kick=1;
   if(!best){SFX.whiff();return;}
@@ -8123,17 +8131,31 @@ function showSub(who,txt,ms,label){
    They come from where the van is (or was), pick up the trail you left and follow it to you. Your driver doesn't wait
    for them: he leaves with whatever is already in the van (that money is yours whatever happens next), and you get out
    on foot the way you came in. Co-op keeps the old rule for now: when the police arrive, the job is over. */
-const COP_FIRE=1.4,COP_WAVE_T=35,COP_MAX=6,COP_WAVES=[2,3,4],PLAYER_HP=100;
+const COP_FIRE=1.4,COP_WAVE_T=35,COP_MAX=6,COP_POOL=10,COP_WAVES=[2,3,4],PLAYER_HP=100;
 const copUni=phong(0x1c2c4d),copCapM=phong(0x10182a);
 let COPS=[];
-function clearCops(){for(const c of COPS){LV.group.remove(c.root);if(c.item)LV.group.remove(c.item.mesh);const i=guards.indexOf(c);if(i>=0)guards.splice(i,1);}if(COPS.length)rebuildHitList();COPS=[];}
+// built with the map, parked out of sight; a wave takes officers from here
+function makeCopPool(){
+  COPS=[];
+  for(let i=0;i<COP_POOL;i++){
+    const g=new Guard([[900+i*3,900]],0,{police:true,name:"Officer",flashShadow:false});
+    guards.pop();   // officers aren't guards: they don't patrol, check pagers or find bodies
+    g.police=true;g.body.remove(g.spot);g.spot={intensity:0,castShadow:false};
+    g.root.traverse(o=>{if(o.material===M.uni)o.material=copUni;else if(o.material===M.cap)o.material=copCapM;});
+    const m=makeBodyBag();m.visible=false;m.userData.noHit=true;lvAdd(m);g.item={kind:"body",guard:g,mesh:m,state:"none",level:0};
+    COPS.push(g);parkCop(g);
+  }
+}
+function parkCop(g){const i=COPS.indexOf(g);Object.assign(g,{active:false,down:true,dead:false,x:900+i*3,z:900,level:0,fall:0,bagged:false,stagger:0,grab:null});g.root.visible=false;g.root.position.set(g.x,0,g.z);g.body.rotation.x=0;if(g.item){g.item.state="none";g.item.mesh.visible=false;}}
+function clearCops(){COPS.forEach(parkCop);}
+const activeCops=()=>COPS.filter(c=>c.active);
 function spawnCop(x,z,lvl,ti){
-  const g=new Guard([[x,z]],0,{police:true,name:"Officer",level:lvl,flashShadow:false});
-  g.police=true;g.hp=3;g.fireT=1.4+Math.random()*0.8;g.ti=ti;g.spot.intensity=0;g.spot.castShadow=false;g.pager=null;
-  g.root.traverse(o=>{if(o.material===M.uni)o.material=copUni;else if(o.material===M.cap)o.material=copCapM;});
-  g.root.traverse(o=>{if(o.isMesh)hitList.push(o);});
-  {const m=makeBodyBag();m.visible=false;m.userData.noHit=true;lvAdd(m);g.item={kind:"body",guard:g,mesh:m,state:"none",level:lvl};}
-  COPS.push(g);return g;
+  // a free officer, or the one who has been down the longest
+  let g=COPS.find(c=>!c.active)||COPS.filter(c=>c.down).sort((a,b)=>a.downAt-b.downAt)[0];if(!g)return null;
+  Object.assign(g,{active:true,down:false,dead:false,fall:0,hp:3,level:lvl,x,z,yaw:0,stagger:0,grab:null,bagged:false,wounded:0,reportT:0,pager:null,
+    fireT:1.4+Math.random()*0.8,ti,tiOwner:null,route:[[x,z]],speedNow:0,seated:false});
+  g.body.rotation.x=0;g.body.position.y=0;g.root.visible=true;g.sprite.visible=false;if(g.item){g.item.state="none";g.item.mesh.visible=false;}
+  g.sync(0);return g;
 }
 function policeArrive(){
   G.police={wave:0,next:3};
@@ -8155,31 +8177,30 @@ function policeArrive(){
 }
 function spawnWave(){
   const po=G.police;po.wave++;const n=COP_WAVES[Math.min(po.wave-1,COP_WAVES.length-1)];
-  const k=Math.min(n,COP_MAX-COPS.filter(c=>!c.down).length);if(k<=0)return;
+  const k=Math.min(n,COP_MAX-COPS.filter(c=>c.active&&!c.down).length);if(k<=0)return;
   const sp=po.spawn;
   for(let i=0;i<k;i++){const p={x:sp.x+(i-(k-1)/2)*0.9,z:sp.z+(i%2?0.8:0)};resolve(p,0.3,sp.lvl);spawnCop(p.x,p.z,sp.lvl,sp.ti);}
   if(po.wave>1)toast(`More police · wave ${po.wave}`,"bad",2000);
 }
 function copShoot(c,d){
-  const s=spatial(c.x,c.z,45,c.level)||{vol:.3,pan:0};
-  noiseHit({freq:1500,q:.7,dur:.16,vol:.5*s.vol+.08,pan:s.pan});tone({type:"square",f0:170,f1:50,dur:.14,vol:.22*s.vol+.02,pan:s.pan});
+  SFX.copShot(c.x,c.z,c.level);
   c.armL.rotation.x=-1.7;
   const moving=keys.KeyW||keys.KeyA||keys.KeyS||keys.KeyD||IN.mag>0.1;
   const hit=clamp(0.66-d*0.022-(P.crouch?0.15:0)-(P.sprinting?0.2:moving?0.08:0),0.08,0.66);
   if(Math.random()<hit)hurtPlayer((6+Math.random()*5)*DIFF.det);
 }
 function hurtPlayer(n){
-  if(DEV.ghost||state!=="playing"||P.out)return;
+  if(DEV.ghost||!running()||P.out||(CTX.pl&&CTX.pl.out))return;
   P.hp=Math.max(0,P.hp-n);P.hurtT=0;G.hurtFlash=1;SFX.flesh(P.x,P.z);
-  if(P.hp<=0)endGame(false,"You went down. The police took you in.");
+  if(P.hp<=0){if(NET.on&&PLAYERS.length>1)playerCaught("You went down. The police took you in.");else endGame(false,"You went down. The police took you in.");}
 }
 function updateAlarm(dt){
   // health comes back slowly once nobody has hit you for a while
-  P.hurtT=(P.hurtT||0)+dt;if(P.hurtT>5&&P.hp<PLAYER_HP)P.hp=Math.min(PLAYER_HP,P.hp+5*dt);G.hurtFlash=Math.max(0,(G.hurtFlash||0)-dt*2.5);
+  eachPlayer(()=>{P.hurtT=(P.hurtT||0)+dt;if(P.hurtT>5&&P.hp<PLAYER_HP)P.hp=Math.min(PLAYER_HP,P.hp+5*dt);G.hurtFlash=Math.max(0,(G.hurtFlash||0)-dt*2.5);});
   if(!G.alarm)return;
   if(G.police){G.police.next-=dt;if(G.police.next<=0){spawnWave();G.police.next=COP_WAVE_T;}return;}
   G.alarmT-=dt;
-  if(G.alarmT<=0){G.alarmT=0;if(NET.on){endGame(false,"The police arrived before you got away.");return;}policeArrive();}
+  if(G.alarmT<=0){G.alarmT=0;policeArrive();}
 }
 const fmt=s=>{s=Math.max(0,Math.ceil(s));return String(Math.floor(s/60)).padStart(2,"0")+":"+String(s%60).padStart(2,"0");};
 const fmtUp=s=>{s=Math.floor(s);return String(Math.floor(s/60)).padStart(2,"0")+":"+String(s%60).padStart(2,"0");};
@@ -8339,6 +8360,7 @@ function stepGame(dt){
   updateInvestigations(dt);
   updateCams(dt,false);
   for(const g of guards){npcUpdate(g,dt);if(!running())return;}
+  for(const g of COPS){if(!g.active)continue;npcUpdate(g,dt);if(!running())return;}
   for(const c of civs){npcUpdate(c,dt);if(!running())return;}
   updateDetection(dt);
   if(!ME.out)asLocal(()=>updateInteraction(dt));else setPrompt(null);
@@ -8383,7 +8405,7 @@ const COOP_MAPS=new Set(["spin","harbor","harborDay","meridian","meridianDay","c
 // moving things go 30 times a second on a lossy channel (a late update is useless, so it's never resent or waited for);
 // everything settles over the reliable channel 20 times a second once it stops changing
 const NET_HZ=20,FAST_HZ=30,HOT_T=0.6,SETTLE_T=0.3,PEER_PREFIX="cleangetaway-v1-";
-const SWAP_G=["noise","shotNoise","loud","keypad","picking","pickScr","ladderTip","coins","leaveT","tieT","loopHold","bagT","lootT","leaveBlock","trail","trailBase"];
+const SWAP_G=["noise","shotNoise","loud","keypad","picking","pickScr","ladderTip","coins","leaveT","tieT","loopHold","bagT","lootT","leaveBlock","trail","trailBase","hurtFlash"];
 const SWAP_IN=["fwd","right","mag","sprint","src","objHide","objPeek","objKey"];
 const ME={id:0,local:true,P:LP,keys:null,pressedE:false,KP:null,cam:camera,g:{},in:{},out:false};
 const PLAYERS=[ME];
@@ -8464,15 +8486,15 @@ function newRemote(id){
 }
 function hudClone(){
   const map={};
-  for(const id of ["hud","alarmEdge","maskEdge","seenEdge"]){const c=document.getElementById(id).cloneNode(true);map[id]=c;c.querySelectorAll("[id]").forEach(e=>map[e.id]=e);}
+  for(const id of ["hud","alarmEdge","maskEdge","seenEdge","hurtEdge"]){const c=document.getElementById(id).cloneNode(true);map[id]=c;c.querySelectorAll("[id]").forEach(e=>map[e.id]=e);}
   return map;
 }
 function resetRemote(pl,i){
   const sp=LV.def.spawn,a=(sp.yaw||0)+Math.PI/2,off=1.3*i;
   const p={x:sp.x+Math.cos(a)*off*-1,z:sp.z+Math.sin(a)*off};resolve(p,0.35,sp.lvl||0);
   Object.assign(pl.P,{x:p.x,z:p.z,yaw:sp.yaw||0,level:sp.lvl||0,y:(sp.lvl||0)*ROOF_Y,climb:null,ladder:null,onStair:false,jh:0,vy:0,gnd:0,fiddle:0,pitch:0,crouch:false,eye:1.65,bobT:0,carry:null,sprinting:false,kick:0,
-    masked:false,maskT:0,mag:MAG,reserve:MAG*3,reload:0,fireCD:0,aim:false,aimT:0,recoil:0,raise:0,wasRestricted:false,ties:LV.def.zipTies||0,shoutCD:0,jammers:JAMMERS,hasCard:false,locked:false});
-  Object.assign(pl.g,{noise:0,shotNoise:0,loud:0,keypad:false,picking:false,pickScr:0,ladderTip:false,coins:COINS+(SK.coins||0),leaveT:0,tieT:0,loopHold:0,bagT:0,leaveBlock:false,trail:[],trailBase:0});
+    masked:false,maskT:0,mag:MAG,reserve:MAG*3,reload:0,fireCD:0,aim:false,aimT:0,recoil:0,raise:0,wasRestricted:false,ties:LV.def.zipTies||0,shoutCD:0,jammers:JAMMERS,hasCard:false,locked:false,hp:PLAYER_HP,hurtT:9,struggle:null,hasGun:true});
+  Object.assign(pl.g,{hurtFlash:0,noise:0,shotNoise:0,loud:0,keypad:false,picking:false,pickScr:0,ladderTip:false,coins:COINS+(SK.coins||0),leaveT:0,tieT:0,loopHold:0,bagT:0,leaveBlock:false,trail:[],trailBase:0});
   pl.KP={entry:"",busy:false};pl.out=false;pl.hd=false;pl.hdSeq++;pl.keys={};pl.pressedE=false;pl.hudLast={};pl.dom=hudClone();pl.lx=p.x;pl.lz=p.z;
   if(pl.avatar)pl.avatar.root.visible=true;
 }
@@ -8493,6 +8515,7 @@ function hostPlayers(dt){
     withPlayer(pl,"act",()=>{
       // paths and ladders are driven here, the rest of the walking happens on the guest's device
       const hd=!!(P.climb||P.ladder);
+      if(P.struggle)updateStruggle(dt);
       if(hd){updatePlayer(dt);if(!pl.hd)pl.hdSeq++;}
       else if(pl.hd)pl.hdSeq++;
       pl.hd=hd;
@@ -8873,10 +8896,10 @@ function hostState(pl,d){
   pl.g.noise=noise;
   // breadcrumbs for hostages following them
   const tl=pl.g.trail[pl.g.trail.length-1];
-  if(!tl||Math.hypot(x-tl.x,z-tl.z)>0.35){pl.g.trail.push({x,z});if(pl.g.trail.length>600){pl.g.trail.shift();pl.g.trailBase++;}}
+  if(!tl||Math.hypot(x-tl.x,z-tl.z)>0.35||tl.l!==level){pl.g.trail.push({x,z,l:level});if(pl.g.trail.length>600){pl.g.trail.shift();pl.g.trailBase++;}}
 }
 // [id, send its contents, send hidden]
-const HUD_SYNC=[["hud",0,0],["detect",1,1],["clock",1,1],["obj",1,1],["status",1,1],["prompt",1,1],["keypad",0,1],["kpScreen",1,1],["kpTitle",1,1],["alarmEdge",0,1],["maskEdge",0,1],["seenEdge",0,1]];
+const HUD_SYNC=[["hud",0,0],["detect",1,1],["clock",1,1],["obj",1,1],["status",1,1],["prompt",1,1],["keypad",0,1],["kpScreen",1,1],["kpTitle",1,1],["alarmEdge",0,1],["maskEdge",0,1],["seenEdge",0,1],["hurtEdge",0,0]];
 function hudPacket(pl){
   const out={},L=pl.hudLast;
   for(const [id,inner,hid] of HUD_SYNC){
@@ -8919,7 +8942,7 @@ function hostSend(){
   const snap={t:"snap",tm:r3(G.time),s:syncDiff(),
     g:[G.alarm?1:0,r3(G.alarmT),G.drilling?1:0,G.vaultOpen?1:0,r3(G.susp),r3(G.jamT),pl.g.keypad?1:0,pl.g.coins,state==="paused"?1:0],
     p:[p.masked?1:0,p.carry?(p.carry.kind==="body"?2:p.carry.gold?3:1):0,p.mag,p.reserve,r3(p.reload),p.ties,p.jammers,p.locked?1:0,p.hasCard?1:0,pl.out?1:0,pl.hd?1:0,pl.hdSeq,
-       r3(p.x),r3(p.y),r3(p.z),p.level,r3(p.jh),p.ladder?LADDERS.indexOf(p.ladder.l):-1,p.ladder?r3(p.ladder.y):0,p.climb?1:0,r3(p.maskT)],
+       r3(p.x),r3(p.y),r3(p.z),p.level,r3(p.jh),p.ladder?LADDERS.indexOf(p.ladder.l):-1,p.ladder?r3(p.ladder.y):0,p.climb?1:0,r3(p.maskT),p.struggle?1:0,Math.ceil(p.hp??PLAYER_HP)],
     a:poseOf(LP,ME.out),h:hudPacket(pl),e:pl.ev.splice(0)};
   NET.send(snap);
 }
@@ -8974,7 +8997,7 @@ function guestSnap(d){
   if(G.alarm&&!wasAlarm){G.everAlarm=true;}
   const p=d.p;
   P.masked=!!p[0];P.carry=p[1]?{kind:p[1]===2?"body":"loot",gold:p[1]===3}:null;P.mag=p[2];P.reserve=p[3];P.reload=p[4];P.ties=p[5];P.jammers=p[6];P.locked=!!p[7];P.hasCard=!!p[8];
-  P.maskT=p[20];
+  P.maskT=p[20];P.struggle=p[21]?(P.struggle||{g:{down:false},t:9,n:0}):null;P.hp=p[22]??PLAYER_HP;
   if(!!p[9]!==!!GS.out){GS.out=!!p[9];}
   const hd=!!p[10];
   if(hd){
