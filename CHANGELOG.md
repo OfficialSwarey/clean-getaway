@@ -5,6 +5,13 @@ feature round bumps MINOR, a bug-fix-only update bumps PATCH, and 1.0.0 is
 the first "finished" release. Up to 0.30.0, MINOR is the version number the
 claude.ai artifact had. Releases are tagged `v0.30.0` and so on.
 
+## 0.37.0 — police in co-op, faster co-op netcode
+- **The police come in co-op too:** when the alarm timer runs out, armed police arrive in waves for both players, follow the trail of whoever they're after and shoot at whoever they can see. Each player has their own health (the guest sees their own health and the red edges when hit). A player who goes down is in custody, and the other can still finish the job and get out. The guest can knock officers out, shoot them, and break free when grabbed.
+- **The driver leaves in co-op too:** when the police arrive he drives off with what's in the van (paid even if you're both busted), and you leave on foot the way you came in.
+- **Smoother co-op over the internet:** moving things are sent 30 times a second (was 20) over a fast channel that never waits for lost packets, so one dropped packet no longer holds up the rest. Doors and things that stopped moving are still sent reliably, so they always end up right.
+- **Fair shots for the guest:** the host checks a guest's shot against where everyone was on the guest's screen, so you hit what you aimed at even with some lag.
+- **Own relay servers:** `TURN_SERVERS` in the game's code takes your own TURN relay for players who can't connect directly (see the README).
+
 ## 0.36.0 — Spin Cycle
 - **New short job, Spin Cycle:** Suds & Spin, a 24-hour laundromat a loan shark washes his money through. It's open all night: walk in with the night customers; the drying room and the office in the back are staff only.
   - Two of the five big dryers in the drying room are stuffed with cash. A pick-up ticket pinned up somewhere (a new spot every run) says which two. Open an empty one and its door buzzer goes off: guards nearby come to look.

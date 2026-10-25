@@ -605,7 +605,7 @@ body.coop-guest .diffs{pointer-events:none;opacity:.6}
       <p class="lbl">Touch</p>
       <p>Left thumb: the joystick appears where you touch (push past the ring to sprint). Drag anywhere on the right to look. The buttons on the right change with what you can do; USE glows when there's something to use. Tap the keypad keys directly. OBJ (under the pause button) folds the objective away; a new objective still pops up for a few seconds, and urgent warnings always show.</p>
       <p class="lbl">Co-op</p>
-      <p>Two players, each on their own device. One presses <b>Host</b> and tells the other the code; the other types it and presses <b>Join</b>. The host picks the job and starts it. Guards and cameras notice both of you, and the detection meter, the alarm and the take are shared. If a guard catches one of you, the other can still finish the job. The getaway waits until you're both there. Co-op works on the bank, club and jeweller's jobs for now.</p>
+      <p>Two players, each on their own device. One presses <b>Host</b> and tells the other the code; the other types it and presses <b>Join</b>. The host picks the job and starts it. Guards and cameras notice both of you, and the detection meter, the alarm and the take are shared. If a guard catches one of you, the other can still finish the job. The getaway waits until you're both there. When the police come, each of you has your own health; whoever goes down is in custody and the other plays on. Co-op works on the bank, club, laundromat and jeweller's jobs for now.</p>
       <ul class="tips">
         <li>Outside without a mask you're just someone on the street. Inside a closed building, in a staff-only area or on a roof, anyone who sees you fills the detection meter, mask or not.</li>
         <li>Day jobs: the public areas are open, so walk in unmasked and look around. Behind counters and staff doors is off limits, and staff and guards notice you back there.</li>
@@ -651,7 +651,7 @@ body.coop-guest .diffs{pointer-events:none;opacity:.6}
 // Co-op: the same code runs for every player by swapping who P is. CTX.cur is the player whose turn it is (null = you);
 // HUD writes during another player's turn go to that player's copy of the HUD, which is sent to them.
 const CTX={cur:null,kind:null,pl:null};
-const GAME_VERSION="0.36.0";
+const GAME_VERSION="0.37.0";
 const NET={on:false,host:false,guest:false,send:null,close:null,code:"",busy:false,waiting:false,started:false,acc:0,remote:null,ending:false};
 const $=id=>(CTX.cur&&CTX.cur.dom&&CTX.cur.dom[id])||document.getElementById(id);
 // a timer started during another player's turn runs as that player
@@ -8130,7 +8130,7 @@ function showSub(who,txt,ms,label){
 /* ================= the police: when the alarm runs out they arrive, in waves, and they shoot =================
    They come from where the van is (or was), pick up the trail you left and follow it to you. Your driver doesn't wait
    for them: he leaves with whatever is already in the van (that money is yours whatever happens next), and you get out
-   on foot the way you came in. Co-op keeps the old rule for now: when the police arrive, the job is over. */
+   on foot the way you came in. In co-op the officers hunt both players; each has their own health. */
 const COP_FIRE=1.4,COP_WAVE_T=35,COP_MAX=6,COP_POOL=10,COP_WAVES=[2,3,4],PLAYER_HP=100;
 const copUni=phong(0x1c2c4d),copCapM=phong(0x10182a);
 let COPS=[];
