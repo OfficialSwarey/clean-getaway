@@ -6,14 +6,15 @@ const {setup,wait}=require('./coopH');
 (async()=>{
 const {H,G,errs,close,T,ctx,url}=await setup('harbor',null,{noStart:true});
 const out={};
-const click=(pg,sel)=>pg.evaluate(s=>{const e=document.querySelector(s);if(!e)return false;e.click();return true;},sel);
+const click=async(pg,sel)=>{await pg.waitForFunction(s=>!!document.querySelector(s),sel,{timeout:T}).catch(()=>{console.log('missing',sel));return pg.evaluate(s=>{const e=document.querySelector(s);if(!e)return false;e.click();return true;},sel);};
+process.on('unhandledRejection',e=>{console.log('FAILED',e.message.split('\n')[0]);console.log(JSON.stringify(out,null,1));console.log(errs.join('\n'));process.exit(1);});
 const hostWait=async s=>{const t0=await H.evaluate(()=>__qh.G.time);await H.waitForFunction(([t,s])=>__qh.G.time>t+s,[t0,s],{timeout:T}).catch(()=>{});};
 await H.waitForFunction(()=>__qh.NET.remote&&__qh.NET.remote.pid,null,{timeout:T}).catch(()=>{});
 out.pids={host:await H.evaluate(()=>__qh.myPid()),guest:await G.evaluate(()=>__qh.myPid()),hostKnowsGuest:await H.evaluate(()=>__qh.NET.remote.pid)};
 // the host starts a new crew and joins it as Alice; the guest joins as Bob
 await click(H,'[data-cm="crew"]');await wait(300);await click(H,'#crewNew');
 await H.waitForFunction(()=>!!__qh.CREW,null,{timeout:T});
-await H.evaluate(()=>{document.getElementById('crewMe').value='Alice';document.getElementById('crewJoin').click();});
+await H.waitForFunction(()=>!!document.getElementById('crewJoin'),null,{timeout:T});await H.evaluate(()=>{document.getElementById('crewMe').value='Alice';document.getElementById('crewJoin').click();});
 await G.waitForFunction(()=>!!__qh.CREW&&!!document.getElementById('crewMe'),null,{timeout:T});
 await G.evaluate(()=>{document.getElementById('crewMe').value='Bob';document.getElementById('crewJoin').click();});
 await H.waitForFunction(()=>Object.keys(__qh.CREW.slots).length===2,null,{timeout:T}).catch(()=>{});
