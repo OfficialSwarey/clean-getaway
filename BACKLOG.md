@@ -5,10 +5,6 @@ Each item says what's wanted, then what the game does today and any open questio
 
 ## Co-op
 
-### 10. Co-op on every map
-- Today: co-op works on Quiet Hours, Business Hours, Spin Cycle, Night Deposit, Lunch Rush, Last Call, Brilliant Cut and Window Shopping. Not yet on the Winter Heart, House Edge, Dead Reckoning, Glass Ceiling and Whiteout.
-- Police waves and the driver leaving run in co-op since 0.37.0.
-
 ### 11. Co-op career
 - A career for co-op with its **own save**, separate from the single-player career, and its **own save code** (the save codes from item 2 already exist for the single-player career).
 - Each player has their own skills, and buys their own consumables.
@@ -29,4 +25,5 @@ Each item says what's wanted, then what the game does today and any open questio
 - **5. No driver: no van** (0.35.0): you leave on foot where you came in, with the bag in your hands. The driver also takes 10% of your cut now.
 - **6. The driver leaves when the police come** (0.35.0): he takes the van's loot with him, and it's paid even if you're busted.
 - **7. Police come in waves** (0.35.0): armed police in waves, player health. In co-op too since 0.37.0.
+- **10. Co-op on every map** (0.38.0): the long jobs too, with lasers, sensors, footprints, the uniform, rides and held actions per player.
 - **Co-op netcode** (0.37.0, added on the way): a lossy 30 Hz channel for moving things, lag-compensated guest shots, a hook for your own TURN relays.
