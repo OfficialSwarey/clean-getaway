@@ -612,6 +612,7 @@ body.coop-guest .diffs{pointer-events:none;opacity:.6}
       <p>Left thumb: the joystick appears where you touch (push past the ring to sprint). Drag anywhere on the right to look. The buttons on the right change with what you can do; USE glows when there's something to use. Tap the keypad keys directly. OBJ (under the pause button) folds the objective away; a new objective still pops up for a few seconds, and urgent warnings always show.</p>
       <p class="lbl">Co-op</p>
       <p>Two players, each on their own device. One presses <b>Host</b> and tells the other the code; the other types it and presses <b>Join</b>. The host picks the job and starts it. Guards and cameras notice both of you, and the detection meter, the alarm and the take are shared. If a guard catches one of you, the other can still finish the job. The getaway waits until you're both there. When the police come, each of you has your own health; whoever goes down is in custody and the other plays on. Co-op works on every job.</p>
+      <p><b>Crew career:</b> on the Co-op screen the host picks Crew career and starts a new crew or picks an old one. The crew has one pot of cash and the big goals; each of you has your own level, skills, gear and stash, and plans your own kit. The host picks the job and hires the driver. The crew saves on both devices, so either of you can host next time. On a new device, pick your name in the crew to take your place back, or load the crew's save code.</p>
       <ul class="tips">
         <li>Outside without a mask you're just someone on the street. Inside a closed building, in a staff-only area or on a roof, anyone who sees you fills the detection meter, mask or not.</li>
         <li>Day jobs: the public areas are open, so walk in unmasked and look around. Behind counters and staff doors is off limits, and staff and guards notice you back there.</li>
@@ -7138,7 +7139,7 @@ function menuScreen(sc){
   if(sc!=="coop"&&MENU_SCREEN==="coop"&&(NET.on||NET.waiting||NET.busy)){if(NET.send)try{NET.send({t:"bye"});}catch(e){}netLeave();}
   MENU_SCREEN=sc;document.querySelector(".card.menu").dataset.screen=sc;
   if(sc==="coop"){if(soloMode==null)soloMode=MODE;setMode("free",false);$("menuStamp").textContent="CO-OP";
-    $("menuIntro").textContent="Two players online. One of you hosts and gets a code; the other types it in and joins. The host picks the job and starts it.";}
+    $("menuIntro").textContent="Two players online. One of you hosts and gets a code; the other types it in and joins. The host picks free play or a crew career, and starts the job.";}
   else if(sc==="solo"){if(soloMode!=null){setMode(soloMode,false);soloMode=null;}else setMode(MODE,false);}
   else if(SCREEN_STAMP[sc])$("menuStamp").textContent=SCREEN_STAMP[sc];
   if(sc==="help")document.querySelector("details.help").open=true;
@@ -9496,7 +9497,7 @@ function initCoopUI(){
   const hostRun=()=>{if(!NET.host)return false;if(!COOP_MAPS.has(selectedMap)||crewOn())return true;initAudio();coopStartRun();begin();return true;};
   wrapBtn("startBtn",hostRun);wrapBtn("againBtn",hostRun);wrapBtn("restartBtn",hostRun);
   wrapBtn("pauseMenuBtn",()=>{if(!NET.guest)return false;if(NET.send)try{NET.send({t:"bye"});}catch(e){}netLeave();return true;});
-  wrapBtn("menuBtn",()=>{if(!NET.guest)return false;NET.started=false;if(document.pointerLockElement)document.exitPointerLock();resetGame();setState("menu");coopUI();return true;});
+  wrapBtn("menuBtn",()=>{if(!NET.guest)return false;NET.started=false;if(document.pointerLockElement)document.exitPointerLock();resetGame();setState("menu");coopUI();if(MODE==="career")renderCareer();return true;});
   wrapBtn("resumeBtn",()=>{if(!NET.on)return false;initAudio();begin();return true;});
   coopUI();
 }

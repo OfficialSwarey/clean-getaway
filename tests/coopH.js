@@ -31,6 +31,7 @@ async function setup(map,viewport,opts){
   await G.evaluate(()=>{const t=document.getElementById('coopToggle');if(t&&getComputedStyle(t).display!=='none'&&t.getAttribute('aria-expanded')!=='true')t.click();});
   await G.fill('#coopCode',code);await G.evaluate(()=>document.getElementById('coopJoinBtn').click());
   await H.waitForFunction(()=>__qh.NET.on&&__qh.PLAYERS.length===2,null,{timeout:T});
+  if(opts.noStart){const close=async()=>{await b.close();srv.close();};return {b,ctx,H,G,errs,close,T,code,url};}
   await H.evaluate(m=>__qh.pickMap(m),map||'harbor');await wait(300);
   await H.evaluate(()=>document.getElementById('startBtn').click());
   await G.waitForFunction(()=>__qh.state==='paused',null,{timeout:T});
