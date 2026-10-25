@@ -27,6 +27,8 @@ async function setup(map,viewport,opts){
   await H.evaluate(()=>document.getElementById('coopHostBtn').click());
   await H.waitForFunction(()=>!!document.querySelector('#coopCodeShow:not([hidden]) b'),null,{timeout:T});
   const code=await H.evaluate(()=>document.querySelector('#coopCodeShow b')?.textContent);
+  // small windows use the phone layout: co-op sits behind the Co-op · Dev button
+  await G.evaluate(()=>{const t=document.getElementById('coopToggle');if(t&&getComputedStyle(t).display!=='none'&&t.getAttribute('aria-expanded')!=='true')t.click();});
   await G.fill('#coopCode',code);await G.evaluate(()=>document.getElementById('coopJoinBtn').click());
   await H.waitForFunction(()=>__qh.NET.on&&__qh.PLAYERS.length===2,null,{timeout:T});
   await H.evaluate(m=>__qh.pickMap(m),map||'harbor');await wait(300);
