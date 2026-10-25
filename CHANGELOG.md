@@ -5,6 +5,17 @@ feature round bumps MINOR, a bug-fix-only update bumps PATCH, and 1.0.0 is
 the first "finished" release. Up to 0.30.0, MINOR is the version number the
 claude.ai artifact had. Releases are tagged `v0.30.0` and so on.
 
+## 0.39.0 — the crew career
+- **Crew career (co-op):** on the Co-op screen the host picks *Crew career*, then starts a new crew or picks an old one (from either device). A crew is a career for two:
+  - **One pot of cash** that both of you earn into and spend from, and the five **big goals** belong to the crew.
+  - **Your own** level, experience, skill points, skills, gear and stash. Buy and learn on your own screen; it's paid from the crew's cash.
+  - **The plan:** the host picks the job from the board and hires the one driver; each of you plans and brings your own kit (pistol, picks, bags, ties, coins, jammers…), paid from the crew's cash. On the job, your skills and kit are yours.
+  - **After the job:** one pay into the crew's cash, the same experience for both, and each player's unused kit back to their own stash. Busted, or in custody at the end: the police keep that player's kit. Lawyers' fees come out of the crew's cash.
+- **Saved on both devices:** after every change the crew is copied to both players' devices, and the newer copy wins when you connect, so either of you can host next time.
+- **New device?** Pick your name in the crew to take your place back (your level, skills, gear and stash). A crew also has its own save code (Save code / Load code on the crew screen).
+- A crew job the host keeps playing after the partner drops out still pays the crew, and the partner's kit goes home.
+- The single-player career is untouched and separate.
+
 ## 0.38.0 — co-op on every job
 - **Co-op works on every job now:** The Winter Heart, House Edge, Dead Reckoning, Glass Ceiling and Whiteout join the others.
 - What each of you does counts on your own: either of you can walk into the manor's laser grid or the observatory's laser lanes, set off the casino's or the jeweller's motion sensors, or leave footprints in the snow (both of you see them, and guards follow them).

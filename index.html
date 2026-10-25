@@ -658,7 +658,7 @@ body.coop-guest .diffs{pointer-events:none;opacity:.6}
 // Co-op: the same code runs for every player by swapping who P is. CTX.cur is the player whose turn it is (null = you);
 // HUD writes during another player's turn go to that player's copy of the HUD, which is sent to them.
 const CTX={cur:null,kind:null,pl:null};
-const GAME_VERSION="0.38.0";
+const GAME_VERSION="0.39.0";
 const NET={on:false,host:false,guest:false,send:null,close:null,code:"",busy:false,waiting:false,started:false,acc:0,remote:null,ending:false};
 const $=id=>(CTX.cur&&CTX.cur.dom&&CTX.cur.dom[id])||document.getElementById(id);
 // a timer started during another player's turn runs as that player
