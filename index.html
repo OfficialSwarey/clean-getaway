@@ -157,6 +157,8 @@ button{font:inherit;cursor:pointer}
 .crew-list,.crew-claim{display:grid;gap:6px;justify-items:start}
 .crew-list .btn{text-align:left;white-space:normal}
 .crew .coop-row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.crew-claim .coop-row{width:min(440px,100%);flex-wrap:nowrap}
+.crew-claim .coop-row input{flex:1;min-width:120px;width:auto;text-transform:none;letter-spacing:normal}
 .card.menu[data-screen="coop"][data-crew="1"] #careerPanel{display:grid!important}
 .card.menu[data-screen="coop"][data-crew="1"] #freePanel{display:none!important}
 .settings{display:grid;gap:8px;max-width:680px}
@@ -658,7 +660,7 @@ body.coop-guest .diffs{pointer-events:none;opacity:.6}
 // Co-op: the same code runs for every player by swapping who P is. CTX.cur is the player whose turn it is (null = you);
 // HUD writes during another player's turn go to that player's copy of the HUD, which is sent to them.
 const CTX={cur:null,kind:null,pl:null};
-const GAME_VERSION="0.39.0";
+const GAME_VERSION="0.39.1";
 const NET={on:false,host:false,guest:false,send:null,close:null,code:"",busy:false,waiting:false,started:false,acc:0,remote:null,ending:false};
 const $=id=>(CTX.cur&&CTX.cur.dom&&CTX.cur.dom[id])||document.getElementById(id);
 // a timer started during another player's turn runs as that player

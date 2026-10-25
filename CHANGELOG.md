@@ -5,6 +5,9 @@ feature round bumps MINOR, a bug-fix-only update bumps PATCH, and 1.0.0 is
 the first "finished" release. Up to 0.30.0, MINOR is the version number the
 claude.ai artifact had. Releases are tagged `v0.30.0` and so on.
 
+## 0.39.1 — fix
+- The name box for joining a crew was squeezed to almost nothing, so you couldn't see what you typed. It's full width now, and keeps your capitals as you type them.
+
 ## 0.39.0 — the crew career
 - **Crew career (co-op):** on the Co-op screen the host picks *Crew career*, then starts a new crew or picks an old one (from either device). A crew is a career for two:
   - **One pot of cash** that both of you earn into and spend from, and the five **big goals** belong to the crew.
