@@ -1,18 +1,18 @@
-// Dev mode on a phone: the switch is in the "Co-op · Dev" panel, a GHOST button appears in the job, and you can fly with the touch controls.
+// Dev mode on a phone: the switch is in Settings on the main menu, a GHOST button appears in the job, and you can fly with the touch controls.
 const {chromium}=require('playwright-core');
 (async()=>{const b=await chromium.launch({executablePath:'/opt/pw-browsers/chromium',args:['--use-gl=swiftshader','--enable-unsafe-swiftshader']});
 const ctx=await b.newContext({viewport:{width:844,height:390},deviceScaleFactor:1,isMobile:true,hasTouch:true});
 const p=await ctx.newPage();const errs=[];p.on('pageerror',e=>errs.push('PAGEERR '+e.message));
-await p.goto('file://'+__dirname+'/test.html');await p.waitForTimeout(1500);
+await p.goto('file://'+__dirname+'/test.html?screen=home');await p.waitForTimeout(1500);
 const out={};
-out.devHidden=await p.evaluate(()=>getComputedStyle(document.querySelector('.job-detail .dev')).display);
-await p.tap('#coopToggle');await p.waitForTimeout(300);
-out.devShown=await p.evaluate(()=>getComputedStyle(document.querySelector('.job-detail .dev')).display);
-out.text=await p.evaluate(()=>[...document.querySelectorAll('.job-detail .dev small')].filter(e=>getComputedStyle(e).display!=="none").map(e=>e.textContent.slice(0,40)));
-await p.tap('.job-detail .dev');await p.waitForTimeout(200);
+out.devHidden=await p.evaluate(()=>getComputedStyle(document.querySelector('.settings .dev')).display);
+await p.tap('#homeSettings');await p.waitForTimeout(300);
+out.devShown=await p.evaluate(()=>getComputedStyle(document.querySelector('.settings .dev')).display);
+out.text=await p.evaluate(()=>[...document.querySelectorAll('.settings .dev small')].filter(e=>getComputedStyle(e).display!=="none").map(e=>e.textContent.slice(0,40)));
+await p.tap('.settings .dev');await p.waitForTimeout(200);
 out.devOn=await p.evaluate(()=>__qh.DEV.on);
 await p.screenshot({path:'../ghost-menu.png',timeout:120000});
-await p.tap('#startBtn');await p.waitForTimeout(1500);
+await p.tap('#menuBack');await p.waitForTimeout(200);await p.tap('#homeSolo');await p.waitForTimeout(300);await p.evaluate(()=>{__qh.setMode('free');});await p.tap('#startBtn');await p.waitForTimeout(1500);
 out.ghostBtn=await p.evaluate(()=>!document.getElementById('tGhost').hidden);
 await p.tap('#tGhost');await p.waitForTimeout(500);
 out.ghost=await p.evaluate(()=>__qh.DEV.ghost);
