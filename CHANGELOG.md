@@ -16,6 +16,7 @@ Career only: free play and co-op are unchanged. Old careers keep their cash, lev
 - **Big goals:** Workshop ($75,000: kit half price), Veteran wheelman ($120,000: driver half price, police 20% slower), Inside man ($200,000: +15% pay), Offshore account ($300,000: a bust costs 5%) and the Penthouse ($750,000).
 - **Skills:** Signal tech makes jammers half price (and they still run 7 s longer). Zip-tie stash makes zip ties and body bags half price.
 - New offers cost $500, a skill reset $8,000.
+- Harbor Savings & Loan (Quiet Hours and Business Hours, career and free play): a second way into the security room, a locked staff door from the back alley that opens behind the guard's chair.
 
 ## 0.32.1 — dev mode on phones
 - Phones and tablets: dev mode is back. Tap **Co-op · Dev** next to Start in the job menu (the button used to say "More") and tick Dev mode.

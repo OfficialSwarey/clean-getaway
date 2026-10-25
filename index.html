@@ -1459,7 +1459,7 @@ const MAP_HARBOR={
   },
   fly(a){camera.position.set(Math.sin(a)*6+4,5.5,27+Math.cos(a)*2);camera.lookAt(0,1.5,4);},
   text:{
-    case:"Case the bank from the street. Watch the guards through the front windows. The back door is locked (hold E to pick it), and the side windows can be picked or smashed and jumped through. Hold G to put on your mask when you're ready.",
+    case:"Case the bank from the street. Watch the guards through the front windows. The back door is locked (hold E to pick it), and so is the staff door into the security room behind the bank. The side windows can be picked or smashed and jumped through. Hold G to put on your mask when you're ready.",
     vault:"Get to the vault behind the tellers and set up the drill.",
     van:"Carry the bag to the van in the back alley (northwest corner).",
     bins:"Dump the body in a bin: the two dumpsters behind the bank or the linen cart in the office. Q drops it."
@@ -1480,7 +1480,7 @@ const MAP_HARBOR={
     wallX(12,-15.2,-10.2,4,M.outer); wallX(12,-5.8,-1.5,4,M.outer); wallX(12,1.5,5.8,4,M.outer); wallX(12,10.2,15.2,4,M.outer);
     lintelX(12,-1.5,1.5,2.6,4,M.outer);
     windowX(12,-10.2,-5.8,4); windowX(12,5.8,10.2,4);
-    wallX(-12,-15.2,-12,4,M.outer); wallX(-12,-9.5,15.2,4,M.outer); lintelX(-12,-12,-9.5,2.4,4,M.outer);
+    wallX(-12,-15.2,-12,4,M.outer); wallX(-12,-9.5,5.6,4,M.outer); wallX(-12,7.4,15.2,4,M.outer); lintelX(-12,-12,-9.5,2.4,4,M.outer); lintelX(-12,5.6,7.4,2.4,4,M.outer);
     wallZ(-15,-12.2,-10,4,M.outer); windowOZ(-15,-10,-8,4,M.outer,"office window"); wallZ(-15,-8,12.2,4,M.outer);
     wallZ(15,-12.2,5,4,M.outer); windowOZ(15,5,7,4,M.outer,"lobby window"); wallZ(15,7,12.2,4,M.outer);
     addBox(-15.1,-12.1,15.1,12.1,3.4,M.ceil,{y0:3.2,collide:false});
@@ -1502,13 +1502,15 @@ const MAP_HARBOR={
     addBox(-13,10.6,-10,11.2,0.5,M.bench); addBox(10,10.6,13,11.2,0.5,M.bench);
     plaque(signTex("TELLERS 1 – 4",512,76,"#c9d2d6","#1a2028","600 44px Arial, sans-serif"),3.4,0.5,-1.5,2.6,4.05);
     plaque(LV.day?openTex():closedTex(),0.9,0.5,2.35,1.6,12.215);
-    plaque(staffTex(),0.75,0.28,-10.75,2.75,-12.22,Math.PI);
+    plaque(staffTex(),0.75,0.28,-10.75,2.75,-12.22,Math.PI); plaque(staffTex(),0.75,0.28,6.5,2.75,-12.22,Math.PI);
     // doors
     makeDoor(-1.5,1.5,12,2.58,{glass:true,name:"front door",dayOpen:true});
     makeDoor(-12,-9.5,-12,2.38,{mat:staffDoorMat,name:"back door",pick:true});
     makeDoor(-11,-9,0,2.38,{name:"office door"});
     makeDoor(-1.2,1.2,0,2.38,{mat:staffDoorMat,name:"vault hall door"});
     makeDoor(9,11,0,2.38,{name:"security door"});
+    // a second way into the security room: a locked staff door from the back alley, behind the guard's chair
+    makeDoor(5.6,7.4,-12,2.38,{mat:staffDoorMat,name:"security back door",pick:true});
     // office
     addBox(-14,-7,-12.8,-5,0.8,M.desk); addBox(-14,-3,-12.8,-1.5,0.8,M.desk);
     addBox(-5.6,-11,-5.2,-8,1.4,M.cabinet); addBox(-14.8,-11.8,-13.2,-11.2,1.9,M.cabinet);
@@ -1534,7 +1536,7 @@ const MAP_HARBOR={
     makeVan(-17.4,-17,1);
     // lights
     lamp(-9,15.2,0xffb050); lamp(11,15.2,0xffb050); lamp(-21,-12.6,0xffa848);
-    pointLight(-10.7,2.9,-12.6,0xd8e2ff,0.6,6);
+    pointLight(-10.7,2.9,-12.6,0xd8e2ff,0.6,6); pointLight(6.5,2.9,-12.6,0xd8e2ff,0.45,5);
     pointLight(-7,3,6,0xdfe8ff,0.9,10,true); pointLight(7,3,6,0xdfe8ff,0.9,10,true);
     pointLight(-9.5,3,-6,0xcad6ff,0.5,8,true); pointLight(10,3,-6,0x7fa4e8,0.6,8,true);
     pointLight(0,3,-2.5,0xe8f0ff,0.6,7,true); pointLight(0,3,-8.5,0xd8ffe8,0.7,8,true);
@@ -1572,7 +1574,7 @@ const MAP_HARBOR_DAY=Object.assign({},MAP_HARBOR,{
   id:"harborDay",job:"Business Hours",time:"11:20",day:true,zipTies:6,
   isStaff:(x,z)=>x>-15&&x<15&&z>-12&&z<4,
   text:{
-    case:"Walk in through the front doors like any customer. The lobby is public, everything behind the teller counter is staff only. The back door is locked (hold E to pick it); the side windows can be picked or smashed. Hold G to put on your mask when you're ready.",
+    case:"Walk in through the front doors like any customer. The lobby is public, everything behind the teller counter is staff only. The back door is locked (hold E to pick it), and so is the staff door into the security room behind the bank; the side windows can be picked or smashed. Hold G to put on your mask when you're ready.",
     vault:"Get to the vault behind the tellers and set up the drill.",
     van:MAP_HARBOR.text.van,bins:MAP_HARBOR.text.bins
   }
