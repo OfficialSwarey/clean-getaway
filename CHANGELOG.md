@@ -5,13 +5,17 @@ feature round bumps MINOR, a bug-fix-only update bumps PATCH, and 1.0.0 is
 the first "finished" release. Up to 0.30.0, MINOR is the version number the
 claude.ai artifact had. Releases are tagged `v0.30.0` and so on.
 
-## 0.35.0 — main menu, bag the loot, no driver no van
+## 0.35.0 — main menu, bag the loot, no driver no van, police waves
 - **Main menu:** the game opens on a start screen with Singleplayer (career and free play), Co-op, Settings, and Controls and tips. Each screen has a back button; Escape and B on a controller go back too.
 - **Co-op has its own screen:** host or join at the top, then the host picks a job. Leaving the co-op screen leaves co-op. The "Co-op · Dev" button on phones is gone.
 - **Settings:** sound, folding the objective away on touch screens, and dev mode (moved here from the job panel).
 - **Bag the loot yourself:** cash and gold lie in piles. Hold E at a pile to stuff it into a duffel (about 1.6 s for cash, 2.2 s for gold), then you're carrying it. In career that uses up one of your duffel bags; free play has as many as you want.
 - **No driver, no van (career):** without a driver the van isn't there at all. Carry a bag out the way you came in (the orange ring) and hold E to slip away with it and whatever's in your pockets. Helicopters, boats and the snowcat need the driver too. The plan shows what one bag on foot is worth.
 - **The driver takes a cut:** 10% of your cut on top of his fee (5% with the Veteran wheelman). The job report shows it.
+- **The police come in waves (single player):** when the alarm timer runs out the job isn't over any more. Armed police arrive (2 officers, then 3, then 4, a new wave about every 35 seconds, up to 6 at once), follow the trail you left and shoot when they see you. Crouching, moving, distance and cover make them miss more. They take three body hits (two with a headshot), and you can knock them out like guards.
+- **Health:** you have 100. It comes back slowly once nobody has hit you for about five seconds. At 0 you go down and you're busted.
+- **The driver leaves when the police come:** he drives off with whatever is already in the van, and that money is yours even if you're busted afterwards. Then you get out on foot the way you came in, with the bag in your hands. The job report shows the waves and officers you dropped.
+- Co-op keeps the old rule for now: when the police arrive, the job is over.
 - Controls and tips updated for bagging, throwing, front fights and breaking free.
 
 ## 0.34.0 — save codes, owned kit, fighting back, throwing bags

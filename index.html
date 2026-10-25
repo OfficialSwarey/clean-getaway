@@ -44,6 +44,7 @@ html,body{height:100%;margin:0;overflow:hidden;background:var(--ink);color:var(-
 #vignette{position:fixed;inset:0;pointer-events:none;z-index:1;background:radial-gradient(ellipse at center,transparent 55%,rgba(0,0,0,.6) 100%)}
 #seenEdge{position:fixed;inset:0;pointer-events:none;z-index:1;opacity:0;box-shadow:inset 0 0 120px 20px var(--sodium)}
 #alarmEdge{position:fixed;inset:0;pointer-events:none;z-index:1;box-shadow:inset 0 0 140px 30px var(--alarm);animation:pulse 1s ease-in-out infinite}
+#hurtEdge{position:fixed;inset:0;pointer-events:none;z-index:1;opacity:0;background:radial-gradient(ellipse at center,transparent 45%,rgba(190,10,10,.55) 100%);box-shadow:inset 0 0 120px 40px rgba(200,0,0,.75)}
 @keyframes pulse{0%,100%{opacity:.25}50%{opacity:.7}}
 
 #detect{position:absolute;top:calc(16px + env(safe-area-inset-top,0px));left:50%;transform:translateX(-50%);width:min(380px,62vw);display:grid;gap:6px;text-align:center}
@@ -383,14 +384,14 @@ body.coop-guest .diffs{pointer-events:none;opacity:.6}
 <div id="game"></div>
 <div id="vignette"></div>
 <div id="seenEdge"></div>
-<div id="alarmEdge" hidden></div>
+<div id="alarmEdge" hidden></div><div id="hurtEdge"></div>
 <div id="maskEdge" hidden></div>
 
 <div id="hud" hidden>
   <div id="detect"><div class="lbl" id="detectLbl">Detection</div><div class="bar"><i id="detectFill"></i></div></div>
   <div id="clock"><span class="lbl" id="clockLbl">Elapsed</span><span id="clockVal">00:00</span></div>
   <div id="obj"><div class="lbl">Objective</div><div id="objText">Get into the bank unseen.</div><div id="objTip" hidden></div><div id="bagsRow"><span id="bagsLbl">Bags in the van</span> <b id="bagsVal">0/3</b> · Take <b id="takeVal">$0</b></div></div>
-  <div id="status"><span class="chip warn" id="ctChip" hidden></span><span class="chip" id="mateChip" hidden></span><span class="chip" id="devChip" hidden>DEV · GHOST OFF · V</span><span class="chip" id="posChip" hidden></span><span class="chip" id="ammo" hidden>PISTOL 12 / 36</span><span class="chip" id="pagerChip" hidden>PAGERS 0/3</span><span class="chip" id="tieChip" hidden>ZIP TIES 6</span><span class="chip" id="kitChip" hidden>DUFFELS 0</span><span class="chip" id="loopChip" hidden></span><span class="chip" id="jamChip" hidden>JAMMERS 2 · J</span><span class="chip" id="coinChip" hidden>COINS 3 · T</span><span class="chip ok" id="cardChip" hidden>KEYCARD</span><span class="chip ok" id="codeChip" hidden></span><span class="chip" id="maskChip">UNMASKED · OUTSIDE</span><span class="chip" id="carry" hidden>CARRYING BAG · SLOWED</span><span class="chip" id="stance">STANDING</span><span class="chip" id="sound">SOUND ON · M</span></div>
+  <div id="status"><span class="chip warn" id="ctChip" hidden></span><span class="chip" id="mateChip" hidden></span><span class="chip" id="devChip" hidden>DEV · GHOST OFF · V</span><span class="chip" id="posChip" hidden></span><span class="chip" id="ammo" hidden>PISTOL 12 / 36</span><span class="chip" id="pagerChip" hidden>PAGERS 0/3</span><span class="chip" id="tieChip" hidden>ZIP TIES 6</span><span class="chip" id="kitChip" hidden>DUFFELS 0</span><span class="chip" id="hpChip" hidden>HEALTH 100</span><span class="chip" id="loopChip" hidden></span><span class="chip" id="jamChip" hidden>JAMMERS 2 · J</span><span class="chip" id="coinChip" hidden>COINS 3 · T</span><span class="chip ok" id="cardChip" hidden>KEYCARD</span><span class="chip ok" id="codeChip" hidden></span><span class="chip" id="maskChip">UNMASKED · OUTSIDE</span><span class="chip" id="carry" hidden>CARRYING BAG · SLOWED</span><span class="chip" id="stance">STANDING</span><span class="chip" id="sound">SOUND ON · M</span></div>
   <div id="crosshair"></div>
   <div id="prompt" hidden><span id="promptText"></span><div class="pbar" id="pbar" hidden><i id="pfill"></i></div></div>
   <div id="keypad" hidden><span class="lbl" id="kpTitle">SAFE KEYPAD</span><div id="kpScreen">_ _ _ _</div>
@@ -579,6 +580,7 @@ body.coop-guest .diffs{pointer-events:none;opacity:.6}
         <dt>R-CLICK</dt><dd>Aim down the sights (click again to lower)</dd>
         <dt>R</dt><dd>Reload</dd>
         <dt>F</dt><dd>Take down a guard: one hit from behind, two from the front (the first only rocks him). When a guard grabs you, mash F to break free. Smash the window in front of you. On day jobs: shout at civilians to get on the floor</dd>
+        <dt>ALARM</dt><dd>When the timer runs out the police arrive in waves and shoot. Your driver leaves with what's in the van (that money is safe); get out on foot the way you came in. Health comes back slowly once nobody has hit you for a while</dd>
         <dt>M</dt><dd>Sound on/off</dd>
         <dt>ESC</dt><dd>Pause</dd>
       </dl>
@@ -1125,6 +1127,7 @@ class Guard{
       this.stagger-=dt;this.speedNow=0;this.seeDist=-1;this.bodyDist=-1;this.body.rotation.x=this.stagger>0?-0.28:0;
       this.root.position.set(this.x,this.ly,this.z);this.root.rotation.y=this.yaw;return;
     }
+    if(this.police){this.copUpdate(dt);return;}
     // holding someone while he tries to cuff them
     if(this.grab){
       const s=this.grab.struggle;
@@ -1189,6 +1192,29 @@ class Guard{
     else if(seeing||fb){this.sprite.visible=true;this.sprite.material.map=TEX_AMBER;}
     else if(this.heard){this.sprite.visible=true;this.sprite.material.map=TEX_HEAR;}
     else this.sprite.visible=false;
+    this.sync(dt);
+  }
+  // police: follow the trail you left until they can see you, then shoot
+  copUpdate(dt){
+    this.seeDist=-1;this.bodyDist=-1;this.sprite.visible=false;
+    const d=Math.hypot(P.x-this.x,P.z-this.z);
+    const vis=!DEV.ghost&&!P.out&&this.level===P.level&&d<26&&!blocked(this.x,this.z,P.x,P.z,1.3,this.level);
+    if(vis){
+      const diff=this.turn(Math.atan2(P.x-this.x,P.z-this.z),5,dt);this.armL.rotation.x=-1.5;
+      // close in a little while there's room, but stop to shoot
+      if(d>9&&this.fireT>0.5)this.walk((P.x-this.x)/d,(P.z-this.z)/d,1.6,dt,true);else this.speedNow=0;
+      this.fireT-=dt;if(this.fireT<=0&&diff<0.25){this.fireT=COP_FIRE+Math.random()*0.5;copShoot(this,d);}
+      const head=G.trailBase+G.trail.length-1;if(head>this.ti&&!blocked(this.x,this.z,P.x,P.z,0.5,this.level))this.ti=head;
+    }else{
+      this.fireT=Math.max(this.fireT,0.6);
+      const head=G.trailBase+G.trail.length-1;if(this.ti<G.trailBase)this.ti=G.trailBase;
+      // cut corners: jump ahead along the trail as far as there's a clear line
+      for(const k of [60,30,15,6]){const j=Math.min(head,this.ti+k),t=G.trail[j-G.trailBase];if(t&&j>this.ti&&(t.l||0)===this.level&&!blocked(this.x,this.z,t.x,t.z,0.5,this.level)){this.ti=j;break;}}
+      let t=G.trail[this.ti-G.trailBase];
+      while(t&&this.ti<head&&(Math.hypot(t.x-this.x,t.z-this.z)<0.5||(t.l||0)!==this.level&&Math.hypot(t.x-this.x,t.z-this.z)<1.2)){this.level=t.l||0;this.ti++;t=G.trail[this.ti-G.trailBase];}
+      if(t){const dx=t.x-this.x,dz=t.z-this.z,dd=Math.hypot(dx,dz);if(dd>0.05)this.walk(dx/dd,dz/dd,3.4,dt,false);else this.speedNow=0;}
+      else if(d>1.5){this.walk((P.x-this.x)/d,(P.z-this.z)/d,3.0,dt,true);}else this.speedNow=0;
+    }
     this.sync(dt);
   }
   sync(dt){
@@ -5382,7 +5408,7 @@ function buildMap(id){
     LV.group.traverse(o=>{if(o.geometry)o.geometry.dispose();if(o.shadow&&o.shadow.map){o.shadow.map.dispose();o.shadow.map=null;}});
   }
   colliders.length=0;doors.length=0;bins.length=0;cams.length=0;guards.length=0;civs.length=0;bags.length=0;transitions.length=0;hatches.length=0;windows.length=0;STAIRS.length=0;LADDERS.length=0;
-  secGuard=null;VAULT=null;ring=null;VAN_PARTS=[];VAN_COL=null;FOOT=null;civSeed=0;VAN_Y=0.82;KEYCARD=null;NOTE=null;jammerMeshes.length=0;CASH.length=0;
+  secGuard=null;VAULT=null;ring=null;VAN_PARTS=[];VAN_COL=null;FOOT=null;COPS=[];civSeed=0;VAN_Y=0.82;KEYCARD=null;NOTE=null;jammerMeshes.length=0;CASH.length=0;
   LV={group:new THREE.Group(),def,id:def.id,day:!!def.day,sunny:!!def.day&&!def.night,fx:null};scene.add(LV.group);
   setSky(LV.sunny);
   def.build();
@@ -6337,6 +6363,12 @@ function careerOnEnd(won,score,stealth){
     pay=Math.round(score*(MAP_PAY[c.map]||10000)/full*mult/10)*10;CAREER.cash+=pay;CAREER.stats.jobs++;if(stealth&&score>0)CAREER.stats.clean++;CAREER.stats.earned+=pay;CAREER.stats.best=Math.max(CAREER.stats.best,pay);
     const back=returnKit();if(back&&Object.keys(back).length)notes.push("Back in the stash: "+Object.entries(back).map(([k,n])=>kitWord(k,n)).join(", "));
   }else{
+    // busted, but the driver got away with what was in the van: that's still paid
+    if(score>0){
+      if(goal("inside"))mult*=1.15;if(CAREER.kit&&CAREER.kit.driver){mult*=1-(goal("wheelman")?0.05:0.1);}
+      const full=(G.fullTake||score||1)*(1+STEALTH_BONUS+(civs.length?CIV_BONUS:0));
+      pay=Math.round(score*(MAP_PAY[c.map]||10000)/full*mult/10)*10;CAREER.cash+=pay;CAREER.stats.earned+=pay;notes.push("The driver got away with the van");
+    }
     fee=Math.round(CAREER.cash*(goal("offshore")?0.05:BUST_FEE)/10)*10;CAREER.cash-=fee;CAREER.stats.busts++;
     const K=CAREER.kit;if(K&&KIT_COUNT.some(id=>K[id]>0))notes.push("The police kept your kit: "+KIT_COUNT.filter(id=>K[id]>0).map(id=>kitWord(id,K[id])).join(", "));
     CAREER.kit=null;G.kitLive=false;
@@ -6623,7 +6655,7 @@ function initCareerUI(){
 function resetGame(){
   const sp=LV.def.spawn;
   Object.assign(P,{x:sp.x,z:sp.z,yaw:sp.yaw||0,level:sp.lvl||0,y:(sp.lvl||0)*ROOF_Y,climb:null,ladder:null,onStair:false,jh:0,vy:0,gnd:0,fiddle:0,pitch:0,crouch:false,eye:1.65,bobT:0,carry:null,sprinting:false,kick:0,
-    masked:false,maskT:0,mag:MAG,reserve:MAG*3,reload:0,fireCD:0,aim:false,aimT:0,recoil:0,raise:0,wasRestricted:false,ties:LV.def.zipTies||0,shoutCD:0,jammers:JAMMERS,hasCard:false,hasGun:true,struggle:null});
+    masked:false,maskT:0,mag:MAG,reserve:MAG*3,reload:0,fireCD:0,aim:false,aimT:0,recoil:0,raise:0,wasRestricted:false,ties:LV.def.zipTies||0,shoutCD:0,jammers:JAMMERS,hasCard:false,hasGun:true,struggle:null,hp:PLAYER_HP,hurtT:9});
   Object.assign(G,{time:0,lootT:0,susp:0,unseen:0,alarm:false,alarmT:ALARM_TIME,drill:0,drillWas:false,vaultOpen:false,doorAnim:0,secured:0,takedowns:0,kills:0,camsShot:0,shots:0,everAlarm:false,noise:0,shotNoise:0,blipT:0,bodies:[],secAlert:0,bagT:0,binned:0,
     loud:0,trail:[],trailBase:0,tieT:0,tied:0,civKills:0,callLine:-9,bodyHost:false,lastSpotter:null,secMsg:"",jamT:0,jamsUsed:0,jamBeep:0,loopHold:0,loops:0,picks:0,picking:false,pickScr:0,bang:null,civWatched:false});
   cams.forEach(c=>{c.dead=false;c.loopT=0;c.civDist=-1;c.cone.visible=true;c.spot.intensity=1.6;c.head.rotation.set(0.24,0,0);c.body.material=M.camBody;});
@@ -6643,7 +6675,7 @@ function resetGame(){
   if(VAULT.openCol){const i=colliders.indexOf(VAULT.openCol);if(i>=0)colliders.splice(i,1);}if(VAULT.screen)VAULT.screen.color.setHex(0x3aff8a);
   {const n=LV.def.codeLen||4;G.safeCode=String(Math.floor(10**(n-1)+Math.random()*9*10**(n-1)));}G.knowCode=false;G.safeFails=0;G.keypad=false;KP.entry="";$("keypad").hidden=true;placeCodeNote();
   G.hasDiamond=false;G.diamondVal=0;P.ladder=null;P.onStair=false;
-  G.coins=COINS+(SK.coins||0);G.throws=0;THROWN.forEach(f=>LV.group.remove(f.m));THROWN=[];FLYING=[];guards.forEach(g=>{if(g.route0)g.route=g.route0;g.invest=null;});
+  G.coins=COINS+(SK.coins||0);G.throws=0;THROWN.forEach(f=>LV.group.remove(f.m));THROWN=[];FLYING=[];clearCops();G.police=null;G.banked=0;G.copsDown=0;G.hurtFlash=0;guards.forEach(g=>{if(g.route0)g.route=g.route0;g.invest=null;});
   if(LV.def.reset)LV.def.reset();
   hatches.forEach(h=>{h.open=false;h.t=0;h.piv.rotation.z=0;});
   DEV.ghost=false;
@@ -6933,7 +6965,7 @@ function updatePlayer(dt){
     for(const g of npcs()){if(P.jh>1.0)break;if(g.down||g.level!==P.level)continue;const r=g.kind==="civ"?0.55:0.65;const dx=p.x-g.x,dz=p.z-g.z,d=Math.hypot(dx,dz);if(d<r&&d>1e-6){p.x=g.x+dx/d*r;p.z=g.z+dz/d*r;}}
     P.x=p.x;P.z=p.z;
     const tl=G.trail[G.trail.length-1];
-    if(!tl||Math.hypot(P.x-tl.x,P.z-tl.z)>0.35){G.trail.push({x:P.x,z:P.z});if(G.trail.length>600){G.trail.shift();G.trailBase++;}}
+    if(!tl||Math.hypot(P.x-tl.x,P.z-tl.z)>0.35||tl.l!==P.level){G.trail.push({x:P.x,z:P.z,l:P.level});if(G.trail.length>600){G.trail.shift();G.trailBase++;}}
     const before=Math.floor(P.bobT/Math.PI);
     if(P.jh<=P.gnd+0.02)P.bobT+=dt*speed*2.1;
     if(Math.floor(P.bobT/Math.PI)!==before){
@@ -7272,7 +7304,7 @@ function tryTakedown(){
   const behind=facing<(SK.hands?0.3:-0.15);
   if(behind||best.stagger>0||SK.hands){
     // from behind, a second hit on a reeling guard, or quick hands: out cold
-    best.stagger=0;best.body.rotation.x=0;best.knockDown(false);G.takedowns++;
+    best.stagger=0;best.body.rotation.x=0;best.knockDown(false);G.takedowns++;if(best.police)G.copsDown=(G.copsDown||0)+1;
     SFX.takedown(best.x,best.z);
     if(!behind){G.shotNoise=Math.max(G.shotNoise,3.5);G.loud=Math.max(G.loud,5);}
     toast("Guard knocked out","good");
@@ -7313,14 +7345,14 @@ function shoot(){
   if(ud.guard){
     const g=ud.guard;
     if(g.down){SFX.flesh(g.x,g.z);return;}
-    g.hp-=ud.head?2:1;
+    g.hp-=ud.head?2:1;if(g.police&&g.hp<=0){g.knockDown(true);G.kills++;G.copsDown=(G.copsDown||0)+1;toast(ud.head?"Headshot":"Officer down","good",1300);return;}
     SFX.flesh(g.x,g.z);
     if(g.hp<=0){
       g.knockDown(true);G.kills++;
       toast(ud.head?"Headshot":"Guard down","good",1300);
     }else{
-      g.wounded=2.0;SFX.wound(g.x,g.z);
-      toast("Wounded! Finish him before he radios in","bad",1800);
+      if(!g.police)g.wounded=2.0;SFX.wound(g.x,g.z);
+      toast(g.police?"Hit":"Wounded! Finish him before he radios in","bad",g.police?700:1800);
     }
   }else if(ud.civ){
     const c=ud.civ;SFX.flesh(c.x,c.z);
@@ -7898,10 +7930,67 @@ function showSub(who,txt,ms,label){
   $("subLine").textContent=txt;
   clearTimeout(subTimer);subTimer=setTimeout(()=>{el.classList.add("fade");subTimer=setTimeout(()=>{el.hidden=true;},320);},ms||2500);
 }
+/* ================= the police: when the alarm runs out they arrive, in waves, and they shoot =================
+   They come from where the van is (or was), pick up the trail you left and follow it to you. Your driver doesn't wait
+   for them: he leaves with whatever is already in the van (that money is yours whatever happens next), and you get out
+   on foot the way you came in. Co-op keeps the old rule for now: when the police arrive, the job is over. */
+const COP_FIRE=1.4,COP_WAVE_T=35,COP_MAX=6,COP_WAVES=[2,3,4],PLAYER_HP=100;
+const copUni=phong(0x1c2c4d),copCapM=phong(0x10182a);
+let COPS=[];
+function clearCops(){for(const c of COPS){LV.group.remove(c.root);if(c.item)LV.group.remove(c.item.mesh);const i=guards.indexOf(c);if(i>=0)guards.splice(i,1);}if(COPS.length)rebuildHitList();COPS=[];}
+function spawnCop(x,z,lvl,ti){
+  const g=new Guard([[x,z]],0,{police:true,name:"Officer",level:lvl,flashShadow:false});
+  g.police=true;g.hp=3;g.fireT=1.4+Math.random()*0.8;g.ti=ti;g.spot.intensity=0;g.spot.castShadow=false;g.pager=null;
+  g.root.traverse(o=>{if(o.material===M.uni)o.material=copUni;else if(o.material===M.cap)o.material=copCapM;});
+  g.root.traverse(o=>{if(o.isMesh)hitList.push(o);});
+  {const m=makeBodyBag();m.visible=false;m.userData.noHit=true;lvAdd(m);g.item={kind:"body",guard:g,mesh:m,state:"none",level:lvl};}
+  COPS.push(g);return g;
+}
+function policeArrive(){
+  G.police={wave:0,next:3};
+  const hadVan=!onFoot(),van=hadVan?SECURE:((FOOT&&FOOT.secure)||SECURE);
+  if(hadVan){
+    G.banked=G.vanTake;setOnFoot(true);
+    toast(G.secured?`Sirens! Your driver took off with ${G.secured} bag${G.secured===1?"":"s"}: that money's safe. Get out on foot the way you came in`:"Sirens! Your driver took off. Get out on foot the way you came in","bad",4200);
+  }else toast("Sirens! The police are here. Get out the way you came in","bad",3600);
+  // they pick up your trail at the nearest point they can see from the van, or where you came in
+  const lvl=van.lvl||0;let ti=-1,bd=1e9;
+  for(let i=0;i<G.trail.length;i++){const t=G.trail[i];if((t.l||0)!==lvl)continue;const dd=Math.hypot(t.x-van.x,t.z-van.z);if(dd<bd&&dd<30&&!blocked(van.x,van.z,t.x,t.z,0.5,lvl)){bd=dd;ti=G.trailBase+i;}}
+  if(ti>=0)G.police.spawn={x:van.x,z:van.z,lvl,ti};
+  else{
+    // no trail they can see from the van: they come in where you did (or, with no trail at all, from the van)
+    const t=G.trail[0],e=LV.def.spawn;
+    const c=t&&Math.hypot(t.x-P.x,t.z-P.z)>8?{x:t.x,z:t.z,lvl:t.l||0}:Math.hypot(e.x-P.x,e.z-P.z)>8?{x:e.x,z:e.z,lvl:e.lvl||0}:{x:van.x,z:van.z,lvl};
+    G.police.spawn={...c,ti:G.trailBase};
+  }
+}
+function spawnWave(){
+  const po=G.police;po.wave++;const n=COP_WAVES[Math.min(po.wave-1,COP_WAVES.length-1)];
+  const k=Math.min(n,COP_MAX-COPS.filter(c=>!c.down).length);if(k<=0)return;
+  const sp=po.spawn;
+  for(let i=0;i<k;i++){const p={x:sp.x+(i-(k-1)/2)*0.9,z:sp.z+(i%2?0.8:0)};resolve(p,0.3,sp.lvl);spawnCop(p.x,p.z,sp.lvl,sp.ti);}
+  if(po.wave>1)toast(`More police · wave ${po.wave}`,"bad",2000);
+}
+function copShoot(c,d){
+  const s=spatial(c.x,c.z,45,c.level)||{vol:.3,pan:0};
+  noiseHit({freq:1500,q:.7,dur:.16,vol:.5*s.vol+.08,pan:s.pan});tone({type:"square",f0:170,f1:50,dur:.14,vol:.22*s.vol+.02,pan:s.pan});
+  c.armL.rotation.x=-1.7;
+  const moving=keys.KeyW||keys.KeyA||keys.KeyS||keys.KeyD||IN.mag>0.1;
+  const hit=clamp(0.66-d*0.022-(P.crouch?0.15:0)-(P.sprinting?0.2:moving?0.08:0),0.08,0.66);
+  if(Math.random()<hit)hurtPlayer((6+Math.random()*5)*DIFF.det);
+}
+function hurtPlayer(n){
+  if(DEV.ghost||state!=="playing"||P.out)return;
+  P.hp=Math.max(0,P.hp-n);P.hurtT=0;G.hurtFlash=1;SFX.flesh(P.x,P.z);
+  if(P.hp<=0)endGame(false,"You went down. The police took you in.");
+}
 function updateAlarm(dt){
+  // health comes back slowly once nobody has hit you for a while
+  P.hurtT=(P.hurtT||0)+dt;if(P.hurtT>5&&P.hp<PLAYER_HP)P.hp=Math.min(PLAYER_HP,P.hp+5*dt);G.hurtFlash=Math.max(0,(G.hurtFlash||0)-dt*2.5);
   if(!G.alarm)return;
+  if(G.police){G.police.next-=dt;if(G.police.next<=0){spawnWave();G.police.next=COP_WAVE_T;}return;}
   G.alarmT-=dt;
-  if(G.alarmT<=0){G.alarmT=0;endGame(false,"The police arrived before you got away.");}
+  if(G.alarmT<=0){G.alarmT=0;if(NET.on){endGame(false,"The police arrived before you got away.");return;}policeArrive();}
 }
 const fmt=s=>{s=Math.max(0,Math.ceil(s));return String(Math.floor(s/60)).padStart(2,"0")+":"+String(s%60).padStart(2,"0");};
 const fmtUp=s=>{s=Math.floor(s);return String(Math.floor(s/60)).padStart(2,"0")+":"+String(s%60).padStart(2,"0");};
@@ -7922,8 +8011,10 @@ function updateHUD(){
   const radioWho=reporter?reporter.name:"The security guard";
   $("detectLbl").textContent=G.alarm?"Alarm raised":radio?(jam?`${radioWho}'s radio is jammed · ${jamTxt}`:`${radioWho} is radioing it in · ${Math.ceil(repT)} s`):caller?(jam?`${caller.label} has no signal · ${jamTxt}`:`${caller.label} is calling the police · ${Math.ceil(caller.callT)} s`):ringing?(ringing.pager.state==="ringing"?`Pager going off · ${Math.ceil(ringing.pager.t)} s`:"On the line with dispatch"):radio?"A guard is reaching for his radio":G.civWatched?"A camera sees a panicking civilian":G.bodyWatched?(G.bodyHost?"Hostage spotted":"Body spotted"):civSus>G.susp?"A civilian is getting suspicious":watched?"Being watched":"Detection";
   $("seenEdge").style.opacity=G.alarm?0:(Math.max(G.susp,civSus)*0.55).toFixed(3);
-  $("clockLbl").textContent=G.alarm?"Police arrive in":"Elapsed";
-  $("clockVal").textContent=G.alarm?fmt(G.alarmT):fmtUp(G.time);
+  $("clockLbl").textContent=G.police?"Police on scene":G.alarm?"Police arrive in":"Elapsed";
+  $("clockVal").textContent=G.police?`WAVE ${G.police.wave}`:G.alarm?fmt(G.alarmT):fmtUp(G.time);
+  {const hp=Math.ceil(P.hp??PLAYER_HP),hc=$("hpChip");hc.hidden=hp>=PLAYER_HP&&!G.police;if(!hc.hidden){const t=`HEALTH ${hp}`;if(hc.textContent!==t)hc.textContent=t;hc.className=hp<35?"chip bad":hp<70?"chip warn":"chip";}
+   $("hurtEdge").style.opacity=Math.min(1,(1-(P.hp??PLAYER_HP)/PLAYER_HP)*0.75+(G.hurtFlash||0)*0.55).toFixed(3);}
   let obj,urgent="";
   const loose=G.bodies.filter(b=>!b.hostage).length;
   if(radio)urgent=reporter?`Drop ${reporter.name} before he radios it in! ${jam?(G.jamT>0?`Jammed for ${Math.ceil(G.jamT)} s.`:"No signal: the relay is down."):`${Math.ceil(repT)} s left.`}`:`Take out the security guard before he calls it in! ${jam?(G.jamT>0?`Jammed for ${Math.ceil(G.jamT)} s.`:"No signal: the relay is down."):`${Math.ceil(repT)} s left.`}`;
@@ -7997,9 +8088,9 @@ function endGame(won,reason){
   $("endTitle").textContent=won?(stealth?"Clean job":"Loud, but paid"):"Busted";
   $("endTitle").className=won?"good":"bad";
   const nb=bags.length,nw=["","one","two","three","four","five","six"][nb]||String(nb);
-  const take=won?G.vanTake+G.pocket+G.diamondVal:0,all=G.secured>=nb;
+  const banked=won?0:(G.banked||0),take=won?G.vanTake+G.pocket+G.diamondVal:banked,all=G.secured>=nb;
   if(won&&take===0){$("endTitle").textContent="Empty-handed";$("endTitle").className="bad";}
-  $("endReason").textContent=!won?reason+(G.vanTake+G.pocket>0?` You leave ${money(G.vanTake+G.pocket)} behind.`:""):
+  $("endReason").textContent=!won?reason+(banked?` Your driver got away with ${money(banked)}: that's still yours.`:"")+(G.vanTake-banked+G.pocket>0?` You leave ${money(G.vanTake-banked+G.pocket)} behind.`:""):
     take===0?"You drove off with nothing. At least nobody got hurt. Probably.":
     all?(stealth?`All ${nw} bags are in the ${LV.def.getaway||"van"} and nobody at ${LV.def.place} ever knew you were there.`:`All ${nw} bags made it out, but the whole street heard the alarm.`):
     (()=>{const xs=[G.diamondVal&&LV.def.needDiamond,G.pocket&&"your pockets full of cash"].filter(Boolean).join(" and ");return G.secured?`You drove off with ${G.secured} of ${nb} bags${xs?" and "+xs:""}.`:`You skipped the bags and drove off with ${xs}.`;})()+(stealth?" Nobody saw a thing.":"");
@@ -8011,13 +8102,13 @@ function endGame(won,reason){
   const base=take+bStealth+bCivs,score=Math.round(base*DIFF.pay/10)*10,bDiff=score-base;
   const cr=careerOnEnd(won,score,stealth),ec=$("endCareer");ec.hidden=!cr;
   if(cr){const li=levelInfo(CAREER.xp);
-    ec.innerHTML=(won?`<dt>Your cut (contract ×${cr.mult.toFixed(2)})</dt><dd class="good">+${money(cr.pay)}</dd>`:`<dt>Lawyers' fees (${goal("offshore")?5:15}% of your cash)</dt><dd class="bad">−${money(cr.fee)}</dd>`)
+    ec.innerHTML=(won?`<dt>Your cut (contract ×${cr.mult.toFixed(2)})</dt><dd class="good">+${money(cr.pay)}</dd>`:(cr.pay?`<dt>Your cut of the van</dt><dd class="good">+${money(cr.pay)}</dd>`:"")+`<dt>Lawyers' fees (${goal("offshore")?5:15}% of your cash)</dt><dd class="bad">−${money(cr.fee)}</dd>`)
       +cr.notes.map(n=>`<dt>${n}</dt><dd></dd>`).join("")
       +`<dt>Experience</dt><dd>+${cr.xp} XP</dd><dt>Cash in the safehouse</dt><dd>${money(CAREER.cash)}</dd>`
       +(cr.L1>cr.L0?`<span class="lvl">LEVEL ${cr.L1}! +${cr.L1-cr.L0} SKILL POINT${cr.L1-cr.L0>1?"S":""}</span>`:`<span class="lvl" style="color:var(--dim)">LEVEL ${li.level} · ${li.need?li.need-li.into+" XP TO THE NEXT":"MAX"}</span>`);}
   $("againBtn").hidden=!!cr;$("menuBtn").textContent=cr?"Back to the safehouse":"Back to jobs";$("menuBtn").className=cr?"btn":"btn ghost";
   const tv=$("endTakeVal");tv.textContent=money(score);tv.className=score?"":"zero";
-  $("endTakeLbl").textContent=won?"SCORE":"SCORE · TAKE LOST";
+  $("endTakeLbl").textContent=won?"SCORE":banked?"SCORE · THE VAN GOT AWAY":"SCORE · TAKE LOST";
   const br=G.diamondVal&&won?[[LV.def.needDiamond.replace(/^the /,"The "),money(G.diamondVal),""],["Bags and cash",money(G.vanTake+G.pocket),""]]:[["Take",money(take),take?"":"lost"]];
   if(won&&take>0){
     br.push(["Stealth bonus +"+Math.round(STEALTH_BONUS*100)+"%",bStealth?"+"+money(bStealth):"alarm raised",bStealth?"good":"lost"]);
@@ -8030,7 +8121,7 @@ function endGame(won,reason){
   else{eb.textContent=prev?`BEST ON THIS JOB ${money(prev)}`:"";eb.className="";}
   showBests();
   $("endStamp").textContent=(won?"JOB REPORT · PAID":"JOB REPORT · FAILED")+" · "+LV.def.job.toUpperCase();
-  const rows=[["Time",fmtUp(G.time)],[`Bags in the ${LV.def.getaway||"van"}`,`${G.secured}/${bags.length} · ${money(G.vanTake)}`],["Stealth",stealth?"Kept":"Broken"],["Loose cash",`${G.cashTaken}/${CASH.length} · ${money(G.pocket)}`],["Guards knocked out",String(G.takedowns)],["Guards shot",String(G.kills)],["Bodies hidden",String(G.binned)],["Pagers answered",`${G.pagersUsed}/${maxPagers()}`],["Cameras shot",String(G.camsShot)],["Jammers used",String(G.jamsUsed)],["Shots fired",String(G.shots)]];
+  const rows=[["Time",fmtUp(G.time)],[`Bags in the ${LV.def.getaway||"van"}`,`${G.secured}/${bags.length} · ${money(G.vanTake)}`],["Stealth",stealth?"Kept":"Broken"],["Loose cash",`${G.cashTaken}/${CASH.length} · ${money(G.pocket)}`],["Guards knocked out",String(G.takedowns)],["Guards shot",String(G.kills)],...(G.police?[["Police waves",String(G.police.wave)],["Officers down",String(G.copsDown||0)]]:[]),["Bodies hidden",String(G.binned)],["Pagers answered",`${G.pagersUsed}/${maxPagers()}`],["Cameras shot",String(G.camsShot)],["Jammers used",String(G.jamsUsed)],["Shots fired",String(G.shots)]];
   if(civs.length)rows.splice(6,0,["Civilians tied up",String(G.tied)],["Civilians killed",String(G.civKills)]);
   $("endStats").innerHTML=rows.map(([a,b],i)=>`<dt>${a}</dt><dd class="${i===2?(stealth?"good":"bad"):""}">${b}</dd>`).join("");
   if(NET.on)netEndScreen(won);
