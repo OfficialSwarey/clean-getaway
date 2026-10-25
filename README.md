@@ -48,7 +48,7 @@ Keyboard and mouse, a controller (standard Xbox/PlayStation layout) and touch sc
 
 - `index.html` — the whole game (the page GitHub Pages serves).
 - `manifest.webmanifest`, `icons/` — home-screen install.
-- `tests/` — headless regression tests (Playwright). `cd tests && npm install && npm test`. The co-op tests (`coop*.js`) run a host and a guest in two tabs over `?net=local`; `coopnet.js` tests the real WebRTC connection against a local PeerJS server (`npx peerjs --port 9000`).
+- `tests/` — headless regression tests (Playwright). `cd tests && npm install && npm test`. The co-op tests (`coop*.js`) run a host and a guest in two tabs over `?net=local`; `coopnet.js` tests the real WebRTC connection against a local PeerJS server (`npx peerjs --port 9000`). Build `tests/test.html` with `python3 tools/make_test.py`, then `bash tests/qa/quick.sh` runs the quick check (about 15 minutes; add test names for what you changed), `bash tests/qa/run.sh name …` runs named tests, and `bash tests/qa/runall.sh` runs everything (for changes to code every job uses).
 - `tools/make_test.py` — builds `tests/test.html` from `index.html`.
 - `tools/artifact_page.py` — writes the version of the page used for the claude.ai artifact.
 - `CHANGELOG.md` — what changed in each version. Versions are tagged `v0.MINOR.PATCH` (`v0.30.0`, …).
