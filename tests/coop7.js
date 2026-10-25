@@ -6,7 +6,7 @@ const {setup,wait}=require('./coopH');
 (async()=>{
 const {H,G,errs,close,T,ctx,url}=await setup('harbor',null,{noStart:true});
 const out={};
-const click=async(pg,sel)=>{await pg.waitForFunction(s=>!!document.querySelector(s),sel,{timeout:T}).catch(()=>{console.log('missing',sel));return pg.evaluate(s=>{const e=document.querySelector(s);if(!e)return false;e.click();return true;},sel);};
+const click=async(pg,sel)=>{await pg.waitForFunction(s=>!!document.querySelector(s),sel,{timeout:T}).catch(()=>{console.log('missing',sel);});return pg.evaluate(s=>{const e=document.querySelector(s);if(!e)return false;e.click();return true;},sel);};
 process.on('unhandledRejection',e=>{console.log('FAILED',e.message.split('\n')[0]);console.log(JSON.stringify(out,null,1));console.log(errs.join('\n'));process.exit(1);});
 const hostWait=async s=>{const t0=await H.evaluate(()=>__qh.G.time);await H.waitForFunction(([t,s])=>__qh.G.time>t+s,[t0,s],{timeout:T}).catch(()=>{});};
 await H.waitForFunction(()=>__qh.NET.remote&&__qh.NET.remote.pid,null,{timeout:T}).catch(()=>{});
