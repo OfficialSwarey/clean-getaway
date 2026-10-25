@@ -1,6 +1,7 @@
 # test output and local tooling
 tests/node_modules
 tests/test.html
+tests/test2.html
 tests/qa/*.txt
 build/
 /*.png

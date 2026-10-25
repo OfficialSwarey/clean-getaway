@@ -3,28 +3,10 @@
 Ideas for Clean Getaway that are agreed but not built yet. Items keep their numbers when they're done, so references stay valid.
 Each item says what's wanted, then what the game does today and any open questions, so it can be picked up later.
 
-## Menus and settings
-
-### 1. Main menu
-A proper start menu with **Singleplayer**, **Co-op**, **Settings** and so on. The dev option moves into **Settings**.
-- Today: one job menu with Career / Free play tabs. Co-op and dev mode sit in the job panel; on phones they're behind the "Co-op · Dev" button.
-
-## Career economy and kit
-
-### 4. Bag the loot yourself
-Money and gold aren't already in bags. You fill a duffel with the cash or gold on the spot, and only then can you carry it out.
-- Today: loot lies in ready-made bags. In career mode, picking one up uses a duffel bag.
-- Open question: is bagging a hold-E action at the pile, like bagging a body?
-
 ## Getaway
 
-### 5. No driver: no van, and a way out on foot
-Without a hired driver there's no van on the map at all. You leave by an exit of your own, on foot.
-- Today: without a driver the van is still there, it only takes one bag, and leaving says "run for it".
-- Every map needs an on-foot exit point.
-
 ### 6. The driver leaves when the police come
-With a driver, when the police arrive he drives off with the loot already in the van. You then have to get out the on-foot way (item 5).
+With a driver, when the police arrive he drives off with the loot already in the van. You then have to get out the on-foot way (item 5: where you came in).
 - **Decided:** the loot in the van is always paid, even if you're busted after the driver leaves.
 
 ## Combat and the police
@@ -53,3 +35,6 @@ When the police arrive they come in waves, and they're armed and try to kill you
 - **8. Getting caught takes about 3 seconds** (0.34.0): six presses in 3 seconds break free, on every difficulty. Iron grip still wins once per job.
 - **9. Fight a guard from the front** (0.34.0): the first hit rocks him for 1.5 seconds, the second knocks him out.
 - **Throwing bags** (0.34.0, added on the way): range depends on what's in the bag; a bag thrown at the van is loaded.
+- **1. Main menu** (0.35.0): Singleplayer, Co-op, Settings, Controls and tips. Dev mode lives in Settings.
+- **4. Bag the loot yourself** (0.35.0): hold E at a pile of cash or gold to fill a duffel.
+- **5. No driver: no van** (0.35.0): you leave on foot where you came in, with the bag in your hands. The driver also takes 10% of your cut now.

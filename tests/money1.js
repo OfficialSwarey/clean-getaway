@@ -40,7 +40,7 @@ const {chromium}=require('playwright-core');
   res.oneBag=await p.evaluate(()=>{
     const q=__qh,out={};q.setState("menu");q.pickMap("harbor");q.resetGame();q.setState("playing");q.DEV.ghost=true;q.P.masked=true;
     const step=n=>{for(let i=0;i<n;i++){q.stepGame(1/30);if(q.state!=="playing")break;}};
-    q.G.vaultOpen=true;const b=q.bags[0];q.P.x=b.mesh.position.x;q.P.z=b.mesh.position.z+1;q.P.yaw=0;q.P.pitch=-0.5;step(1);q.pressE();step(1);
+    q.G.vaultOpen=true;const b=q.bags[0];q.P.x=b.mesh.position.x;q.P.z=b.mesh.position.z+1;q.P.yaw=0;q.P.pitch=-0.5;step(1);q.keys.KeyE=true;step(70);q.keys.KeyE=false;step(1); /* 0.35: loot is bagged with a hold */
     out.carry=q.P.carry&&q.P.carry.value;q.updateHUD();out.chip=document.getElementById("carry").textContent;
     q.P.x=q.SECURE.x+0.5;q.P.z=q.SECURE.z;step(1);q.keys.KeyE=true;q.pressE();step(1);step(60);out.afterLoadHold={state:q.state,secured:q.G.secured};
     q.keys.KeyE=false;step(2);q.keys.KeyE=true;step(50);q.keys.KeyE=false;

@@ -41,19 +41,16 @@ out.kitted=await run(`q.setState("playing");away();q.P.masked=true;step(2);
   // throw a coin and drop a jammer: they come off the kit
   q.throwCoin();step(2);r.coinsLeft=q.G.coins;
   // a bag into the van, then leave
-  const sp=q.LV.def.spawn;go(sp.x,sp.z,0,0);const bg=q.bags[0];bg.state="ground";bg.box=null;bg.level=0;bg.mesh.position.set(q.P.x,0.22,q.P.z-1.0);q.P.pitch=-0.4;step(2);q.pressE();step(2);r.carry=!!q.P.carry;r.duffelsLeft=q.G.duffels;
+  const sp=q.LV.def.spawn;go(sp.x,sp.z,0,0);const bg=q.bags[0];bg.state="ground";bg.box=null;bg.level=0;bg.mesh.position.set(q.P.x,0.22,q.P.z-1.0);q.P.pitch=-0.4;step(2);q.keys.KeyE=true;step(70);q.keys.KeyE=false;step(2);r.carry=!!q.P.carry;r.duffelsLeft=q.G.duffels;
   q.P.x=q.SECURE.x;q.P.z=q.SECURE.z;step(2);q.pressE();step(3);r.secured=q.G.secured;
   q.keys.KeyE=true;step(80);q.keys.KeyE=false;
   r.state=q.state;r.end=document.getElementById("endCareer").innerText.replace(/\\n/g," | ");r.cashAfter=q.CAREER.cash;r.stash=q.CAREER.stash;r.kit=q.CAREER.kit;
   return r;`);
 await p.screenshot({path:'../econ-end.png'});
-// on foot: one bag only
+// on foot: no van, the way out is where you came in
 out.foot=await run(`q.toMenu();const C=q.CAREER;C.board[0]={id:"e2",map:"harbor",tw:[],pay:1,xp:1,stars:1,mins:6};q.openPlan("e2");q.PLAN.sel.driver=false;q.startPlan();
-  q.setState("playing");away();q.P.masked=true;step(2);
-  const load=i=>{const bg=q.bags[i];bg.state="carried";bg.duffel=true;q.P.carry=bg;q.P.x=q.SECURE.x;q.P.z=q.SECURE.z;step(2);const t=pr();q.pressE();step(3);return t;};
-  const a=load(0);q.keys.KeyE=false;step(2);const bpr=load(1);
-  const r={first:a,second:bpr,secured:q.G.secured,chip:document.getElementById("kitChip").textContent};
-  q.dropCarry();step(2);q.bags[1].mesh.position.set(300,0,300);q.P.x=q.SECURE.x;q.P.z=q.SECURE.z;step(2);r.leave=pr();return r;`);
+  q.setState("playing");away();q.P.masked=true;step(2);const sp=q.LV.def.spawn;
+  return {onFoot:q.onFoot(),vanHidden:q.VAN_PARTS.every(o=>!o.visible),exitAtStart:Math.hypot(q.SECURE.x-sp.x,q.SECURE.z-sp.z)<0.01,chip:document.getElementById("kitChip").textContent};`);
 // busted: the kit is gone, lawyers take 15%
 out.bust=await run(`const C=q.CAREER;const st0=JSON.stringify(C.stash);const k0=JSON.stringify(C.kit);const cash0=C.cash;q.endGame(false,"Caught.");
   return {k0,st0,stash:C.stash,kit:C.kit,fee:cash0-C.cash,cash0,end:document.getElementById("endCareer").innerText.replace(/\\n/g," | ")};`);

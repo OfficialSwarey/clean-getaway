@@ -5,6 +5,15 @@ feature round bumps MINOR, a bug-fix-only update bumps PATCH, and 1.0.0 is
 the first "finished" release. Up to 0.30.0, MINOR is the version number the
 claude.ai artifact had. Releases are tagged `v0.30.0` and so on.
 
+## 0.35.0 — main menu, bag the loot, no driver no van
+- **Main menu:** the game opens on a start screen with Singleplayer (career and free play), Co-op, Settings, and Controls and tips. Each screen has a back button; Escape and B on a controller go back too.
+- **Co-op has its own screen:** host or join at the top, then the host picks a job. Leaving the co-op screen leaves co-op. The "Co-op · Dev" button on phones is gone.
+- **Settings:** sound, folding the objective away on touch screens, and dev mode (moved here from the job panel).
+- **Bag the loot yourself:** cash and gold lie in piles. Hold E at a pile to stuff it into a duffel (about 1.6 s for cash, 2.2 s for gold), then you're carrying it. In career that uses up one of your duffel bags; free play has as many as you want.
+- **No driver, no van (career):** without a driver the van isn't there at all. Carry a bag out the way you came in (the orange ring) and hold E to slip away with it and whatever's in your pockets. Helicopters, boats and the snowcat need the driver too. The plan shows what one bag on foot is worth.
+- **The driver takes a cut:** 10% of your cut on top of his fee (5% with the Veteran wheelman). The job report shows it.
+- Controls and tips updated for bagging, throwing, front fights and breaking free.
+
 ## 0.34.0 — save codes, owned kit, fighting back, throwing bags
 - **Save codes:** in the safehouse, *Save code* gives you a code to copy (or share on a phone), and *Load code* on another device shows what's in it before it replaces that career. The code holds your career and your best scores, sealed so a random or edited code doesn't open.
 - **Name your career:** type a name in the safehouse. It shows at the top and in save codes.
