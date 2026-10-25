@@ -153,6 +153,12 @@ button{font:inherit;cursor:pointer}
 .home-btn{display:grid;gap:4px;justify-items:start;text-align:left;padding:14px 16px}
 .home-btn b{font-size:24px;font-weight:600}.home-btn span{font-family:var(--f-mono);font-size:11px;letter-spacing:.12em;text-transform:uppercase;opacity:.75}
 #coopLobby .coop{display:grid;gap:8px;padding:12px 14px;border:1px solid var(--line);background:rgba(255,255,255,.03)}
+#coopLobby{display:grid;gap:10px}
+.crew-list,.crew-claim{display:grid;gap:6px;justify-items:start}
+.crew-list .btn{text-align:left;white-space:normal}
+.crew .coop-row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.card.menu[data-screen="coop"][data-crew="1"] #careerPanel{display:grid!important}
+.card.menu[data-screen="coop"][data-crew="1"] #freePanel{display:none!important}
 .settings{display:grid;gap:8px;max-width:680px}
 .set-row{display:flex;gap:14px;align-items:center;justify-content:space-between;padding:12px 14px;border:1px solid var(--line);background:rgba(255,255,255,.02)}
 .set-txt{display:grid;gap:2px}.set-txt b{font-size:16px}.set-txt span{font-size:13px;color:var(--dim)}
@@ -6421,7 +6427,7 @@ const CAREER_KEY="cg-career-v1",LEN_STARS={Short:1,Medium:2,Long:3},LEN_LEVEL={S
 const REFRESH_COST=500,RESPEC_COST=8000,BUST_FEE=0.15,MAX_LEVEL=30;
 let CAREER=null,MODE="career";
 function newCareer(){return {v:1,econ:3,name:"",cash:8000,xp:0,skills:{},gear:{},goals:{},stash:{},kit:null,board:[],active:null,stats:{jobs:0,clean:0,busts:0,earned:0,best:0}};}
-function saveCareer(){try{localStorage.setItem(CAREER_KEY,JSON.stringify(CAREER));}catch(e){}}
+function saveCareer(){if(CAREER&&CAREER.crew){crewSave();return;}try{localStorage.setItem(CAREER_KEY,JSON.stringify(CAREER));}catch(e){}}
 function loadCareer(){
   try{const s=localStorage.getItem(CAREER_KEY),raw=s?JSON.parse(s):null;CAREER=Object.assign(newCareer(),raw||{});if(raw&&!raw.econ)CAREER.econ=1;}catch(e){CAREER=newCareer();}
   CAREER.board=(CAREER.board||[]).filter(c=>MAPS[c.map]);
@@ -6517,7 +6523,7 @@ function makeContract(avoid){
   let pay=1,xp=1,stars=LEN_STARS[j.len];for(const t of tw){pay*=TWISTS[t].pay;xp*=TWISTS[t].xp;if(TWISTS[t].hard)stars++;}
   return {id:Math.random().toString(36).slice(2,9),map:j.id,tw,pay:+pay.toFixed(2),xp:+xp.toFixed(2),stars:Math.min(5,stars),mins:LEN_MINS[j.len]};
 }
-function fillBoard(){while(CAREER.board.length<4)CAREER.board.push(makeContract(CAREER.board.map(c=>c.map)));saveCareer();}
+function fillBoard(){if(crewGuest())return;while(CAREER.board.length<4)CAREER.board.push(makeContract(CAREER.board.map(c=>c.map)));saveCareer();}
 function activeContract(){return MODE==="career"&&CAREER&&CAREER.active?CAREER.board.find(c=>c.id===CAREER.active)||null:null;}
 
 // on every (re)start of a job
@@ -6530,15 +6536,22 @@ function careerOnReset(){
   P.ties+=SK.ties;P.jammers=G.tw.light?0:P.jammers+SK.jammers;P.mag=magSize();P.reserve=G.tw.light?0:magSize()*3;
   // a career job: you have what you brought and nothing more (a restart keeps what's left of it)
   G.kit=null;DRILLS.forEach(d=>LV.group.remove(d.mesh));DRILLS=[];setOnFoot(false);
-  if(c){
+  if(c&&CAREER.crew){
+    // a crew job: the drill bags and the van are the same on both screens; the host hands out each player's kit
+    const J=CAREER.crew.job||{};
+    G.kit=CAREER.kit||{map:c.map};G.kitLive=true;
+    if(!NET.guest)applyKit(G.kit);
+    placeDrillBags(J.drills|0);
+    if(!J.driver)setOnFoot(true);
+  }else if(c){
     if(G.kitLive)syncKit();
     const K=CAREER.kit||(CAREER.kit={map:c.map});
     G.kit=K;G.kitLive=true;
-    P.hasGun=!!K.gun;P.ties=K.tie|0;P.jammers=G.tw.light?0:K.jammer|0;G.coins=K.coins|0;
-    P.mag=K.gun?magSize():0;P.reserve=K.gun&&!G.tw.light?(K.mag|0)*magSize():0;
-    G.duffels=K.duffel|0;G.bodyBags=K.bodybag|0;G.bumps=K.bump|0;G.picksLeft=K.pick|0;G.locksPicked=0;
+    applyKit(K);
     placeDrillBags(K.drill|0);
     if(!K.driver)setOnFoot(true);
+  }
+  if(c){
     // what everything on the map is worth on average: your cut is the score measured against this
     const mid=r=>r?(r[0]+r[1])/2:0,d=LV.def;
     G.fullTake=bags.reduce((s,b)=>s+mid(b.gold?(d.goldValue||[80000,120000]):(d.bagValue||[30000,50000])),0)
@@ -6600,6 +6613,7 @@ function careerChip(){
 // at the end of a career job: pay, experience, a fresh offer on the board
 function careerOnEnd(won,score,stealth){
   const c=G.contract;if(MODE!=="career"||!c||!CAREER)return null;
+  if(CAREER.crew){const all=crewOnEnd(won,score,stealth);return all?{crew:true,all}:null;}
   const L0=levelInfo(CAREER.xp).level,notes=[];
   CAREER.board=CAREER.board.filter(b=>b.id!==c.id);CAREER.active=null;G.contract=null;
   let pay=0,fee=0,mult=c.pay;const deaths=(G.kills||0)+(G.civKills||0);
@@ -6641,7 +6655,9 @@ function renderCareer(){
   const pts=pointsFree();$("crPts").textContent=pts;$("crPts").className=pts>0?"hot":"";
   $("crXpFill").style.width=(li.need?li.into/li.need*100:100).toFixed(1)+"%";
   $("crXpTxt").textContent=li.need?`${li.into} / ${li.need} XP TO LEVEL ${li.level+1}`:"MAX LEVEL";
-  const st=CAREER.stats;$("crStats").textContent=`${st.jobs} jobs paid · ${st.clean} clean · ${st.busts} busted · ${money(st.earned)} earned`;
+  const st=CAREER.stats;$("crStats").textContent=`${st.jobs} jobs paid · ${st.clean} clean · ${st.busts} busted · ${money(st.earned)} earned`+(crewOn()?" · the crew's cash, your own level, skills, gear and stash":"");
+  $("crNew").hidden=crewOn();$("crImport").hidden=crewGuest();$("crName").readOnly=crewGuest();
+  $("crName").placeholder=crewOn()?"Name this crew":"Name this career";$("crName").previousElementSibling.textContent=crewOn()?"Crew":"Career";
   document.querySelectorAll(".cr-tabs button").forEach(b=>b.setAttribute("aria-selected",String(b.dataset.tab===crTab)));
   $("crJobs").hidden=crTab!=="jobs";$("crShop").hidden=crTab!=="shop";$("crSkills").hidden=crTab!=="skills";
   $("crTabSkills").textContent=pts>0?`Skills · ${pts}`:"Skills";
@@ -6656,11 +6672,11 @@ function renderCareer(){
         <h3 class="job-name">${j.name}</h3><div class="job-place">${j.place}</div>
         <ul class="twists">${c.tw.map(t=>`<li><b>${TWISTS[t].name}</b><span>${TWISTS[t].desc(c)}</span></li>`).join("")}</ul>
         <div class="offer-pay"><span>UP TO ${money(fullCut(c))}</span><span>PAY ×${c.pay.toFixed(2)}</span><span>XP ×${c.xp.toFixed(2)}</span></div>
-        <button class="btn" data-take="${c.id}">Plan the job</button></article>`;}).join("")}</div>
+        ${crewGuest()?`<button class="btn ghost" disabled>The host plans the job</button>`:crewOn()&&!(hasSlot(myPid())&&hasSlot(partnerPid()))?`<button class="btn ghost" disabled>Waiting for your partner</button>`:`<button class="btn" data-take="${c.id}">Plan the job</button>`}</article>`;}).join("")}</div>
       <div class="cr-row"><button class="btn ghost small" id="crRefresh" ${CAREER.cash<REFRESH_COST?"disabled":""}>New offers · ${money(REFRESH_COST)}</button>
         <span class="lbl">${locks.length?"Unlocks: "+locks.join(", "):"Every job is open to you"}</span></div>`;
     $("crJobs").querySelectorAll("[data-take]").forEach(b=>b.onclick=()=>openPlan(b.dataset.take));
-    $("crRefresh").onclick=()=>{if(CAREER.cash<REFRESH_COST)return;CAREER.cash-=REFRESH_COST;CAREER.board=[];fillBoard();renderCareer();};
+    $("crRefresh").onclick=()=>crAct("refresh");
   }
   if(crTab==="shop"){
     const L=li.level,st=CAREER.stash;
@@ -6674,8 +6690,7 @@ function renderCareer(){
       <p class="cr-note">${stock.length?stock.map(id=>kitWord(id,st[id])).join(" · "):"Empty. Anything you don't use on a job comes back here. If you're busted, the police keep what you brought."}</p>
       <h3 class="cr-h">Big goals <span class="lbl">something to save up for</span></h3>
       <div class="shop">${GOALS.map(g=>card(g,!!CAREER.goals[g.id],"goal")).join("")}</div>`;
-    $("crShop").querySelectorAll("[data-buy]").forEach(b=>b.onclick=()=>{const [kind,id]=b.dataset.buy.split(":"),list=kind==="goal"?GOALS:GEAR,own=kind==="goal"?CAREER.goals:CAREER.gear;
-      const g=list.find(x=>x.id===id);if(!g||own[g.id]||CAREER.cash<g.price||levelInfo(CAREER.xp).level<g.lvl)return;CAREER.cash-=g.price;own[g.id]=true;saveCareer();renderCareer();setMode(MODE);});
+    $("crShop").querySelectorAll("[data-buy]").forEach(b=>b.onclick=()=>{const [kind,id]=b.dataset.buy.split(":");crAct("buy",kind,id);});
   }
   if(crTab==="skills"){
     $("crSkills").innerHTML=`<div class="trees">${SKILL_TREES.map(t=>`<section class="tree"><header><h3>${t.name}</h3><span class="lbl">${t.blurb} · ${treeSpent(t)} points</span></header>
@@ -6685,9 +6700,8 @@ function renderCareer(){
           <span class="node-fx">${k.fx}</span>${s==="locked"?`<span class="node-lock">${need} more point${need===1?"":"s"} in ${t.name} first</span>`:""}</button>`;}).join("")}</section>`).join("")}</div>
       <div class="cr-row"><span class="lbl">One skill point per level, up to level ${MAX_LEVEL}. Each tree opens up as you put points into it.</span>
         <button class="btn ghost small" id="crRespec" ${skillSpent()&&CAREER.cash>=RESPEC_COST?"":"disabled"}>Reset skills · ${money(RESPEC_COST)}</button></div>`;
-    $("crSkills").querySelectorAll("[data-skill]").forEach(b=>b.onclick=()=>{
-      for(const t of SKILL_TREES)for(const k of t.skills)if(k.id===b.dataset.skill&&skillState(t,k)==="avail"){CAREER.skills[k.id]=true;saveCareer();renderCareer();return;}});
-    $("crRespec").onclick=()=>{if(!skillSpent()||CAREER.cash<RESPEC_COST)return;CAREER.cash-=RESPEC_COST;CAREER.skills={};saveCareer();renderCareer();};
+    $("crSkills").querySelectorAll("[data-skill]").forEach(b=>b.onclick=()=>crAct("learn",b.dataset.skill));
+    $("crRespec").onclick=()=>crAct("respec");
   }
   $("crNew").textContent=crConfirmNew?"Click again to wipe your career":"New career";
   {const n=$("crName");if(n&&document.activeElement!==n&&n.value!==(CAREER.name||""))n.value=CAREER.name||"";}
@@ -6731,15 +6745,21 @@ function planNeeds(){
 const kitMax=(k)=>{const light=PLAN&&PLAN.c.tw.includes("light");if(light&&(k.id==="jammer"||k.id==="mag"))return 0;if(k.id==="mag"&&!PLAN.sel.gun)return 0;if(k.id==="drill")return PLAN&&PLAN.I.drill?1:0;return k.max||1;};
 const kitOwned=k=>!!(k.own&&CAREER.gear[k.own]);
 function planFill(){const sel={};PLAN.sel=sel;for(const n of planNeeds()){const k=KIT.find(x=>x.id===n.id);sel[n.id]=k.job?true:Math.min(n.n,kitMax(k));}}
-function planCovered(n){const k=KIT.find(x=>x.id===n.id);return k.job?(kitOwned(k)||!!PLAN.sel[n.id]):(PLAN.sel[n.id]||0)>=n.n;}
+function planCovered(n){const k=KIT.find(x=>x.id===n.id);if(k.job&&crewGuest())return !!PLAN.hostDriver;return k.job?(kitOwned(k)||!!PLAN.sel[n.id]):(PLAN.sel[n.id]||0)>=n.n;}
 function renderPlan(){
-  const {c,I,sel}=PLAN,j=jobInfo(c.map)||{name:c.map,place:"",len:"Short"},cost=kitCost(sel,c),can=CAREER.cash>=cost,st=CAREER.stash;
+  if(crewGuest())PLAN.sel.driver=false;
+  const {c,I,sel}=PLAN,j=jobInfo(c.map)||{name:c.map,place:"",len:"Short"},cost=kitCost(sel,c),st=CAREER.stash;
+  // a crew job: the partner's kit is paid from the same cash; the host hires the one driver
+  const crew=crewOn(),guest=crewGuest(),gp=partnerPid(),drv=guest?!!PLAN.hostDriver:!!sel.driver;
+  const pCost=crew&&!guest&&PLAN.partnerSel&&hasSlot(gp)?asSlot(gp,()=>kitCost(PLAN.partnerSel,c)):0;
+  const total=guest?cost+(PLAN.hostCost||0):cost+pCost,ready=!crew||guest||!!PLAN.partnerSel,can=CAREER.cash>=total&&ready;
   const needs=planNeeds();
   const row=k=>{
     if(k.id==="drill"&&!I.drill)return "";
     const owned=kitOwned(k),price=k.job?kitPrice(k,c):kitPrice(k,c),max=kitMax(k),n=sel[k.id]||0;
     let ctl;
-    if(k.job)ctl=owned?`<span class="lbl good">OWNED</span>`:`<button type="button" class="kit-tog" data-tog="${k.id}" aria-pressed="${!!sel[k.id]}">${sel[k.id]?"Bring":"Skip"}</button>`;
+    if(k.job&&guest)ctl=`<span class="lbl ${drv?"good":""}">${drv?"THE HOST HIRED HIM":"THE HOST'S CALL"}</span>`;
+    else if(k.job)ctl=owned?`<span class="lbl good">OWNED</span>`:`<button type="button" class="kit-tog" data-tog="${k.id}" aria-pressed="${!!sel[k.id]}">${sel[k.id]?"Bring":"Skip"}</button>`;
     else ctl=`<button type="button" class="kit-step" data-dec="${k.id}" ${n<=0?"disabled":""} aria-label="One less">−</button><b class="kit-n">${n}</b><button type="button" class="kit-step" data-inc="${k.id}" ${n>=max?"disabled":""} aria-label="One more">+</button>`;
     const have=!k.job&&st[k.id]?` · ${st[k.id]} in stash`:"";
     const pr=owned?"":`${money(price)}${k.job?" / job":k.step?" / "+k.step:" each"}${have}`;
@@ -6751,18 +6771,21 @@ function renderPlan(){
   $("crJobs").innerHTML=`<div class="plan">
     <div class="plan-head"><button type="button" class="btn ghost small" id="planBack">← Board</button>
       <div><h3 class="job-name">${j.name}</h3><div class="job-place">${j.place} · ${j.len.toUpperCase()} · ${stars(c.stars)}${c.tw.length?" · "+c.tw.map(t=>TWISTS[t].name).join(", "):""}</div></div>
-      <div class="plan-worth"><span class="lbl">${sel.driver?"Everything, clean, after the driver":"On foot: one bag, clean, about"}</span><b>${money(sel.driver?fullCut(c):Math.round(fullCut(c,false)/Math.max(1,I.nb+I.gold)/100)*100)}</b></div></div>
+      <div class="plan-worth"><span class="lbl">${drv?"Everything, clean, after the driver":"On foot: one bag, clean, about"}</span><b>${money(drv?fullCut(c):Math.round(fullCut(c,false)/Math.max(1,I.nb+I.gold)/100)*100)}</b></div></div>
     <div class="plan-cols">
       <section><h4 class="lbl">Intel</h4><dl class="plan-intel">${lines.map(([a,b])=>`<dt>${a}</dt><dd>${b}</dd>`).join("")}</dl>
         <h4 class="lbl">To take everything</h4><ul class="plan-check">${needs.map(n=>{const ok=planCovered(n),k=KIT.find(x=>x.id===n.id);
           return `<li class="${ok?"ok":n.need?"miss":"opt"}"><i>${ok?"✓":n.need?"✗":"·"}</i><b>${k.job?k.name:`${k.name.replace(/ ×\d+$/,"")} ×${n.n}`}</b><span>${n.need?"":"Useful · "}${n.why}</span></li>`;}).join("")}</ul></section>
       <section><h4 class="lbl">Your kit <span>· you go in with your mask and nothing else</span></h4><div class="kit">${KIT.map(row).join("")}</div></section>
     </div>
-    <div class="plan-foot"><div class="plan-total"><span class="lbl">Kit and crew</span><b class="${can?"":"bad"}">${money(cost)}</b><span class="lbl">You have ${money(CAREER.cash)}</span></div>
+    <div class="plan-foot"><div class="plan-total"><span class="lbl">${crew?"Your kit":"Kit and crew"}</span><b class="${CAREER.cash>=total?"":"bad"}">${money(cost)}</b><span class="lbl">${crew?`${guest?"The host's kit and the driver":"Your partner's kit"} ${guest||PLAN.partnerSel?money(guest?PLAN.hostCost||0:pCost):"· still choosing"} · the crew has ${money(CAREER.cash)}`:`You have ${money(CAREER.cash)}`}</span></div>
       <button type="button" class="btn ghost small" id="planFill">Fill to plan</button><button type="button" class="btn ghost small" id="planClear">Nothing</button>
-      <button type="button" class="btn" id="planGo" ${can?"":"disabled"}>${can?"Start the job":"Not enough cash"}</button></div></div>`;
+      <button type="button" class="btn" id="planGo" ${can&&!guest?"":"disabled"}>${guest?"The host starts the job":!ready?"Waiting for your partner's kit":can?"Start the job":"Not enough cash"}</button></div></div>`;
   const root=$("crJobs"),re=()=>renderCareer();
-  root.querySelector("#planBack").onclick=()=>{PLAN=null;re();};
+  root.querySelector("#planBack").onclick=()=>{if(guest){crTab="jobs";PLAN=null;re();return;}PLAN=null;if(crew&&NET.send)NET.send({t:"crewPlan",id:null});re();};
+  // keep the other side up to date: the guest's kit, the host's driver and bill
+  if(guest){const k=JSON.stringify(sel);if(k!==PLAN.sent){PLAN.sent=k;NET.send({t:"crewSel",id:PLAN.id,sel});}}
+  else if(crew&&NET.send){const k=JSON.stringify([PLAN.id,!!sel.driver,cost]);if(k!==PLAN.sent){PLAN.sent=k;NET.send({t:"crewPlan",id:PLAN.id,driver:!!sel.driver,cost});}}
   root.querySelector("#planFill").onclick=()=>{planFill();re();};
   root.querySelector("#planClear").onclick=()=>{PLAN.sel={};re();};
   root.querySelectorAll("[data-tog]").forEach(b=>b.onclick=()=>{const id=b.dataset.tog;sel[id]=!sel[id];if(id==="gun"&&!sel.gun)sel.mag=0;re();});
@@ -6772,7 +6795,7 @@ function renderPlan(){
 }
 // pay, take from the stash, and go
 function startPlan(){
-  if(!PLAN)return;const {c,sel}=PLAN,cost=kitCost(sel,c);if(CAREER.cash<cost)return;
+  if(!PLAN)return;if(crewOn()){crewStartPlan();return;}const {c,sel}=PLAN,cost=kitCost(sel,c);if(CAREER.cash<cost)return;
   CAREER.cash-=cost;const K={map:c.map};
   for(const k of KIT){
     if(k.job){K[k.id]=kitOwned(k)||!!sel[k.id];continue;}
@@ -6784,7 +6807,7 @@ function setMode(m,save){
   MODE=m;if(save!==false)try{localStorage.setItem("cg-mode",m);}catch(e){}
   document.querySelectorAll(".modes button").forEach(b=>b.setAttribute("aria-selected",String(b.dataset.mode===m)));
   $("careerPanel").hidden=m!=="career";$("freePanel").hidden=m!=="free";
-  $("menuStamp").textContent=m==="career"?(goal("penthouse")?"THE PENTHOUSE · RETIRED IN STYLE":"THE SAFEHOUSE")+(CAREER&&CAREER.name?" · "+CAREER.name.toUpperCase():""):"FREE PLAY";
+  $("menuStamp").textContent=m==="career"?(crewOn()?"THE CREW":goal("penthouse")?"THE PENTHOUSE · RETIRED IN STYLE":"THE SAFEHOUSE")+(CAREER&&CAREER.name?" · "+CAREER.name.toUpperCase():""):MENU_SCREEN==="coop"?"CO-OP":"FREE PLAY";
   $("menuIntro").textContent=m==="career"?`Take jobs off the board and plan them: you go in with your mask and whatever you buy, so hire a driver and bring bags, picks and the rest. Each job has a twist that changes how it plays and what it pays. Money buys gear and big upgrades; experience gives levels, and every level a skill point. Get busted and the police keep your kit, and the lawyers take ${goal("offshore")?5:15}% of your cash.`:
     "Any job, as it comes: no twists, no skills, no gear. Every bag and every stack of loose cash adds to your take, and you can leave whenever you like. Never set off the alarm: +30%. On jobs with civilians, nobody hurt: another +15%.";
   if(m==="career")renderCareer();
@@ -6806,6 +6829,7 @@ async function squeeze(bytes,dir){
 const b64u={enc:u=>{let s="";for(let i=0;i<u.length;i+=0x8000)s+=String.fromCharCode.apply(null,u.subarray(i,i+0x8000));return btoa(s).replace(/\+/g,"-").replace(/\//g,"_").replace(/=+$/,"");},
   dec:t=>{const s=atob(t.replace(/-/g,"+").replace(/_/g,"/")+"===".slice(0,(4-t.length%4)%4));const u=new Uint8Array(s.length);for(let i=0;i<s.length;i++)u[i]=s.charCodeAt(i);return u;}};
 function saveBundle(){
+  if(crewOn()){const c=JSON.parse(JSON.stringify(CREW));c.active=null;c.job=null;for(const s of Object.values(c.slots))s.kit=null;return {v:1,kind:"crew",at:Date.now(),crew:c};}
   const bests={};for(const id of Object.keys(MAPS)){const v=readBest(id);if(v)bests[id]=v;}
   const c=JSON.parse(JSON.stringify(CAREER));c.kit=null;c.active=null;
   return {v:1,kind:"career",at:Date.now(),career:c,bests};
@@ -6826,6 +6850,7 @@ async function readCode(text){
     const body=new Uint8Array(await crypto.subtle.decrypt({name:"AES-GCM",iv:all.subarray(0,12)},await saveCodeKey(),all.subarray(12)));
     const json=body[0]===1?await squeeze(body.subarray(1),"out"):body.subarray(1);if(!json)return null;
     const b=JSON.parse(new TextDecoder().decode(json));
+    if(b&&b.kind==="crew"&&b.crew&&typeof b.crew==="object"&&b.crew.slots)return b;
     if(!b||b.kind!=="career"||!b.career||typeof b.career!=="object")return null;
     return b;
   }catch(e){return null;}
@@ -6840,17 +6865,26 @@ function saveUI(mode){
   const box=$("crSave");if(!mode){box.hidden=true;box.innerHTML="";return;}
   box.hidden=false;
   if(mode==="export"){
-    box.innerHTML=`<div class="lbl">${CAREER.name?`Save code for “${CAREER.name.replace(/[<>&"]/g,"")}”`:"Your save code"} · paste it into Load code on another device</div><textarea id="crCode" readonly>Making the code…</textarea>
+    box.innerHTML=`<div class="lbl">${CAREER.name?`Save code for “${CAREER.name.replace(/[<>&"]/g,"")}”`:crewOn()?"Your crew's save code":"Your save code"} · paste it into Load code on another device</div><textarea id="crCode" readonly>Making the code…</textarea>
       <div class="row"><button type="button" class="btn small" id="crCopy">Copy</button>${navigator.share?`<button type="button" class="btn ghost small" id="crShare">Share</button>`:""}<button type="button" class="btn ghost small" id="crSaveClose">Close</button><span class="msg" id="crSaveMsg"></span></div>`;
     exportCode().then(code=>{const ta=$("crCode");if(ta)ta.value=code;}).catch(()=>{const m=$("crSaveMsg");if(m){m.textContent="This browser can't make save codes";m.className="msg bad";}});
     $("crCopy").onclick=async()=>{const ta=$("crCode"),m=$("crSaveMsg");try{await navigator.clipboard.writeText(ta.value);m.textContent="Copied";m.className="msg good";}catch(e){ta.select();try{document.execCommand("copy");m.textContent="Copied";m.className="msg good";}catch(e2){m.textContent="Select the code and copy it";m.className="msg";}}};
     if($("crShare"))$("crShare").onclick=()=>{try{navigator.share({title:"Clean Getaway save",text:$("crCode").value});}catch(e){}};
   }else{
-    box.innerHTML=`<div class="lbl">Load a save code · it replaces the career on this device</div><textarea id="crCode" placeholder="CG1-…" spellcheck="false" autocomplete="off"></textarea>
+    box.innerHTML=`<div class="lbl">${crewOn()?"Load a crew's save code":"Load a save code · it replaces the career on this device"}</div><textarea id="crCode" placeholder="CG1-…" spellcheck="false" autocomplete="off"></textarea>
       <div class="row"><button type="button" class="btn small" id="crCheck">Check the code</button><button type="button" class="btn ghost small" id="crSaveClose">Close</button><span class="msg" id="crSaveMsg"></span></div>`;
     $("crCheck").onclick=async()=>{
       const m=$("crSaveMsg"),b=await readCode($("crCode").value);
       if(!b){m.textContent="That code isn't valid";m.className="msg bad";return;}
+      if(b.kind==="crew"){
+        // a crew's save code: keep it on this device; the host can open it straight away
+        const cw=fixCrew(b.crew),sum=crewSummary(cw),open=NET.host&&MENU_SCREEN==="coop";
+        m.innerHTML=`A crew${sum.name?`: <b>${sum.name}</b>`:""} · ${sum.members.map(x=>`${x[0]||"?"} L${x[1]}`).join(", ")||"no members"} · ${money(cw.cash)}. <button type="button" class="btn small" id="crReplace">${open?"Play this crew":"Keep it on this device"}</button>`;m.className="msg good";
+        $("crReplace").onclick=()=>{const have=loadCrews().crews[cw.id];if(!have||!(have.at>cw.at)){CREWS.crews[cw.id]=cw;storeCrews();}saveUI(null);
+          if(open)crewStart(JSON.parse(JSON.stringify(CREWS.crews[cw.id])));else toast("Crew saved. Host a co-op game and pick it under Crew career","good",2600);};
+        return;
+      }
+      if(crewOn()){m.textContent="That's a single-player career. Load it from Singleplayer";m.className="msg bad";return;}
       const c=b.career,L=levelInfo(c.xp||0).level;
       const nm=String(c.name||"").replace(/[<>&"]/g,"").slice(0,24);
       m.innerHTML=`${nm?`<b>${nm}</b> · `:""}Level ${L} · ${money(c.cash||0)} · ${(c.stats&&c.stats.jobs)||0} jobs paid. <button type="button" class="btn small" id="crReplace">Replace my career</button>`;m.className="msg good";
@@ -6859,7 +6893,244 @@ function saveUI(mode){
   }
   $("crSaveClose").onclick=()=>saveUI(null);
 }
-function setStampOnly(){if(MODE==="career")$("menuStamp").textContent=(goal("penthouse")?"THE PENTHOUSE · RETIRED IN STYLE":"THE SAFEHOUSE")+(CAREER&&CAREER.name?" · "+CAREER.name.toUpperCase():"");}
+function setStampOnly(){if(MODE==="career")$("menuStamp").textContent=(crewOn()?"THE CREW":goal("penthouse")?"THE PENTHOUSE · RETIRED IN STYLE":"THE SAFEHOUSE")+(CAREER&&CAREER.name?" · "+CAREER.name.toUpperCase():"");}
+/* ---------- the crew career: a career for two, kept on both devices ----------
+   Cash and the big goals belong to the crew; each player has their own level, skills, gear and stash, and plans and
+   buys their own kit. The host picks the job and hires the one driver. Each device has a player ID that owns a slot
+   in the crew; on a new device you claim your slot by name. The crew save is copied to both devices after every
+   change, and when you connect the newer copy wins, so either of you can host. */
+const CREWS_KEY="cg-crews-v1",PID_KEY="cg-player-id",CREW_SIZE=2;
+let CREWS=null,CREW=null,SOLO_CAREER=null,CREW_PICK=false,CREW_WAIT=null,PID_MEM=null,CREW_LATER=false;
+const rid=()=>Math.random().toString(36).slice(2,10)+Date.now().toString(36).slice(-4);
+function myPid(){try{let id=localStorage.getItem(PID_KEY);if(!id){id=PID_MEM||rid();localStorage.setItem(PID_KEY,id);}return id;}catch(e){return PID_MEM||(PID_MEM=rid());}}
+function loadCrews(){if(CREWS)return CREWS;try{CREWS=JSON.parse(localStorage.getItem(CREWS_KEY)||"null");}catch(e){CREWS=null;}if(!CREWS||typeof CREWS!=="object"||!CREWS.crews)CREWS={crews:{},last:null};return CREWS;}
+function storeCrews(){try{localStorage.setItem(CREWS_KEY,JSON.stringify(CREWS));}catch(e){}}
+function newCrew(){return {v:1,kind:"crew",id:rid(),name:"",at:Date.now(),econ:3,cash:8000,goals:{},board:[],active:null,job:null,stats:{jobs:0,clean:0,busts:0,earned:0,best:0},slots:{}};}
+function newSlot(name){return {name:name||"",xp:0,skills:{},gear:{},stash:{},kit:null};}
+const cleanName=s=>String(s||"").replace(/[<>&"]/g,"").replace(/\s+/g," ").trim().slice(0,24);
+function fixCrew(c){
+  c=c&&typeof c==="object"?c:newCrew();c.kind="crew";c.id=String(c.id||rid());c.name=cleanName(c.name);c.at=+c.at||0;c.cash=+c.cash||0;
+  c.goals=c.goals||{};c.board=(c.board||[]).filter(b=>b&&MAPS[b.map]);c.stats=Object.assign({jobs:0,clean:0,busts:0,earned:0,best:0},c.stats||{});c.slots=c.slots||{};
+  for(const k of Object.keys(c.slots)){const s=c.slots[k];if(!s||typeof s!=="object"){delete c.slots[k];continue;}s.name=cleanName(s.name);s.skills=s.skills||{};s.gear=s.gear||{};s.stash=s.stash||{};s.xp=+s.xp||0;}
+  return c;
+}
+function crewSummary(c){return {id:c.id,name:c.name,at:c.at,members:Object.values(c.slots).map(s=>[s.name,levelInfo(s.xp).level])};}
+function crewList(){return Object.values(loadCrews().crews).map(crewSummary).sort((a,b)=>b.at-a.at);}
+// the career code reads and writes CAREER: on a crew job it's a view of the crew plus one member's slot
+function crewView(crew,pid){
+  const v={crew,pid,v:1,econ:3};let tmp=null;
+  const S=()=>crew.slots[pid]||tmp||(tmp=newSlot(""));
+  for(const k of ["name","cash","goals","board","active","stats"])Object.defineProperty(v,k,{get:()=>crew[k],set:x=>{crew[k]=x;},enumerable:true});
+  for(const k of ["xp","skills","gear","stash","kit"])Object.defineProperty(v,k,{get:()=>S()[k],set:x=>{S()[k]=x;},enumerable:true});
+  return v;
+}
+const crewOn=()=>!!(CAREER&&CAREER.crew);
+const crewGuest=()=>crewOn()&&!!NET.guest;
+const partnerPid=()=>NET.host?(NET.remote&&NET.remote.pid):NET.peerPid;
+const hasSlot=pid=>!!(CREW&&pid&&CREW.slots[pid]);
+// run fn as the crew member with this player ID (their skills, gear, stash and kit)
+function asSlot(pid,fn){const c=CAREER;CAREER=crewView(CREW,pid);try{return fn();}finally{CAREER=c;}}
+// keep this device's copy; the host also sends it to the guest
+function crewSave(send){
+  if(!CREW)return;CREW.at=Date.now();loadCrews().crews[CREW.id]=CREW;CREWS.last=CREW.id;storeCrews();
+  if(send!==false&&NET.host&&NET.send)NET.send({t:"crew",crew:CREW});
+}
+function crewSendList(){if(NET.send)NET.send({t:"crews",pid:myPid(),list:crewList()});}
+// the remote players' careers and skills while the host runs the job
+function crewPlayers(){for(const pl of PLAYERS){if(pl.local)continue;pl.CR=CREW&&pl.pid?crewView(CREW,pl.pid):null;}}
+function crewEnter(crew){
+  if(!crewOn())SOLO_CAREER=CAREER;
+  CREW=fixCrew(crew);loadCrews().crews[CREW.id]=CREW;CREWS.last=CREW.id;storeCrews();
+  CAREER=crewView(CREW,myPid());PLAN=null;crTab="jobs";CREW_PICK=false;CREW_WAIT=null;
+  crewPlayers();setMode("career",false);
+}
+function crewLeave(tell){
+  if(tell&&NET.host&&NET.send&&CREW)NET.send({t:"crewOff"});
+  if(CREW||crewOn()){CREW=null;if(SOLO_CAREER){CAREER=SOLO_CAREER;SOLO_CAREER=null;}PLAN=null;for(const pl of PLAYERS)pl.CR=null;}
+  CREW_PICK=false;CREW_WAIT=null;
+  if(MENU_SCREEN==="coop")setMode("free",false);
+  crewUI();
+}
+// the host opens a crew: kit left over from a job that never finished goes back to its owner first
+function crewStart(crew){
+  crew=fixCrew(crew);
+  if(crew.active||Object.values(crew.slots).some(s=>s.kit)){const c=CREW;CREW=crew;for(const pid of Object.keys(crew.slots))if(crew.slots[pid].kit)asSlot(pid,()=>returnKit());CREW=c;crew.active=null;crew.job=null;}
+  crewEnter(crew);
+  if(hasSlot(myPid())&&CAREER.board.length<4)fillBoard();
+  crewSave();crewUI();renderCareer();
+}
+function crewPick(id){
+  const mine=loadCrews().crews[id],theirs=((NET.remote&&NET.remote.crews)||[]).find(x=>x.id===id);
+  if(theirs&&(!mine||theirs.at>mine.at)){CREW_WAIT=id;NET.send({t:"crewGet",id});crewUI();return;}
+  if(mine)crewStart(JSON.parse(JSON.stringify(mine)));
+}
+// someone takes a slot: their own (a new device), or a new one while the crew has room
+function crewClaim(pid,slot,name){
+  if(!CREW||!pid||CREW.slots[pid])return false;
+  const busy=[myPid(),partnerPid()].filter(x=>x&&x!==pid);
+  if(slot&&CREW.slots[slot]&&!busy.includes(slot)){CREW.slots[pid]=CREW.slots[slot];delete CREW.slots[slot];if(cleanName(name))CREW.slots[pid].name=cleanName(name);}
+  else if(!slot&&Object.keys(CREW.slots).length<CREW_SIZE)CREW.slots[pid]=newSlot(cleanName(name)||`Player ${Object.keys(CREW.slots).length+1}`);
+  else return false;
+  crewPlayers();
+  if(CAREER.board.length<4&&hasSlot(myPid()))fillBoard();
+  return true;
+}
+function crewAdopt(c){
+  c=fixCrew(c);
+  if(!CREW||CREW.id!==c.id){crewEnter(c);}
+  else{for(const k of Object.keys(CREW))delete CREW[k];Object.assign(CREW,c);loadCrews().crews[CREW.id]=CREW;CREWS.last=CREW.id;storeCrews();}
+  if(PLAN&&!CREW.board.some(b=>b.id===PLAN.id))PLAN=null;
+  crewUI();if(state==="menu")renderCareer();
+}
+// the guest's taps in the safehouse run on the host, as the guest
+function crAct(op,...a){
+  if(crewGuest()){NET.send({t:"crewOp",op,a});return;}
+  if(CR_OPS[op])CR_OPS[op](...a);
+}
+const CR_OPS={
+  refresh(){if(CAREER.cash<REFRESH_COST)return;CAREER.cash-=REFRESH_COST;CAREER.board=[];fillBoard();renderCareer();},
+  buy(kind,id){const list=kind==="goal"?GOALS:GEAR,own=kind==="goal"?CAREER.goals:CAREER.gear;
+    const g=list.find(x=>x.id===id);if(!g||own[g.id]||CAREER.cash<g.price||levelInfo(CAREER.xp).level<g.lvl)return;CAREER.cash-=g.price;own[g.id]=true;saveCareer();renderCareer();setMode(MODE,false);},
+  learn(id){for(const t of SKILL_TREES)for(const k of t.skills)if(k.id===id&&skillState(t,k)==="avail"){CAREER.skills[k.id]=true;saveCareer();renderCareer();return;}},
+  respec(){if(!skillSpent()||CAREER.cash<RESPEC_COST)return;CAREER.cash-=RESPEC_COST;CAREER.skills={};saveCareer();renderCareer();}
+};
+function crewHostMsg(pl,d){
+  switch(d.t){
+    case "crews":pl.pid=String(d.pid||"");pl.crews=Array.isArray(d.list)?d.list:[];crewPlayers();crewUI();break;
+    case "crewFull":if(d.crew&&CREW_WAIT===d.crew.id)crewStart(d.crew);break;
+    case "crewClaim":if(crewClaim(pl.pid,d.slot,d.name)){crewSave();crewUI();renderCareer();}break;
+    case "crewOp":if(CREW&&hasSlot(pl.pid)&&CR_OPS[d.op]&&state==="menu"){asSlot(pl.pid,()=>CR_OPS[d.op](...(d.a||[])));crewSave();renderCareer();}break;
+    case "crewSel":if(PLAN&&crewOn()&&d.id===PLAN.id){PLAN.partnerSel=Object.assign({},d.sel||{},{driver:false});renderCareer();}break;
+  }
+}
+function crewGuestMsg(d){
+  switch(d.t){
+    case "crews":NET.peerPid=String(d.pid||"");NET.peerCrews=Array.isArray(d.list)?d.list:[];crewUI();break;
+    case "crewsPlease":crewSendList();break;
+    case "crew":if(d.crew)crewAdopt(d.crew);break;
+    case "crewOff":crewLeave();renderCareer();break;
+    case "crewGet":{const c=loadCrews().crews[d.id];if(c)NET.send({t:"crewFull",crew:c});break;}
+    case "crewPlan":
+      if(!crewOn()||state!=="menu")break;
+      if(!d.id){PLAN=null;renderCareer();break;}
+      if(!PLAN||PLAN.id!==d.id){crTab="jobs";openPlan(d.id);}
+      if(PLAN){PLAN.hostDriver=!!d.driver;PLAN.hostCost=d.cost||0;renderCareer();}
+      break;
+  }
+}
+// the crew strip on the co-op screen: free play or a crew, pick or start one, claim your slot
+function crewUI(){
+  const box=$("crewBox");if(!box)return;
+  const card=document.querySelector(".card.menu"),me=myPid(),pp=partnerPid();
+  card.dataset.crew=crewOn()&&hasSlot(me)?"1":"0";
+  if(!NET.on){box.hidden=true;box.innerHTML="";return;}
+  box.hidden=false;
+  const members=CREW?Object.entries(CREW.slots).map(([pid,s])=>`<b>${s.name||"?"}</b> · level ${levelInfo(s.xp).level}${pid===me?" (you)":pid===pp?" (partner)":""}`).join(" &nbsp;·&nbsp; "):"";
+  let h=`<span class="lbl">Play</span>`;
+  if(NET.host)h+=`<div class="coop-row"><button type="button" class="kit-tog" data-cm="free" aria-pressed="${!CREW&&!CREW_PICK}">Free play</button><button type="button" class="kit-tog" data-cm="crew" aria-pressed="${!!CREW||CREW_PICK}">Crew career</button></div>`;
+  if(!CREW&&NET.host&&CREW_PICK){
+    const mine=crewList(),theirs=((NET.remote&&NET.remote.crews)||[]).filter(t=>!mine.some(m=>m.id===t.id)),all=[...mine.map(c=>[c,"this device"]),...theirs.map(c=>[c,"your partner's device"])];
+    const line=c=>`${c.name?`<b>${c.name}</b> · `:""}${c.members.map(m=>`${m[0]||"?"} L${m[1]}`).join(", ")||"nobody yet"}`;
+    h+=CREW_WAIT?`<p class="cr-note">Getting the crew from your partner's device…</p>`:
+      `<p class="cr-note">A career for the two of you: shared cash and big goals, your own levels, skills, gear and kit. It saves on both devices.</p>
+      <div class="crew-list">${all.map(([c,where])=>`<button type="button" class="btn ghost small" data-crew="${c.id}">${line(c)} <span class="lbl">${where}</span></button>`).join("")}
+      <button type="button" class="btn small" id="crewNew">New crew</button></div>`;
+  }else if(!CREW&&!NET.host){
+    h+=`<p class="cr-note">The host picks free play or a crew career.</p>`;
+  }else if(CREW){
+    h+=`<p class="cr-note">${CREW.name?`<b>${CREW.name}</b> · `:""}${members||"No members yet"}</p>`;
+    if(!hasSlot(me)){
+      const open=Object.entries(CREW.slots).filter(([pid])=>pid!==pp);
+      h+=`<div class="crew-claim"><span class="lbl">Who are you in this crew?</span>${open.map(([pid,s])=>`<button type="button" class="btn ghost small" data-claim="${pid}">I'm ${s.name||"?"} · level ${levelInfo(s.xp).level}</button>`).join("")}
+        ${Object.keys(CREW.slots).length<CREW_SIZE?`<span class="coop-row"><input id="crewMe" maxlength="24" placeholder="Your name" autocomplete="off" spellcheck="false"><button type="button" class="btn small" id="crewJoin">Join the crew</button></span>`:""}
+        ${!open.length&&Object.keys(CREW.slots).length>=CREW_SIZE?`<span class="cr-note bad">This crew is full.</span>`:""}</div>`;
+    }else if(!hasSlot(pp))h+=`<p class="cr-note">Waiting for your partner to join the crew.</p>`;
+  }
+  const typed=$("crewMe"),tv=typed?typed.value:"",tf=typed&&document.activeElement===typed;
+  box.innerHTML=h;
+  if($("crewMe")&&tv){$("crewMe").value=tv;if(tf)$("crewMe").focus();}
+  box.querySelectorAll("[data-cm]").forEach(b=>b.onclick=()=>{if(b.dataset.cm==="free"){crewLeave(true);}else if(!CREW){CREW_PICK=true;crewUI();}});
+  box.querySelectorAll("[data-crew]").forEach(b=>b.onclick=()=>crewPick(b.dataset.crew));
+  if($("crewNew"))$("crewNew").onclick=()=>crewStart(newCrew());
+  const claim=(slot)=>{const nm=$("crewMe")?$("crewMe").value:"";if(NET.host){if(crewClaim(me,slot,nm)){crewSave();crewUI();renderCareer();}}else NET.send({t:"crewClaim",slot,name:nm});};
+  box.querySelectorAll("[data-claim]").forEach(b=>b.onclick=()=>claim(b.dataset.claim));
+  if($("crewJoin"))$("crewJoin").onclick=()=>claim(null);
+  if($("crewMe"))$("crewMe").addEventListener("keydown",e=>{e.stopPropagation();if(e.key==="Enter")claim(null);});
+}
+// a crew job starts: the host pays both kits and the driver from the crew's cash, then starts it for both
+function crewStartPlan(){
+  if(!PLAN||!NET.host||!NET.remote)return;
+  const {c,sel}=PLAN,gp=NET.remote.pid,psel=PLAN.partnerSel;if(!psel||!hasSlot(gp))return;
+  const mine=kitCost(sel,c),theirs=asSlot(gp,()=>kitCost(psel,c));if(CAREER.cash<mine+theirs)return;
+  const mk=s=>{const K={map:c.map};for(const k of KIT){if(k.job){K[k.id]=kitOwned(k)||!!s[k.id];continue;}const n=Math.min(s[k.id]||0,kitMax(k));K[k.id]=n;CAREER.stash[k.id]=Math.max(0,(CAREER.stash[k.id]||0)-n);}return K;};
+  CAREER.cash-=mine+theirs;
+  CAREER.kit=mk(sel);asSlot(gp,()=>{CAREER.kit=mk(psel);CAREER.kit.driver=false;});
+  CREW.job={driver:!!CAREER.kit.driver,drills:(CAREER.kit.drill|0)+(CREW.slots[gp].kit.drill|0)};
+  CREW.active=c.id;PLAN=null;G.kitLive=false;
+  selectedMap=c.map;crewSave();
+  initAudio();coopStartRun();begin();
+}
+// the kit a player brought, on the job (run as that player)
+function applyKit(K){
+  P.hasGun=!!K.gun;P.ties=K.tie|0;P.jammers=G.tw.light?0:K.jammer|0;G.coins=K.coins|0;
+  P.mag=K.gun?magSize():0;P.reserve=K.gun&&!G.tw.light?(K.mag|0)*magSize():0;
+  G.duffels=K.duffel|0;G.bodyBags=K.bodybag|0;G.bumps=K.bump|0;G.picksLeft=K.pick|0;G.locksPicked=0;
+}
+// host, after the players are reset: the guest's skills and kit
+function crewKits(){
+  for(const pl of others())withPlayer(pl,"sim",()=>{SK=computeSK();P.mag=magSize();applyKit(CAREER.kit||{});});
+}
+// the end of a crew job: one pay into the crew's cash, experience for each, kit home (or kept by the police)
+function crewOnEnd(won,score,stealth){
+  const c=G.contract;if(!c)return null;
+  const L0={},out={};const deaths=(G.kills||0)+(G.civKills||0);
+  for(const pid of Object.keys(CREW.slots))L0[pid]=levelInfo(CREW.slots[pid].xp).level;
+  CREW.board=CREW.board.filter(b=>b.id!==c.id);CREW.active=null;G.contract=null;
+  // everyone's counters back into their kit first, then home or lost
+  for(const pl of PLAYERS)withPlayer(pl,"sim",()=>syncKit());
+  const notes={},lost=new Set();
+  for(const pl of PLAYERS){const pid=pl.local?myPid():pl.pid;if(!pid||!hasSlot(pid))continue;notes[pid]=[];
+    if(won&&!pl.out){const back=asSlot(pid,()=>returnKit());if(back&&Object.keys(back).length)notes[pid].push("Back in your stash: "+Object.entries(back).map(([k,n])=>kitWord(k,n)).join(", "));}
+    else{const K=CREW.slots[pid].kit;if(K&&KIT_COUNT.some(id=>K[id]>0))notes[pid].push("The police kept your kit: "+KIT_COUNT.filter(id=>K[id]>0).map(id=>kitWord(id,K[id])).join(", "));CREW.slots[pid].kit=null;lost.add(pid);}}
+  // a partner who left mid-job: their kit simply comes home
+  for(const pid of Object.keys(CREW.slots))if(CREW.slots[pid].kit)asSlot(pid,()=>returnKit());
+  G.kitLive=false;G.kit=null;
+  let pay=0,fee=0,mult=c.pay;const J=CREW.job||{},shared=[];
+  if(won||score>0){
+    if(won&&c.tw.includes("ghost")){mult*=stealth?1.5:0.5;shared.push(stealth?"Ghost contract kept · ×1.5":"Ghost contract broken · ×0.5");}
+    if(won&&c.tw.includes("nokill")&&deaths){mult*=0.5;shared.push("Somebody died · ×0.5");}
+    if(goal("inside")){mult*=1.15;if(won)shared.push("Inside man · ×1.15");}
+    if(J.driver){const cut=goal("wheelman")?0.05:0.1;mult*=1-cut;if(won)shared.push(`The driver's cut · −${Math.round(cut*100)}%`);}
+    const full=(G.fullTake||score||1)*(1+STEALTH_BONUS+(civs.length?CIV_BONUS:0));
+    pay=Math.round(score*(MAP_PAY[c.map]||10000)/full*mult/10)*10;CREW.cash+=pay;CREW.stats.earned+=pay;
+    if(won){CREW.stats.jobs++;if(stealth&&score>0)CREW.stats.clean++;CREW.stats.best=Math.max(CREW.stats.best,pay);}
+    else shared.push("The driver got away with the van");
+  }
+  if(!won){fee=Math.round(CREW.cash*(goal("offshore")?0.05:BUST_FEE)/10)*10;CREW.cash-=fee;CREW.stats.busts++;}
+  const xp=Math.round((won?(150*c.stars+(stealth&&score>0?200:0)+score/500)*c.xp:60*c.stars)*(won?DIFF.pay:1));
+  for(const pid of Object.keys(CREW.slots)){
+    const inJob=PLAYERS.some(pl=>(pl.local?myPid():pl.pid)===pid);if(!inJob)continue;
+    const got=xp;CREW.slots[pid].xp+=got;
+    out[pid]={pay,fee,xp:got,L0:L0[pid],L1:levelInfo(CREW.slots[pid].xp).level,notes:[...shared,...(lost.has(pid)&&won?["You were in custody at the end"]:[]),...(notes[pid]||[])],mult:+mult.toFixed(2)};
+  }
+  CREW.job=null;
+  fillBoard();crewSave();
+  return out;
+}
+// the job report's career part (for you, or for your partner's screen)
+function careerReport(cr,won){
+  const li=levelInfo(CAREER.xp),crew=crewOn();
+  return (won?`<dt>${crew?"The crew's cut":"Your cut"} (contract ×${cr.mult.toFixed(2)})</dt><dd class="good">+${money(cr.pay)}</dd>`:(cr.pay?`<dt>${crew?"The crew's cut":"Your cut"} of the van</dt><dd class="good">+${money(cr.pay)}</dd>`:"")+`<dt>Lawyers' fees (${goal("offshore")?5:15}% of ${crew?"the crew's":"your"} cash)</dt><dd class="bad">−${money(cr.fee)}</dd>`)
+    +cr.notes.map(n=>`<dt>${n}</dt><dd></dd>`).join("")
+    +`<dt>Experience</dt><dd>+${cr.xp} XP</dd><dt>${crew?"The crew's cash":"Cash in the safehouse"}</dt><dd>${money(CAREER.cash)}</dd>`
+    +(cr.L1>cr.L0?`<span class="lvl">LEVEL ${cr.L1}! +${cr.L1-cr.L0} SKILL POINT${cr.L1-cr.L0>1?"S":""}</span>`:`<span class="lvl" style="color:var(--dim)">LEVEL ${li.level} · ${li.need?li.need-li.into+" XP TO THE NEXT":"MAX"}</span>`);
+}
+// walking away from a crew job: each player's unused kit goes home
+function crewWalkAway(){
+  for(const pl of PLAYERS)withPlayer(pl,"sim",()=>syncKit());
+  for(const pid of Object.keys(CREW.slots))if(CREW.slots[pid].kit)asSlot(pid,()=>returnKit());
+  CREW.active=null;CREW.job=null;crewSave();
+}
 /* ---------- the main menu and its screens ---------- */
 let MENU_SCREEN="home",soloMode=null;
 const SCREEN_STAMP={settings:"SETTINGS",help:"CONTROLS AND TIPS",coop:"CO-OP"};
@@ -6938,6 +7209,7 @@ function resetGame(){
   careerOnReset();
   hideToast();
   if(NET.on)coopReset();
+  if(NET.host&&crewOn()&&G.contract)crewKits();
 }
 
 /* ================= input ================= */
@@ -7011,8 +7283,11 @@ $("againBtn").onclick=()=>{initAudio();resetGame();begin();};
 $("resumeBtn").onclick=()=>{initAudio();$("pauseNote").textContent="The guards are frozen until you come back.";begin();};
 $("restartBtn").onclick=()=>{initAudio();resetGame();begin();};
 function toMenu(){if(NET.host&&NET.send)NET.send({t:"menu"});NET.started=false;if(document.pointerLockElement)document.exitPointerLock();stopVoices();drillOff(true);alarmOff();
-  if(CAREER&&CAREER.kit&&state!=="ended"){syncKit();returnKit();}   // walking away from a job: the kit you didn't use comes home
-  if(CAREER)CAREER.active=null;resetGame();setState("menu");if(MODE==="career")renderCareer();}
+  if(crewOn()){if(!NET.guest&&CREW.active&&state!=="ended")crewWalkAway();}
+  else if(CAREER&&CAREER.kit&&state!=="ended"){syncKit();returnKit();}   // walking away from a job: the kit you didn't use comes home
+  if(CAREER&&!crewGuest())CAREER.active=null;resetGame();setState("menu");
+  if(CREW_LATER){CREW_LATER=false;crewLeave();}
+  if(MODE==="career")renderCareer();}
 $("menuBtn").onclick=toMenu;$("pauseMenuBtn").onclick=toMenu;
 // job picker
 let selectedMap="harbor";
@@ -8364,12 +8639,10 @@ function endGame(won,reason){
   const bStealth=won&&take>0&&stealth?Math.round(take*STEALTH_BONUS):0;
   const hasCivs=civs.length>0,bCivs=won&&take>0&&hasCivs&&!G.civKills?Math.round(take*CIV_BONUS):0;
   const base=take+bStealth+bCivs,score=Math.round(base*DIFF.pay/10)*10,bDiff=score-base;
-  const cr=careerOnEnd(won,score,stealth),ec=$("endCareer");ec.hidden=!cr;
-  if(cr){const li=levelInfo(CAREER.xp);
-    ec.innerHTML=(won?`<dt>Your cut (contract ×${cr.mult.toFixed(2)})</dt><dd class="good">+${money(cr.pay)}</dd>`:(cr.pay?`<dt>Your cut of the van</dt><dd class="good">+${money(cr.pay)}</dd>`:"")+`<dt>Lawyers' fees (${goal("offshore")?5:15}% of your cash)</dt><dd class="bad">−${money(cr.fee)}</dd>`)
-      +cr.notes.map(n=>`<dt>${n}</dt><dd></dd>`).join("")
-      +`<dt>Experience</dt><dd>+${cr.xp} XP</dd><dt>Cash in the safehouse</dt><dd>${money(CAREER.cash)}</dd>`
-      +(cr.L1>cr.L0?`<span class="lvl">LEVEL ${cr.L1}! +${cr.L1-cr.L0} SKILL POINT${cr.L1-cr.L0>1?"S":""}</span>`:`<span class="lvl" style="color:var(--dim)">LEVEL ${li.level} · ${li.need?li.need-li.into+" XP TO THE NEXT":"MAX"}</span>`);}
+  let cr=careerOnEnd(won,score,stealth),crAll=null;const ec=$("endCareer");
+  if(cr&&cr.crew){crAll=cr.all;cr=crAll[myPid()]||null;}
+  ec.hidden=!cr;
+  if(cr)ec.innerHTML=careerReport(cr,won);
   $("againBtn").hidden=!!cr;$("menuBtn").textContent=cr?"Back to the safehouse":"Back to jobs";$("menuBtn").className=cr?"btn":"btn ghost";
   const tv=$("endTakeVal");tv.textContent=money(score);tv.className=score?"":"zero";
   $("endTakeLbl").textContent=won?"SCORE":banked?"SCORE · THE VAN GOT AWAY":"SCORE · TAKE LOST";
@@ -8388,7 +8661,7 @@ function endGame(won,reason){
   const rows=[["Time",fmtUp(G.time)],[`Bags in the ${LV.def.getaway||"van"}`,`${G.secured}/${bags.length} · ${money(G.vanTake)}`],["Stealth",stealth?"Kept":"Broken"],["Loose cash",`${G.cashTaken}/${CASH.length} · ${money(G.pocket)}`],["Guards knocked out",String(G.takedowns)],["Guards shot",String(G.kills)],...(G.police?[["Police waves",String(G.police.wave)],["Officers down",String(G.copsDown||0)]]:[]),["Bodies hidden",String(G.binned)],["Pagers answered",`${G.pagersUsed}/${maxPagers()}`],["Cameras shot",String(G.camsShot)],["Jammers used",String(G.jamsUsed)],["Shots fired",String(G.shots)]];
   if(civs.length)rows.splice(6,0,["Civilians tied up",String(G.tied)],["Civilians killed",String(G.civKills)]);
   $("endStats").innerHTML=rows.map(([a,b],i)=>`<dt>${a}</dt><dd class="${i===2?(stealth?"good":"bad"):""}">${b}</dd>`).join("");
-  if(NET.on)netEndScreen(won);
+  if(NET.on)netEndScreen(won,crAll);
 }
 
 /* ================= main loop ================= */
@@ -8459,7 +8732,7 @@ const COOP_MAPS=new Set(Object.keys(MAPS));
 // moving things go 30 times a second on a lossy channel (a late update is useless, so it's never resent or waited for);
 // everything settles over the reliable channel 20 times a second once it stops changing
 const NET_HZ=20,FAST_HZ=30,HOT_T=0.6,SETTLE_T=0.3,PEER_PREFIX="cleangetaway-v1-";
-const SWAP_G=["noise","shotNoise","loud","keypad","picking","pickScr","ladderTip","coins","leaveT","tieT","loopHold","bagT","lootT","leaveBlock","trail","trailBase","hurtFlash"];
+const SWAP_G=["noise","shotNoise","loud","keypad","picking","pickScr","ladderTip","coins","leaveT","tieT","loopHold","bagT","lootT","leaveBlock","trail","trailBase","hurtFlash","duffels","bodyBags","bumps","picksLeft","locksPicked"];
 const SWAP_IN=["fwd","right","mag","sprint","src","objHide","objPeek","objKey"];
 const ME={id:0,local:true,P:LP,keys:null,pressedE:false,KP:null,cam:camera,g:{},in:{},out:false};
 const PLAYERS=[ME];
@@ -8474,9 +8747,9 @@ function withPlayer(pl,kind,fn){
   try{return fn();}
   finally{saveTurn(pl);loadTurn(cur);CTX.pl=cur===ME?null:cur;CTX.cur=cur.local?null:cur;CTX.kind=pk;}
 }
-function saveTurn(pl){pl.P=P;pl.keys=keys;pl.pressedE=pressedE;pl.KP=KP;pl.cam=camera;for(const f of SWAP_G)pl.g[f]=G[f];for(const f of SWAP_IN)pl.in[f]=IN[f];
+function saveTurn(pl){pl.P=P;pl.keys=keys;pl.pressedE=pressedE;pl.KP=KP;pl.cam=camera;pl.SK=SK;if(pl.local||pl.CR)pl.CR=CAREER;for(const f of SWAP_G)pl.g[f]=G[f];for(const f of SWAP_IN)pl.in[f]=IN[f];
   const ms=mapState();if(ms){pl.g.mHoldT=ms.holdT;pl.g.mHoldId=ms.holdId;}}
-function loadTurn(pl){P=pl.P;keys=pl.keys;pressedE=pl.pressedE;KP=pl.KP;camera=pl.cam;for(const f of SWAP_G)G[f]=pl.g[f];for(const f of SWAP_IN)IN[f]=pl.in[f];
+function loadTurn(pl){P=pl.P;keys=pl.keys;pressedE=pl.pressedE;KP=pl.KP;camera=pl.cam;if(pl.SK)SK=pl.SK;if(pl.CR)CAREER=pl.CR;for(const f of SWAP_G)G[f]=pl.g[f];for(const f of SWAP_IN)IN[f]=pl.in[f];
   const ms=mapState();if(ms){ms.holdT=pl.g.mHoldT||0;ms.holdId=pl.g.mHoldId||"";}}
 // the map's own state (G.m on the manor, G.t in the tower, ...): what a player is holding E on is kept per player
 function mapState(){const k=LV.def&&LV.def.st;return k?G[k]:null;}
@@ -8557,7 +8830,8 @@ function resetRemote(pl,i){
   const p={x:sp.x+Math.cos(a)*off*-1,z:sp.z+Math.sin(a)*off};resolve(p,0.35,sp.lvl||0);
   Object.assign(pl.P,{x:p.x,z:p.z,yaw:sp.yaw||0,level:sp.lvl||0,y:(sp.lvl||0)*ROOF_Y,climb:null,ladder:null,onStair:false,jh:0,vy:0,gnd:0,fiddle:0,pitch:0,crouch:false,eye:1.65,bobT:0,carry:null,sprinting:false,kick:0,
     masked:false,maskT:0,mag:MAG,reserve:MAG*3,reload:0,fireCD:0,aim:false,aimT:0,recoil:0,raise:0,wasRestricted:false,ties:LV.def.zipTies||0,shoutCD:0,jammers:JAMMERS,hasCard:false,locked:false,hp:PLAYER_HP,hurtT:9,struggle:null,hasGun:true,uniform:false,tips:{},fpX:null,fpZ:null});
-  Object.assign(pl.g,{hurtFlash:0,noise:0,shotNoise:0,loud:0,keypad:false,picking:false,pickScr:0,ladderTip:false,coins:COINS+(SK.coins||0),leaveT:0,tieT:0,loopHold:0,bagT:0,leaveBlock:false,trail:[],trailBase:0,mHoldT:0,mHoldId:""});
+  Object.assign(pl.g,{hurtFlash:0,noise:0,shotNoise:0,loud:0,keypad:false,picking:false,pickScr:0,ladderTip:false,coins:COINS+(SK.coins||0),leaveT:0,tieT:0,loopHold:0,bagT:0,leaveBlock:false,trail:[],trailBase:0,mHoldT:0,mHoldId:"",duffels:0,bodyBags:0,bumps:0,picksLeft:0,locksPicked:0});
+  pl.SK=Object.assign({},SK0);pl.CR=CREW&&pl.pid?crewView(CREW,pl.pid):null;
   pl.KP={entry:"",busy:false};pl.out=false;pl.hd=false;pl.hdSeq++;pl.keys={};pl.pressedE=false;pl.hudLast={};pl.msLast=null;pl.dom=hudClone();pl.lx=p.x;pl.lz=p.z;
   if(pl.avatar)pl.avatar.root.visible=true;
 }
@@ -8890,13 +9164,13 @@ function netJoin(code){
 function hostConnected(send,close){
   wire(send,close);NET.on=true;NET.host=true;NET.busy=false;NET.waiting=false;
   const pl=newRemote(1);PLAYERS.push(pl);NET.remote=pl;
-  setMode("free");NET.send({t:"welcome",v:GAME_VERSION,map:selectedMap,diff:DIFF_ID});
+  setMode("free");NET.send({t:"welcome",v:GAME_VERSION,map:selectedMap,diff:DIFF_ID});crewSendList();NET.send({t:"crewsPlease"});
   if(DEV.on){DEV.on=false;DEV.ghost=false;$("devToggle").checked=false;}
   coopUI();toast(state==="menu"?"Your partner joined":"Your partner joined. They'll be in the next job you start","good",2600);
 }
 function guestConnected(send,close){
   wire(send,close);NET.on=true;NET.guest=true;NET.busy=false;
-  NET.send({t:"hello",v:GAME_VERSION});setMode("free");
+  NET.send({t:"hello",v:GAME_VERSION});crewSendList();setMode("free");
   if(DEV.on){DEV.on=false;DEV.ghost=false;$("devToggle").checked=false;}
   coopUI("Connected. The host picks the job");
 }
@@ -8916,11 +9190,14 @@ function netLost(){
   if(wasGuest){if(state!=="menu"){toMenu();}coopUI("Lost the connection to the host");}
 }
 function netReset(keepMsg,keepPeer){
+  const wasHost=NET.host;
   try{if(NET.close)NET.close();}catch(e){}
   if(!keepPeer){try{if(NET.peer)NET.peer.destroy();}catch(e){}try{if(NET.bc)NET.bc.close();}catch(e){}NET.peer=null;NET.bc=null;}
   const keepCode=keepPeer?NET.code:"";
   Object.assign(NET,{on:false,host:false,guest:false,send:null,close:null,conn:null,remote:null,busy:false,waiting:!!keepPeer,code:keepCode,started:false,acc:0});
-  PLAYERS.length=1;
+  PLAYERS.length=1;NET.peerPid=null;NET.peerCrews=null;
+  // a crew job the host is still playing finishes on the crew (the partner's kit comes home); then back to free play
+  if(CREW||CREW_PICK){if(wasHost&&state!=="menu"&&crewOn()&&G.contract)CREW_LATER=true;else crewLeave();}
   if(!keepMsg)coopUI();
 }
 function netLeave(){netReset();dropAvatars();if(state!=="menu")toMenu();coopUI();}
@@ -8939,6 +9216,7 @@ function netRecv(d){
       case "st":if(d.q!=null){if(d.q<=(pl.sq||0))break;pl.sq=d.q;}hostState(pl,d);break;
       case "act":hostAction(pl,d.a,d.args||[],d.pose);break;
       case "bye":netLost();break;
+      default:crewHostMsg(pl,d);
     }
     return;
   }
@@ -8953,6 +9231,7 @@ function netRecv(d){
     case "menu":if(state!=="menu")toMenu();coopUI("Connected. The host picks the job");break;
     case "warn":toast(d.msg,"bad",4000);coopUI(d.msg);break;
     case "full":coopUI("That game already has two players");netReset(true);break;
+    default:crewGuestMsg(d);
   }
 }
 function hostState(pl,d){
@@ -9051,6 +9330,7 @@ function guestStart(d){
   initAudio();guestPick(d.map);
   if(state!=="menu"){NET.ending=true;try{setState("menu");}finally{NET.ending=false;}}
   if(d.diff)setDifficulty(d.diff,false);
+  setMode(d.crew&&crewOn()?"career":"free",false);
   coopBuild(d.map,d.seed);
   Object.assign(GS,{hd:false,hdSeq:0,out:false,pose:null,joined:false,fq:0,tm:0});dropAvatars();
   NET.started=true;
@@ -9158,10 +9438,11 @@ function guestEnd(d){
   }finally{NET.ending=false;}
   $("againBtn").hidden=true;$("menuBtn").textContent="Back to the lobby";$("menuBtn").className="btn ghost";
 }
-function netEndScreen(won){
+function netEndScreen(won,crAll){
   if(NET.host&&NET.send){
     const dom={};for(const id of ["endStamp","endTitle","endTakeVal","endTakeLbl","endBreak","endBest","endReason","endStats"]){const e=document.getElementById(id);dom[id]=[e.innerHTML,e.className,e.hidden?1:0];}
-    dom.endCareer=["","",1];
+    const gp=NET.remote&&NET.remote.pid;
+    dom.endCareer=crAll&&gp&&crAll[gp]&&CREW?[asSlot(gp,()=>careerReport(crAll[gp],won)),"",0]:["","",1];
     hostSend();NET.send({t:"end",won,dom});
   }
 }
@@ -9188,11 +9469,12 @@ function coopUI(msg){
   sb.textContent=NET.guest?"The host starts the job":NET.host?(ok?"Start the co-op job":"Solo only for now"):"Start the job";
   const mt=document.querySelector(".modes");if(mt)mt.hidden=!!NET.on;
   if(!NET.on&&MENU_SCREEN==="coop"){sb.disabled=true;sb.textContent="Host or join first";}
+  crewUI();
 }
 function coopStartRun(){
   const seed=(Math.random()*4294967296)>>>0;
   NET.started=true;NET.remote.ready=false;NET.remote.ev.length=0;
-  NET.send({t:"start",map:selectedMap,seed,diff:DIFF_ID});
+  NET.send({t:"start",map:selectedMap,seed,diff:DIFF_ID,crew:crewOn()&&!!CREW&&!!CREW.active});
   coopBuild(selectedMap,seed);
 }
 function initCoopUI(){
@@ -9204,13 +9486,14 @@ function initCoopUI(){
     <div class="coop-status" id="coopStatus" hidden></div>
     <button type="button" class="btn ghost small" id="coopLeaveBtn" hidden>Leave co-op</button>`;
   $("coopLobby").appendChild(box);
+  const cb=document.createElement("div");cb.className="coop crew";cb.id="crewBox";cb.hidden=true;$("coopLobby").appendChild(cb);
   $("coopHostBtn").onclick=()=>{initAudio();netHost();};
   $("coopJoinBtn").onclick=()=>{initAudio();netJoin($("coopCode").value);};
   $("coopCode").addEventListener("keydown",e=>{e.stopPropagation();if(e.key==="Enter")$("coopJoinBtn").click();});
   $("coopLeaveBtn").onclick=()=>{if(NET.send)try{NET.send({t:"bye"});}catch(e){}netLeave();};
   // in co-op the host starts every run (a new random seed for both), and the guest can only leave
   const wrapBtn=(id,fn)=>{const b=$(id),o=b.onclick;b.onclick=e=>{if(fn())return;if(o)o.call(b,e);};};
-  const hostRun=()=>{if(!NET.host)return false;if(!COOP_MAPS.has(selectedMap))return true;initAudio();coopStartRun();begin();return true;};
+  const hostRun=()=>{if(!NET.host)return false;if(!COOP_MAPS.has(selectedMap)||crewOn())return true;initAudio();coopStartRun();begin();return true;};
   wrapBtn("startBtn",hostRun);wrapBtn("againBtn",hostRun);wrapBtn("restartBtn",hostRun);
   wrapBtn("pauseMenuBtn",()=>{if(!NET.guest)return false;if(NET.send)try{NET.send({t:"bye"});}catch(e){}netLeave();return true;});
   wrapBtn("menuBtn",()=>{if(!NET.guest)return false;NET.started=false;if(document.pointerLockElement)document.exitPointerLock();resetGame();setState("menu");coopUI();return true;});
@@ -9223,7 +9506,7 @@ function coopPauseText(){
   if(NET.guest&&$("resumeBtn").textContent==="Join the job"&&!GS.joined)return;
   $("pauseNote").textContent="Co-op: the job keeps going while you're in this menu.";
   $("resumeBtn").textContent="Resume";
-  $("restartBtn").hidden=!!NET.guest;
+  $("restartBtn").hidden=!!NET.guest||crewOn();
   $("pauseMenuBtn").textContent=NET.guest?"Leave co-op":"Back to jobs";
 }
 
