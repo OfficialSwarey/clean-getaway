@@ -11,6 +11,7 @@ claude.ai artifact had. Releases are tagged `v0.30.0` and so on.
 - **Smoother co-op over the internet:** moving things are sent 30 times a second (was 20) over a fast channel that never waits for lost packets, so one dropped packet no longer holds up the rest. Doors and things that stopped moving are still sent reliably, so they always end up right.
 - **Fair shots for the guest:** the host checks a guest's shot against where everyone was on the guest's screen, so you hit what you aimed at even with some lag.
 - **Own relay servers:** `TURN_SERVERS` in the game's code takes your own TURN relay for players who can't connect directly (see the README).
+- Tests: a quick check (`tests/qa/quick.sh`) and a runner for named tests (`tests/qa/run.sh`).
 
 ## 0.36.0 — Spin Cycle
 - **New short job, Spin Cycle:** Suds & Spin, a 24-hour laundromat a loan shark washes his money through. It's open all night: walk in with the night customers; the drying room and the office in the back are staff only.
