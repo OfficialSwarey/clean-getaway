@@ -660,7 +660,7 @@ body.coop-guest .diffs{pointer-events:none;opacity:.6}
 // Co-op: the same code runs for every player by swapping who P is. CTX.cur is the player whose turn it is (null = you);
 // HUD writes during another player's turn go to that player's copy of the HUD, which is sent to them.
 const CTX={cur:null,kind:null,pl:null};
-const GAME_VERSION="0.39.1";
+const GAME_VERSION="0.39.2";
 const NET={on:false,host:false,guest:false,send:null,close:null,code:"",busy:false,waiting:false,started:false,acc:0,remote:null,ending:false};
 const $=id=>(CTX.cur&&CTX.cur.dom&&CTX.cur.dom[id])||document.getElementById(id);
 // a timer started during another player's turn runs as that player
@@ -5678,7 +5678,7 @@ function buildMap(id){
   for(const s of BAG_SPOTS){const m=makeLoot(s.gold);m.userData.noHit=true;lvAdd(m);bags.push({kind:"loot",mesh:m,state:"ground",level:s.lvl||0,gold:!!s.gold,box:s.box||null,bagged:false});}
   for(const sp of (def.cash||[]))makeCashPile(sp);
   for(const g of guards.concat(civs)){const m=makeBodyBag();m.visible=false;m.userData.noHit=true;lvAdd(m);g.item={kind:"body",guard:g,mesh:m,state:"none",level:g.level};}
-  makeCopPool();
+  makeCopPool();makeFootRing();
   const mb=def.moon||32;Object.assign(moon.shadow.camera,{left:-mb,right:mb,top:mb,bottom:-mb});moon.shadow.camera.updateProjectionMatrix();
   sbBuild();lmBuild();
   rebuildHitList();
@@ -6585,11 +6585,13 @@ function placeDrillBags(n){
 /* Career without a driver: there's no van at all, and you leave on foot the way you came in,
    with the bag in your hands and whatever is in your pockets. */
 const onFoot=()=>!!(FOOT&&FOOT.on);
+// the orange ring at the way out: made (hidden) with every map, so in co-op it exists on both screens and the host only shows and moves it
+function makeFootRing(){const r=new THREE.Mesh(new THREE.RingGeometry(0.9,1.1,40),new THREE.MeshBasicMaterial({color:0xf4ab3d,transparent:true,opacity:.4,depthWrite:false}));r.rotation.x=-Math.PI/2;r.userData.noHit=true;r.visible=false;lvAdd(r);FOOT={on:false,ring:r};}
 function setOnFoot(on){
   if(FOOT&&FOOT.on){SECURE=FOOT.secure;VAN_PARTS.forEach(o=>o.visible=true);if(VAN_COL&&!colliders.includes(VAN_COL))colliders.push(VAN_COL);if(FOOT.ring)FOOT.ring.visible=false;FOOT.on=false;}
   if(!on)return;
   const sp=LV.def.footExit||LV.def.spawn;
-  if(!FOOT){FOOT={on:false,ring:null};const r=new THREE.Mesh(new THREE.RingGeometry(0.9,1.1,40),new THREE.MeshBasicMaterial({color:0xf4ab3d,transparent:true,opacity:.4,depthWrite:false}));r.rotation.x=-Math.PI/2;r.userData.noHit=true;lvAdd(r);FOOT.ring=r;}
+  if(!FOOT)makeFootRing();
   FOOT.secure=SECURE;FOOT.on=true;
   SECURE={x:sp.x,z:sp.z,lvl:sp.lvl||0,name:"way out",verb:"slip away",foot:true};
   FOOT.ring.position.set(sp.x,(sp.lvl||0)*ROOF_Y+0.05,sp.z);FOOT.ring.visible=true;

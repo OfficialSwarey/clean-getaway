@@ -15,7 +15,10 @@ out.arrive={host:await H.evaluate(()=>({wave:__qh.G.police&&__qh.G.police.wave,c
 await wait(1500);
 const hc=await H.evaluate(()=>__qh.activeCops().map(c=>[c.root.position.x,c.root.position.z,c.root.visible]));
 const gc=await G.evaluate(()=>__qh.COPS.filter(c=>c.root.visible).map(c=>[c.root.position.x,c.root.position.z]));
-out.arrive.guestSees=gc.length;out.arrive.vanHiddenGuest=await G.evaluate(()=>__qh.VAN_PARTS.every(o=>!o.visible));
+out.arrive.guestSees=gc.length;
+// the way-out ring: the host shows it when the driver leaves, and the guest sees it in the same place
+const ringOf=()=>{const r=__qh.SYNC.objs.find(o=>o.geometry&&o.geometry.type==="RingGeometry"&&o.geometry.parameters.innerRadius===0.9&&o.material&&o.material.color&&o.material.color.getHex()===0xf4ab3d);return r?{vis:r.visible,at:[+r.position.x.toFixed(1),+r.position.z.toFixed(1)]}:null;};
+out.arrive.ring={host:await H.evaluate(ringOf),guest:await G.evaluate(ringOf)};out.arrive.vanHiddenGuest=await G.evaluate(()=>__qh.VAN_PARTS.every(o=>!o.visible));
 // the host steps into the vault, out of sight; an officer right in front of the guest shoots, the guest is hurt
 await H.evaluate(()=>{const q=__qh;q.P.x=q.VAULT.x;q.P.z=q.VAULT.z-3;q.P.level=0;});
 await H.evaluate(()=>{const q=__qh,p=q.PLAYERS[1].P,c=q.activeCops()[0];const fx=-Math.sin(p.yaw),fz=-Math.cos(p.yaw);c.x=p.x+fx*5;c.z=p.z+fz*5;c.level=p.level;c.fireT=0.1;c.route=[[c.x,c.z]];
