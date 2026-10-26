@@ -20,7 +20,7 @@ for(const m of maps){
     r.bagPr=pr();q.keys.KeyE=true;step(80);q.keys.KeyE=false;step(2);r.carry=!!(q.P.carry&&q.P.carry.bagged);r.duffels=q.G.duffels;
     go(sp.x,sp.z,sp.lvl||0,sp.yaw||0,0);step(2);r.leavePr=pr();r.obj=document.getElementById("objText").textContent.slice(0,60);
     if(q.LV.def.needDiamond){q.G.hasDiamond=true;q.G.diamondVal=q.LV.def.diamondValue;step(1);}
-    q.keys.KeyE=true;step(80);q.keys.KeyE=false;r.state=q.state;r.won=document.getElementById("endTitle").className;r.reason=document.getElementById("endReason").textContent.slice(0,70);
+    q.keys.KeyE=true;step(3);r.holdPr=pr();step(77);q.keys.KeyE=false;r.state=q.state;r.won=document.getElementById("endTitle").className;r.reason=document.getElementById("endReason").textContent.slice(0,70);
     r.end=document.getElementById("endCareer").innerText.replace(/\\n/g," | ").slice(0,90);
     // now with a driver: the van is back
     q.toMenu();C.board[0]={id:"f2",map:"${m}",tw:[],pay:1,xp:1,stars:1,mins:9};q.openPlan("f2");q.PLAN.sel={driver:true,duffel:1};q.startPlan();q.setState("playing");step(1);
