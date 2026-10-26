@@ -5,6 +5,9 @@ feature round bumps MINOR, a bug-fix-only update bumps PATCH, and 1.0.0 is
 the first "finished" release. Up to 0.30.0, MINOR is the version number the
 claude.ai artifact had. Releases are tagged `v0.30.0` and so on.
 
+## 0.39.2 — fix
+- Co-op: the guest didn't see the orange ring at the way out when leaving on foot (no driver, or after the driver left when the police came). The ring is now part of every map on both screens.
+
 ## 0.39.1 — fix
 - The name box for joining a crew was squeezed to almost nothing, so you couldn't see what you typed. It's full width now, and keeps your capitals as you type them.
 
