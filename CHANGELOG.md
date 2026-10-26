@@ -5,6 +5,9 @@ feature round bumps MINOR, a bug-fix-only update bumps PATCH, and 1.0.0 is
 the first "finished" release. Up to 0.30.0, MINOR is the version number the
 claude.ai artifact had. Releases are tagged `v0.30.0` and so on.
 
+## 0.39.3 — fix
+- Spin Cycle: the office pinboard hung across the office door. It's on the wall beside the door now, with the ticket and the code note that can be pinned to it.
+
 ## 0.39.2 — fix
 - Co-op: the guest didn't see the orange ring at the way out when leaving on foot (no driver, or after the driver left when the police came). The ring is now part of every map on both screens.
 
