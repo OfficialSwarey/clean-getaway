@@ -102,6 +102,8 @@ html,body{height:100%;margin:0;overflow:hidden;background:var(--ink);color:var(-
 /* ---------- overlays ---------- */
 .overlay{position:fixed;inset:0;z-index:5;display:grid;justify-items:center;overflow-y:auto;padding-block:24px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));background:linear-gradient(180deg,rgba(8,11,16,.55),rgba(8,11,16,.88))}
 .overlay>.card{margin:auto}
+#pause .card.set-open{width:min(820px,100%)}
+#pauseSet{display:grid;gap:12px}#pauseSetBack{justify-self:start}#pauseSet[hidden]{display:none}#pauseSet .settings{max-width:none}#pauseSet .dev{display:none!important}
 .card{box-sizing:border-box;width:min(560px,100%);background:var(--panel);border:1px solid var(--line);padding:28px clamp(18px,4vw,34px);display:grid;gap:16px;backdrop-filter:blur(6px)}
 .card h1{margin:0;font-family:var(--f-display);font-weight:400;font-size:clamp(44px,8vw,72px);line-height:.95;letter-spacing:.02em;text-wrap:balance}
 .card h2{margin:0;font-family:var(--f-display);font-weight:400;font-size:clamp(36px,6vw,54px);line-height:1;text-wrap:balance}
@@ -654,7 +656,8 @@ body.coop-guest .diffs{pointer-events:none;opacity:.6}
     <span class="stamp">PAUSED</span>
     <h2>Holding position</h2>
     <p id="pauseNote">The guards are frozen until you come back.</p>
-    <div class="row"><button class="btn" id="resumeBtn">Resume</button><button class="btn ghost" id="restartBtn">Restart job</button><button class="btn ghost" id="pauseMenuBtn">Back to jobs</button></div>
+    <div class="row" id="pauseRow"><button class="btn" id="resumeBtn">Resume</button><button class="btn ghost" id="pauseSetBtn">Settings</button><button class="btn ghost" id="restartBtn">Restart job</button><button class="btn ghost" id="pauseMenuBtn">Back to jobs</button></div>
+    <div id="pauseSet" hidden><button type="button" class="btn ghost small" id="pauseSetBack">← Back</button></div>
   </div>
 </div>
 
@@ -677,7 +680,7 @@ body.coop-guest .diffs{pointer-events:none;opacity:.6}
 // Co-op: the same code runs for every player by swapping who P is. CTX.cur is the player whose turn it is (null = you);
 // HUD writes during another player's turn go to that player's copy of the HUD, which is sent to them.
 const CTX={cur:null,kind:null,pl:null};
-const GAME_VERSION="0.40.0";
+const GAME_VERSION="0.40.1";
 const NET={on:false,host:false,guest:false,send:null,close:null,code:"",busy:false,waiting:false,started:false,acc:0,remote:null,ending:false};
 const $=id=>(CTX.cur&&CTX.cur.dom&&CTX.cur.dom[id])||document.getElementById(id);
 // a timer started during another player's turn runs as that player
@@ -7240,6 +7243,19 @@ function menuScreen(sc){
   const first=sc==="home"?$("homeSolo"):$("menuBack");if(IN.src==="pad"&&first)first.focus();
 }
 /* ---------- the settings screen ---------- */
+// the same settings from the pause menu during a job: the settings section moves into the pause card and back
+let SET_HOME=null;
+function pauseSettings(open){
+  const sec=$("settingsScreen"),box=$("pauseSet"),card=$("pause").querySelector(".card");if(!sec||!box)return;
+  if(open){
+    if(!SET_HOME)SET_HOME={parent:sec.parentNode,next:sec.nextSibling};
+    box.appendChild(sec);box.hidden=false;$("pauseRow").hidden=true;$("pauseNote").hidden=true;card.classList.add("set-open");
+    BINDING=null;settingsUI();$("pause").scrollTop=0;
+  }else if(SET_HOME){
+    SET_HOME.parent.insertBefore(sec,SET_HOME.next);SET_HOME=null;BINDING=null;
+    box.hidden=true;$("pauseRow").hidden=false;$("pauseNote").hidden=false;card.classList.remove("set-open");
+  }
+}
 let BINDING=null;   // the action waiting for a key
 function applySettings(){
   // sound
@@ -7468,6 +7484,8 @@ function toMenu(){if(NET.host&&NET.send)NET.send({t:"menu"});NET.started=false;i
   if(CREW_LATER){CREW_LATER=false;crewLeave();}
   if(MODE==="career")renderCareer();}
 $("menuBtn").onclick=toMenu;$("pauseMenuBtn").onclick=toMenu;
+$("pauseSetBtn").onclick=()=>pauseSettings(true);$("pauseSetBack").onclick=()=>pauseSettings(false);
+addEventListener("keydown",e=>{if(e.code==="Escape"&&state==="paused"&&SET_HOME&&!BINDING){e.preventDefault();pauseSettings(false);}});
 // job picker
 let selectedMap="harbor";
 try{const m=localStorage.getItem("cg-map");if(m&&MAPS[m])selectedMap=m;}catch(e){}
@@ -7497,6 +7515,7 @@ $("devToggle").addEventListener("change",e=>{DEV.on=e.target.checked;DEV.ghost=f
 setMuted(A.muted);
 
 function setState(s){
+  if(s!=="paused")pauseSettings(false);
   state=s;
   if(s==="paused")$("pauseMenuBtn").textContent=G.contract?"Abandon job (it stays on the board)":"Back to jobs";
   $("menu").hidden=s!=="menu";

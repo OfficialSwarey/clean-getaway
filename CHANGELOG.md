@@ -5,6 +5,9 @@ feature round bumps MINOR, a bug-fix-only update bumps PATCH, and 1.0.0 is
 the first "finished" release. Up to 0.30.0, MINOR is the version number the
 claude.ai artifact had. Releases are tagged `v0.30.0` and so on.
 
+## 0.40.1 — settings in the pause menu
+- Pause a job and press **Settings**: the same settings as in the main menu (sensitivity, keys, movement, sound, display), and they apply as soon as you change them. Back (or Escape) returns to the pause menu. Dev mode stays in the main menu.
+
 ## 0.40.0 — settings: Counter-Strike movement and sensitivity, your own keys, volumes, graphics
 - **Mouse sensitivity, the same number as in Counter-Strike:** a slider and a number box. It uses CS's scale (0.022° per mouse count) and raw mouse input where the browser has it, so your CS sensitivity feels the same here. **Aim sensitivity** works like CS's zoom sensitivity ratio (1.00 keeps the same feel through the sights). **Invert mouse**, and **aim** as toggle or hold.
 - **Counter-Strike movement (new default):** you speed up and slow down the way CS does (its acceleration and friction), you can steer in the air (air strafing), and you can **bunny hop**: press jump just as you land and you keep your speed. *Jump on the mouse wheel* is on, for scroll-hopping. Your keys and speeds stay the same: W walks, Shift sprints, and running fast is as loud as sprinting. The old movement is *Classic* in Settings. The jump is as high as before.

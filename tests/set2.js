@@ -1,0 +1,20 @@
+// 0.40.1: the settings from the pause menu during a job; they apply at once, and the section goes back to the main menu.
+const {chromium}=require('playwright-core');
+const PAGE=process.argv[2]||'test.html';
+(async()=>{const b=await chromium.launch({executablePath:'/opt/pw-browsers/chromium',args:['--use-gl=swiftshader','--enable-unsafe-swiftshader']});
+const p=await b.newPage({viewport:{width:1100,height:700}});const errs=[];p.on('pageerror',e=>errs.push('PAGEERR '+e.message));
+await p.goto('file://'+__dirname+'/'+PAGE);await p.waitForTimeout(1500);
+const out={};
+await p.evaluate(()=>{const q=__qh;q.setMode("free");q.pickMap("harbor");q.resetGame();q.setState("playing");q.setState("paused");});
+await p.click('#pauseSetBtn');await p.waitForTimeout(300);
+out.open=await p.evaluate(()=>({inPause:!!document.querySelector('#pauseSet #settingsScreen'),rowHidden:document.getElementById('pauseRow').hidden,visible:document.getElementById('settingsScreen').getBoundingClientRect().height>100,devHidden:getComputedStyle(document.querySelector('#pauseSet .dev')).display}));
+await p.fill('[data-num="sens"]','3.2');await p.press('[data-num="sens"]','Tab');
+await p.click('[data-seg="move"][data-v="cs"]');
+out.applied=await p.evaluate(()=>({sens:__qh.SET.sens,move:__qh.SET.move}));
+await p.keyboard.press('Escape');await p.waitForTimeout(200);
+out.back=await p.evaluate(()=>({inPause:!!document.querySelector('#pauseSet #settingsScreen'),rowShown:!document.getElementById('pauseRow').hidden,state:__qh.state}));
+await p.click('#pauseSetBtn');await p.evaluate(()=>__qh.setState('playing'));await p.waitForTimeout(300);
+out.resumed=await p.evaluate(()=>({home:document.getElementById('settingsScreen').parentNode.classList.contains('menu'),state:__qh.state}));
+await p.evaluate(()=>{__qh.setState("menu");__qh.menuScreen("settings");});
+out.menu=await p.evaluate(()=>({shown:document.getElementById('settingsScreen').getBoundingClientRect().height>100,sens:document.querySelector('[data-num="sens"]').value}));
+console.log(JSON.stringify(out,null,1));console.log(errs.join("\n")||"no errors");await b.close();})();
