@@ -161,7 +161,22 @@ button{font:inherit;cursor:pointer}
 .crew-claim .coop-row input{flex:1;min-width:120px;width:auto;text-transform:none;letter-spacing:normal}
 .card.menu[data-screen="coop"][data-crew="1"] #careerPanel{display:grid!important}
 .card.menu[data-screen="coop"][data-crew="1"] #freePanel{display:none!important}
-.settings{display:grid;gap:8px;max-width:680px}
+.settings{display:grid;gap:8px;max-width:760px}
+#setMore{display:grid;gap:8px}#setMore .cr-h{margin:14px 0 2px}
+.set-seg{display:inline-flex;border:1px solid var(--line);flex-shrink:0}
+.set-seg button{white-space:nowrap}
+.set-seg button{min-height:36px;padding:0 12px;border:0;background:transparent;color:var(--dim);font-family:var(--f-mono);font-size:12px;letter-spacing:.1em;text-transform:uppercase}
+.set-seg button[aria-pressed="true"]{background:var(--sodium);color:var(--ink)}
+.set-num{display:inline-flex;align-items:center;gap:10px;flex:0 1 330px;min-width:0}
+.set-num input[type=range]{flex:1;min-width:80px;accent-color:var(--sodium)}
+.set-num input[type=number]{width:74px;background:rgba(0,0,0,.25);color:var(--fg);border:1px solid var(--line);padding:6px 8px;font-family:var(--f-mono);font-size:14px}
+.set-num i{font-style:normal;color:var(--dim);font-family:var(--f-mono);font-size:12px;margin-left:-6px}
+.binds{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:6px}
+.bind{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:6px 10px;border:1px solid var(--line);background:rgba(255,255,255,.02);font-size:14px}
+.bind .key{min-width:84px;min-height:32px;border:1px solid var(--line);background:rgba(0,0,0,.3);color:var(--fg);font-family:var(--f-mono);font-size:12px;letter-spacing:.1em}
+.bind .key:focus-visible,.bind .key:hover{border-color:var(--sodium)}
+#fpsMeter{position:fixed;top:8px;left:10px;z-index:30;font-family:var(--f-mono);font-size:12px;color:var(--secure);background:rgba(0,0,0,.45);padding:2px 6px;pointer-events:none}
+@media (max-width:640px){.set-row{flex-wrap:wrap}.set-num{flex:1 1 100%}}
 .set-row{display:flex;gap:14px;align-items:center;justify-content:space-between;padding:12px 14px;border:1px solid var(--line);background:rgba(255,255,255,.02)}
 .set-txt{display:grid;gap:2px}.set-txt b{font-size:16px}.set-txt span{font-size:13px;color:var(--dim)}
 .set-tog{min-width:72px;height:36px;border:1px solid var(--line);background:transparent;color:var(--dim);font-family:var(--f-mono);font-size:12px;letter-spacing:.14em;text-transform:uppercase}
@@ -395,6 +410,7 @@ body.coop-guest .diffs{pointer-events:none;opacity:.6}
 <div id="alarmEdge" hidden></div><div id="hurtEdge"></div>
 <div id="maskEdge" hidden></div>
 
+<div id="fpsMeter" hidden></div>
 <div id="hud" hidden>
   <div id="detect"><div class="lbl" id="detectLbl">Detection</div><div class="bar"><i id="detectFill"></i></div></div>
   <div id="clock"><span class="lbl" id="clockLbl">Elapsed</span><span id="clockVal">00:00</span></div>
@@ -454,6 +470,7 @@ body.coop-guest .diffs{pointer-events:none;opacity:.6}
       <div class="set-row"><div class="set-txt"><b>Sound</b><span>M does the same during a job</span></div><button type="button" class="set-tog" id="setSound" aria-pressed="true">On</button></div>
       <div class="set-row"><div class="set-txt"><b>Fold the objective away on touch screens</b><span>OBJ during a job does the same. A new objective still pops up for a few seconds</span></div><button type="button" class="set-tog" id="setObj" aria-pressed="false">Off</button></div>
       <label class="dev set-row" for="devToggle"><input type="checkbox" id="devToggle"><span>Dev mode<small class="dev-kbm">Press V during a job for noclip: fly through walls, unseen by guards and cameras. SPACE up, CTRL or C down, SHIFT faster.</small><small class="dev-touch">Tap GHOST (left side, under OBJ) during a job for noclip: fly through walls, unseen by guards and cameras. JUMP up, CROUCH down. On a controller: BACK.</small><small>Not in co-op.</small></span></label>
+      <div id="setMore"></div>
     </section>
     <div id="careerPanel">
       <div class="cr-top">
@@ -660,7 +677,7 @@ body.coop-guest .diffs{pointer-events:none;opacity:.6}
 // Co-op: the same code runs for every player by swapping who P is. CTX.cur is the player whose turn it is (null = you);
 // HUD writes during another player's turn go to that player's copy of the HUD, which is sent to them.
 const CTX={cur:null,kind:null,pl:null};
-const GAME_VERSION="0.39.4";
+const GAME_VERSION="0.40.0";
 const NET={on:false,host:false,guest:false,send:null,close:null,code:"",busy:false,waiting:false,started:false,acc:0,remote:null,ending:false};
 const $=id=>(CTX.cur&&CTX.cur.dom&&CTX.cur.dom[id])||document.getElementById(id);
 // a timer started during another player's turn runs as that player
@@ -5872,14 +5889,14 @@ function aqApply(){
   const L=AQ.level;
   AQ.shadowEvery=L>=1?2:1;
   renderer.shadowMap.autoUpdate=AQ.shadowEvery===1;
-  renderer.setPixelRatio(L>=2?1:Math.min(window.devicePixelRatio||1,1.5));renderer.setSize(innerWidth,innerHeight);
+  renderer.setPixelRatio((L>=2?1:Math.min(window.devicePixelRatio||1,1.5))*clamp((+SET.res||100)/100,0.5,1));renderer.setSize(innerWidth,innerHeight);
   if(L>=3){LM.K.p=8;LM.K.s=5;LM.K.sh=2;AQ.shadowEvery=3;}
   lmUpdate(0,true);
 }
 function aqTick(raw){
   AQ.frame++;
   if(AQ.shadowEvery>1)renderer.shadowMap.needsUpdate=AQ.frame%AQ.shadowEvery===0;
-  if(state!=="playing"||raw>0.25||AQ.level>=3)return;
+  if(state!=="playing"||raw>0.25||AQ.level>=3||SET.quality!=="auto")return;
   if(AQ.cool>0){AQ.cool-=raw;return;}
   AQ.acc+=raw;AQ.n++;
   if(AQ.n>=120){const avg=AQ.acc/AQ.n;AQ.acc=0;AQ.n=0;if(avg>0.025){AQ.level++;aqApply();AQ.cool=3;}}
@@ -6025,6 +6042,69 @@ function findBody(ox,oz,yaw,half,range,self,lvl){
 
 /* ================= audio (Web Audio, all synthesized) ================= */
 const A={ctx:null,master:null,muted:false,noise:null,brown:null,amb:null,hum:null,drill:null,alarm:null};
+/* ---------- settings: saved in the browser ----------
+   Mouse sensitivity uses Counter-Strike's scale (0.022° per mouse count × sensitivity, raw input), so your CS number feels
+   the same here. Field of view is CS-style too: horizontal degrees on a 4:3 screen (90 = CS). */
+const SET_KEY="cg-settings-v1";
+// actions you can bind: [id, what it does, the key the game's code listens for]
+const ACTIONS=[["fwd","Move forward","KeyW"],["back","Move back","KeyS"],["left","Move left","KeyA"],["right","Move right","KeyD"],
+  ["jump","Jump","Space"],["crouch","Crouch","KeyC"],["sprint","Sprint","ShiftLeft"],["use","Use (hold to work on things)","KeyE"],
+  ["mask","Mask (hold)","KeyG"],["fight","Takedown, shout, break free","KeyF"],["reload","Reload","KeyR"],["drop","Drop or throw what you carry","KeyQ"],
+  ["coin","Throw a coin","KeyT"],["jammer","Place a jammer","KeyJ"],["mute","Sound on/off","KeyM"]];
+const LAYOUTS={
+  classic:{name:"Classic",binds:{},crouchHold:false,aimHold:false},
+  cs:{name:"Counter-Strike",binds:{crouch:"ControlLeft",drop:"KeyG",mask:"KeyQ",jammer:"KeyX"},crouchHold:true,aimHold:false},
+  cod:{name:"Call of Duty",binds:{use:"KeyF",fight:"KeyV",coin:"KeyG",jammer:"KeyQ",drop:"KeyX",mask:"KeyB"},crouchHold:false,aimHold:true}
+};
+const SET0={sens:2.5,zoomRatio:1,invert:false,move:window.__qhMove||"cs",crouchHold:false,aimHold:false,wheelJump:true,fov:90,
+  vol:{master:100,fx:100,voice:100,amb:100},quality:"auto",res:100,shadows:true,bob:true,fps:false,layout:"classic",binds:{}};
+let SET=(()=>{let s=null;try{s=JSON.parse(localStorage.getItem(SET_KEY)||"null");}catch(e){}
+  s=Object.assign({},SET0,s&&typeof s==="object"?s:{});s.vol=Object.assign({},SET0.vol,s.vol||{});s.binds=Object.assign({},s.binds||{});return s;})();
+function saveSet(){try{localStorage.setItem(SET_KEY,JSON.stringify(SET));}catch(e){}}
+// key bindings: the physical key you press -> the key the game's code listens for (null: a default key that's bound elsewhere now)
+let KEYMAP=null;
+function bindOf(id){const a=ACTIONS.find(x=>x[0]===id);return SET.binds[id]||(a&&a[2]);}
+function buildKeymap(){
+  const m={};
+  for(const [id,,def] of ACTIONS){m[def]=null;}            // every default key is off unless something is bound to it
+  for(const [id,,def] of ACTIONS){const k=bindOf(id);m[k]=def;
+    if(k==="ShiftLeft")m.ShiftRight=def;if(k==="ControlLeft")m.ControlRight=def;if(k==="AltLeft")m.AltRight=def;}
+  if(!("ShiftRight" in m))m.ShiftRight=null;   // the right Shift sprints only while Sprint is on Shift
+  KEYMAP=m;
+}
+buildKeymap();
+// the key the game sees for a key you pressed
+function gameKey(code){if(KEYMAP&&Object.prototype.hasOwnProperty.call(KEYMAP,code))return KEYMAP[code];return code;}
+function keyLabel(code){
+  if(!code)return "—";
+  const names={Space:"SPACE",ShiftLeft:"SHIFT",ShiftRight:"R-SHIFT",ControlLeft:"CTRL",ControlRight:"R-CTRL",AltLeft:"ALT",AltRight:"R-ALT",Tab:"TAB",CapsLock:"CAPS",
+    Backquote:"`",Minus:"-",Equal:"=",BracketLeft:"[",BracketRight:"]",Backslash:"\\",Semicolon:";",Quote:"'",Comma:",",Period:".",Slash:"/",Enter:"ENTER",Backspace:"BKSP",
+    ArrowUp:"↑",ArrowDown:"↓",ArrowLeft:"←",ArrowRight:"→"};
+  if(names[code])return names[code];
+  if(/^Key[A-Z]$/.test(code))return code.slice(3);
+  if(/^Digit\d$/.test(code))return code.slice(5);
+  if(/^Numpad/.test(code))return "NUM "+code.slice(6);
+  return code.replace(/^F(\d+)$/,"F$1").toUpperCase();
+}
+// what the prompts call a key, when you've moved it ("Hold E" says your key instead)
+function kbmNames(){
+  const L={E:"use",F:"fight",G:"mask",Q:"drop",T:"coin",J:"jammer",R:"reload",C:"crouch",SPACE:"jump"};let any=false;const m={};
+  for(const [k,id] of Object.entries(L)){const b=bindOf(id),lab=keyLabel(b);m[k]=lab;if(lab!==k)any=true;}
+  return any?m:null;
+}
+// mouse: CS's 0.022 degrees per count; aiming down the sights scales like CS's zoom sensitivity ratio
+const fovV=h=>2*Math.atan(Math.tan(h*Math.PI/360)*0.75)*180/Math.PI;   // CS horizontal FOV (4:3) -> vertical degrees
+function baseFov(){return fovV(clamp(+SET.fov||90,60,120));}
+function aimFov(t){return baseFov()*(1-(t||0)/3);}
+function lookSens(){
+  const s=(+SET.sens||2.5)*0.022*Math.PI/180;
+  if(!P.aimT)return s;
+  const b=baseFov(),a=aimFov(1),r=Math.tan(a*Math.PI/360)/Math.tan(b*Math.PI/360)*(+SET.zoomRatio||1);
+  return s*(1+(r-1)*P.aimT);
+}
+const moveCS=()=>SET.move==="cs";
+// Counter-Strike's movement, in metres (1 unit = 2.54 cm): ground acceleration and friction, air strafing, bunny hops
+const CS_ACC=5.5,CS_FRIC=5.2,CS_STOP=2.03,CS_AIRACC=12,CS_AIRCAP=0.76;
 try{A.muted=localStorage.getItem("cg-muted")==="1";}catch(e){}
 function initAudio(){
   if(A.ctx){if(A.ctx.state!=="running")A.ctx.resume().catch(()=>{});return;}
@@ -6032,25 +6112,27 @@ function initAudio(){
   try{A.ctx=new AC();}catch(e){A.ctx=null;return;}
   const c=A.ctx;
   const comp=c.createDynamicsCompressor();comp.threshold.value=-14;comp.ratio.value=4;comp.connect(c.destination);
-  A.master=c.createGain();A.master.gain.value=A.muted?0:0.9;A.master.connect(comp);
+  A.master=c.createGain();A.master.gain.value=A.muted?0:0.9*SET.vol.master/100;A.master.connect(comp);
+  // three groups under the master volume: effects, voices and alarms, ambience and music
+  for(const [k,v] of [["fx","fx"],["voice","voice"],["ambBus","amb"]]){A[k]=c.createGain();A[k].gain.value=SET.vol[v]/100;A[k].connect(A.master);}
   const len=c.sampleRate*2;
   A.noise=c.createBuffer(1,len,c.sampleRate);const nd=A.noise.getChannelData(0);for(let i=0;i<len;i++)nd[i]=Math.random()*2-1;
   A.brown=c.createBuffer(1,len,c.sampleRate);const bd=A.brown.getChannelData(0);let l=0;for(let i=0;i<len;i++){l=(l+0.02*(Math.random()*2-1))/1.02;bd[i]=l*3.5;}
   // night ambience: distant city rumble + fluorescent hum indoors
   const amb=c.createBufferSource();amb.buffer=A.brown;amb.loop=true;
   const af=c.createBiquadFilter();af.type="lowpass";af.frequency.value=380;
-  A.amb=c.createGain();A.amb.gain.value=0;amb.connect(af).connect(A.amb).connect(A.master);amb.start();
+  A.amb=c.createGain();A.amb.gain.value=0;amb.connect(af).connect(A.amb).connect(A.ambBus);amb.start();
   const h1=c.createOscillator();h1.frequency.value=100;const h2=c.createOscillator();h2.frequency.value=200;
   A.hum=c.createGain();A.hum.gain.value=0;const h2g=c.createGain();h2g.gain.value=0.4;
-  h1.connect(A.hum);h2.connect(h2g).connect(A.hum);A.hum.connect(A.master);h1.start();h2.start();
+  h1.connect(A.hum);h2.connect(h2g).connect(A.hum);A.hum.connect(A.ambBus);h1.start();h2.start();
 }
 function setMuted(m){
   A.muted=m;try{localStorage.setItem("cg-muted",m?"1":"0");}catch(e){}
-  if(A.master)A.master.gain.setTargetAtTime(m?0:0.9,A.ctx.currentTime,0.05);
+  if(A.master)A.master.gain.setTargetAtTime(m?0:0.9*SET.vol.master/100,A.ctx.currentTime,0.05);
   $("sound").textContent=m?"SOUND OFF · M":"SOUND ON · M";
 }
 function chain(pan,lp){
-  const c=A.ctx;let node=A.master;
+  const c=A.ctx;let node=A.fx||A.master;
   if(pan!=null&&c.createStereoPanner){const p=c.createStereoPanner();p.pan.value=clamp(pan,-1,1);p.connect(node);node=p;}
   if(lp){const f=c.createBiquadFilter();f.type="lowpass";f.frequency.value=lp;f.connect(node);node=f;}
   return node;
@@ -6179,7 +6261,7 @@ function speak(dur,v){
   const lp=c.createBiquadFilter();lp.type="lowpass";lp.frequency.value=v.radio?2800:2400;
   const sh=c.createWaveShaper();sh.curve=softClip(v.radio?5:2.2);
   const out=c.createGain();out.gain.value=v.radio?0.9:1.0;
-  env.connect(hp).connect(lp).connect(sh).connect(out).connect(A.master);
+  env.connect(hp).connect(lp).connect(sh).connect(out).connect(A.voice||A.master);
   let vib=null;
   if(v.vib){vib=c.createOscillator();vib.frequency.value=v.vib;const vg=c.createGain();vg.gain.value=v.f0*0.03;vib.connect(vg).connect(src.frequency);vib.start(t0);vib.stop(end+0.1);}
   let t=t0,p=v.f0*1.12;
@@ -6200,7 +6282,7 @@ function speak(dur,v){
   if(v.radio){ // radio hiss under the voice
     const n=c.createBufferSource();n.buffer=A.noise;n.loop=true;
     const nf=c.createBiquadFilter();nf.type="bandpass";nf.frequency.value=2000;nf.Q.value=0.6;
-    const ng=c.createGain();ng.gain.value=0.035;n.connect(nf).connect(ng).connect(A.master);n.start(t0);n.stop(end+0.1);nodes.push(n);
+    const ng=c.createGain();ng.gain.value=0.035;n.connect(nf).connect(ng).connect(A.voice||A.master);n.start(t0);n.stop(end+0.1);nodes.push(n);
   }
   const vo={nodes,out};voices.push(vo);
   setTimeout(()=>{voices=voices.filter(x=>x!==vo);},(dur+0.4)*1000);
@@ -6217,7 +6299,7 @@ function drillOn(){
   const c=A.ctx,t=c.currentTime;
   const out=c.createGain();out.gain.setValueAtTime(0.0001,t);
   const pan=c.createStereoPanner?c.createStereoPanner():null;
-  if(pan){out.connect(pan);pan.connect(A.master);}else out.connect(A.master);
+  if(pan){out.connect(pan);pan.connect(A.fx||A.master);}else out.connect(A.fx||A.master);
   const o=c.createOscillator();o.type="sawtooth";o.frequency.setValueAtTime(60,t);o.frequency.exponentialRampToValueAtTime(110,t+.4);
   const of=c.createBiquadFilter();of.type="lowpass";of.frequency.value=900;const og=c.createGain();og.gain.value=.35;o.connect(of).connect(og).connect(out);
   const n=c.createBufferSource();n.buffer=A.noise;n.loop=true;
@@ -6239,11 +6321,11 @@ function alarmOn(){
   const bell=c.createOscillator();bell.type="square";bell.frequency.value=1250;
   const bf=c.createBiquadFilter();bf.type="bandpass";bf.frequency.value=1800;bf.Q.value=1.2;
   const bg=c.createGain();bg.gain.value=.5;const lfo=c.createOscillator();lfo.type="square";lfo.frequency.value=14;const lg=c.createGain();lg.gain.value=.5;lfo.connect(lg).connect(bg.gain);
-  const bo=c.createGain();bo.gain.value=.08;bell.connect(bf).connect(bg).connect(bo).connect(A.master);
+  const bo=c.createGain();bo.gain.value=.08;bell.connect(bf).connect(bg).connect(bo).connect(A.voice||A.master);
   // police siren, distant at first, louder as the timer runs down
   const sir=c.createOscillator();sir.type="sawtooth";sir.frequency.value=850;
   const sl=c.createOscillator();sl.type="triangle";sl.frequency.value=0.4;const sd=c.createGain();sd.gain.value=320;sl.connect(sd).connect(sir.frequency);
-  const sf=c.createBiquadFilter();sf.type="lowpass";sf.frequency.value=1300;const sg=c.createGain();sg.gain.value=0.0001;sir.connect(sf).connect(sg).connect(A.master);
+  const sf=c.createBiquadFilter();sf.type="lowpass";sf.frequency.value=1300;const sg=c.createGain();sg.gain.value=0.0001;sir.connect(sf).connect(sg).connect(A.voice||A.master);
   [bell,lfo,sir,sl].forEach(o=>o.start());
   A.alarm={nodes:[bell,lfo,sir,sl],siren:sg,outs:[bo,sg]};
 }
@@ -6291,7 +6373,7 @@ function musicStep(t,st){
 function updateMusic(){
   const def=LV.def,c=A.ctx;
   if(!def.music||!c||c.state!=="running"){if(A.music)A.music.out.gain.setTargetAtTime(0,c?c.currentTime:0,0.05);return;}
-  if(!A.music){const out=c.createGain();out.gain.value=0;const lp=c.createBiquadFilter();lp.type="lowpass";lp.frequency.value=16000;out.connect(lp).connect(A.master);A.music={out,lp,next:0,step:0};A.music.out=out;}
+  if(!A.music){const out=c.createGain();out.gain.value=0;const lp=c.createBiquadFilter();lp.type="lowpass";lp.frequency.value=16000;out.connect(lp).connect(A.ambBus||A.master);A.music={out,lp,next:0,step:0};A.music.out=out;}
   const m=A.music;
   if(G.alarm||state!=="playing"){m.out.gain.setTargetAtTime(0,c.currentTime,0.15);return;} // the DJ cuts the music
   const loud=P.level===0&&def.musicLoud(P.x,P.z),inside=P.level===0&&def.isInside(P.x,P.z);
@@ -7157,11 +7239,90 @@ function menuScreen(sc){
   $("menu").scrollTop=0;
   const first=sc==="home"?$("homeSolo"):$("menuBack");if(IN.src==="pad"&&first)first.focus();
 }
+/* ---------- the settings screen ---------- */
+let BINDING=null;   // the action waiting for a key
+function applySettings(){
+  // sound
+  if(A.ctx&&A.fx){const now=A.ctx.currentTime,v=SET.vol;
+    A.master.gain.setTargetAtTime(A.muted?0:0.9*v.master/100,now,0.05);
+    A.fx.gain.setTargetAtTime(v.fx/100,now,0.05);A.voice.gain.setTargetAtTime(v.voice/100,now,0.05);A.ambBus.gain.setTargetAtTime(v.amb/100,now,0.05);}
+  // view
+  camera.fov=aimFov(P.aimT||0);camera.updateProjectionMatrix();
+  // graphics
+  const sh=!!SET.shadows&&!TOUCH_DEV;
+  if(renderer.shadowMap.enabled!==sh){renderer.shadowMap.enabled=sh;scene.traverse(o=>{const m=o.material;if(!m)return;(Array.isArray(m)?m:[m]).forEach(x=>x.needsUpdate=true);});}
+  if(SET.quality==="high"){AQ.level=0;}else if(SET.quality==="low"){AQ.level=Math.max(AQ.level,2);}
+  aqApply();
+  const f=$("fpsMeter");if(f)f.hidden=!SET.fps;
+}
+function setSet(path,val){
+  const k=path.split(".");let o=SET;for(let i=0;i<k.length-1;i++)o=o[k[i]];o[k[k.length-1]]=val;
+  saveSet();applySettings();
+}
 function settingsUI(){
   const so=$("setSound");so.setAttribute("aria-pressed",String(!A.muted));so.textContent=A.muted?"Off":"On";
   const ob=$("setObj");ob.setAttribute("aria-pressed",String(!!IN.objHide));ob.textContent=IN.objHide?"On":"Off";
   $("devToggle").checked=!!DEV.on;
+  const box=$("setMore");if(!box)return;
+  const tog=(id,on,a,b)=>`<button type="button" class="set-tog" data-tog="${id}" aria-pressed="${!!on}">${on?(a||"On"):(b||"Off")}</button>`;
+  const seg=(id,cur,opts)=>`<span class="set-seg">${opts.map(([v,l])=>`<button type="button" data-seg="${id}" data-v="${v}" aria-pressed="${cur===v}">${l}</button>`).join("")}</span>`;
+  const slider=(id,v,min,max,step,unit)=>`<span class="set-num"><input type="range" data-rng="${id}" min="${min}" max="${max}" step="${step}" value="${v}" aria-label="${id}"><input type="number" data-num="${id}" min="${min}" max="${max}" step="${step}" value="${v}" aria-label="${id}">${unit?`<i>${unit}</i>`:""}</span>`;
+  const row=(t,s,ctl)=>`<div class="set-row"><div class="set-txt"><b>${t}</b>${s?`<span>${s}</span>`:""}</div>${ctl}</div>`;
+  const v=SET.vol;
+  box.innerHTML=`
+  <h3 class="cr-h">Mouse and aim</h3>
+  ${row("Mouse sensitivity","The same number as in Counter-Strike (raw input, 0.022° per count)",slider("sens",SET.sens,0.1,10,0.01))}
+  ${row("Aim sensitivity","Like CS's zoom sensitivity ratio: 1.00 keeps the same feel through the sights",slider("zoomRatio",SET.zoomRatio,0.1,3,0.01))}
+  ${row("Invert mouse","Mouse up looks down",tog("invert",SET.invert))}
+  ${row("Aim","Right mouse button",seg("aimHold",SET.aimHold?"1":"0",[["0","Toggle"],["1","Hold"]]))}
+  <h3 class="cr-h">Movement</h3>
+  ${row("Movement feel","Counter-Strike: you speed up and slow down, steer in the air and can bunny hop. Classic: you stop the moment you let go",seg("move",SET.move,[["cs","Counter-Strike"],["classic","Classic"]]))}
+  ${row("Crouch","",seg("crouchHold",SET.crouchHold?"1":"0",[["0","Toggle"],["1","Hold"]]))}
+  ${row("Jump on the mouse wheel","For bunny hops: scroll just as you land",tog("wheelJump",SET.wheelJump))}
+  <h3 class="cr-h">Keys</h3>
+  <div class="set-row"><div class="set-txt"><b>Layout</b><span>A starting point; then change any key below</span></div>${seg("layout",SET.layout,Object.entries(LAYOUTS).map(([k,l])=>[k,l.name]).concat(SET.layout==="custom"?[["custom","Custom"]]:[]))}</div>
+  <div class="binds">${ACTIONS.map(([id,name])=>`<div class="bind"><span>${name}</span><button type="button" class="key" data-bind="${id}">${BINDING===id?"Press a key…":keyLabel(bindOf(id))}</button></div>`).join("")}</div>
+  <p class="cr-note">Click a key, then press the new one (Escape cancels). A key that's already used swaps places. Number keys, Escape and the mouse buttons stay as they are.</p>
+  <h3 class="cr-h">Sound</h3>
+  ${row("Volume","Everything",slider("vol.master",v.master,0,100,1,"%"))}
+  ${row("Effects","Steps, doors, shots, the drill",slider("vol.fx",v.fx,0,100,1,"%"))}
+  ${row("Voices and alarms","Guards, the radio, the alarm bell and the siren",slider("vol.voice",v.voice,0,100,1,"%"))}
+  ${row("Ambience and music","The city at night, the hum indoors, the club's music",slider("vol.amb",v.amb,0,100,1,"%"))}
+  <h3 class="cr-h">Display</h3>
+  ${row("Field of view","Horizontal degrees on a 4:3 screen, like CS: 90 is CS's view",slider("fov",SET.fov,60,120,1,"°"))}
+  ${row("Graphics quality","Auto steps down by itself when frames run slow",seg("quality",SET.quality,[["auto","Auto"],["high","High"],["low","Low"]]))}
+  ${row("Resolution","Lower is faster",slider("res",SET.res,50,100,5,"%"))}
+  ${row("Shadows","",tog("shadows",SET.shadows))}
+  ${row("Head bob","The view bobs as you walk",tog("bob",SET.bob))}
+  ${row("FPS counter","Frames per second, top left",tog("fps",SET.fps))}
+  <div class="set-row"><div class="set-txt"><b>Reset</b><span>Everything on this page back to how it started</span></div><button type="button" class="set-tog" id="setReset">Reset</button></div>`;
+  box.querySelectorAll("[data-tog]").forEach(b=>b.onclick=()=>{setSet(b.dataset.tog,!SET[b.dataset.tog]);settingsUI();});
+  box.querySelectorAll("[data-seg]").forEach(b=>b.onclick=()=>{const id=b.dataset.seg,val=b.dataset.v;
+    if(id==="layout"){if(val==="custom")return;const L=LAYOUTS[val];SET.binds=Object.assign({},L.binds);SET.crouchHold=L.crouchHold;SET.aimHold=L.aimHold;SET.layout=val;buildKeymap();saveSet();applySettings();}
+    else if(id==="crouchHold"||id==="aimHold")setSet(id,val==="1");else setSet(id,val);
+    settingsUI();});
+  const num=(id,x)=>{const lim=box.querySelector(`[data-num="${id}"]`);x=clamp(+x,+lim.min,+lim.max);if(!isFinite(x))return;setSet(id,x);
+    box.querySelectorAll(`[data-num="${id}"],[data-rng="${id}"]`).forEach(e=>{if(document.activeElement!==e)e.value=x;});};
+  box.querySelectorAll("[data-rng]").forEach(e=>e.oninput=()=>num(e.dataset.rng,e.value));
+  box.querySelectorAll("[data-num]").forEach(e=>{e.onchange=()=>num(e.dataset.num,e.value);e.addEventListener("keydown",ev=>ev.stopPropagation());});
+  box.querySelectorAll("[data-bind]").forEach(b=>b.onclick=()=>{BINDING=BINDING===b.dataset.bind?null:b.dataset.bind;settingsUI();});
+  $("setReset").onclick=()=>{SET=JSON.parse(JSON.stringify(SET0));buildKeymap();saveSet();applySettings();settingsUI();};
 }
+// waiting for a key to bind
+addEventListener("keydown",e=>{
+  if(!BINDING)return;
+  e.preventDefault();e.stopImmediatePropagation();
+  if(e.code==="Escape"){BINDING=null;settingsUI();return;}
+  if(/^(Digit|Numpad)\d$/.test(e.code)||["Enter","NumpadEnter","Backspace"].includes(e.code))return;
+  const id=BINDING,old=bindOf(id),other=ACTIONS.find(([a])=>a!==id&&bindOf(a)===e.code);
+  SET.binds[id]=e.code;if(other)SET.binds[other[0]]=old;
+  // still one of the layouts?
+  SET.layout=Object.keys(LAYOUTS).find(k=>ACTIONS.every(([a,,def])=>(LAYOUTS[k].binds[a]||def)===bindOf(a)))||"custom";
+  BINDING=null;buildKeymap();saveSet();settingsUI();
+},true);
+// the frame rate, when it's switched on
+const FPSM={t:0,n:0};
+function fpsTick(raw){if(!SET.fps)return;FPSM.t+=raw;FPSM.n++;if(FPSM.t>=0.5){const e=$("fpsMeter");if(e)e.textContent=Math.round(FPSM.n/FPSM.t)+" FPS";FPSM.t=0;FPSM.n=0;}}
 function initMenuScreens(){
   document.querySelectorAll("[data-go]").forEach(b=>b.onclick=()=>{initAudio();menuScreen(b.dataset.go);});
   $("menuBack").onclick=()=>menuScreen("home");
@@ -7187,7 +7348,7 @@ function initCareerUI(){
 function resetGame(){
   const sp=LV.def.spawn;
   Object.assign(P,{x:sp.x,z:sp.z,yaw:sp.yaw||0,level:sp.lvl||0,y:(sp.lvl||0)*ROOF_Y,climb:null,ladder:null,onStair:false,jh:0,vy:0,gnd:0,fiddle:0,pitch:0,crouch:false,eye:1.65,bobT:0,carry:null,sprinting:false,kick:0,
-    masked:false,maskT:0,mag:MAG,reserve:MAG*3,reload:0,fireCD:0,aim:false,aimT:0,recoil:0,raise:0,wasRestricted:false,ties:LV.def.zipTies||0,shoutCD:0,jammers:JAMMERS,hasCard:false,hasGun:true,struggle:null,hp:PLAYER_HP,hurtT:9,uniform:false,tips:{},fpX:null,fpZ:null});
+    masked:false,maskT:0,mag:MAG,reserve:MAG*3,reload:0,fireCD:0,aim:false,aimT:0,recoil:0,raise:0,wasRestricted:false,ties:LV.def.zipTies||0,shoutCD:0,jammers:JAMMERS,hasCard:false,hasGun:true,struggle:null,hp:PLAYER_HP,hurtT:9,uniform:false,tips:{},fpX:null,fpZ:null,mvx:0,mvz:0,moving:false,jumpBufT:-9});
   Object.assign(G,{time:0,lootT:0,susp:0,unseen:0,alarm:false,alarmT:ALARM_TIME,drill:0,drillWas:false,vaultOpen:false,doorAnim:0,secured:0,takedowns:0,kills:0,camsShot:0,shots:0,everAlarm:false,noise:0,shotNoise:0,blipT:0,bodies:[],secAlert:0,bagT:0,binned:0,
     loud:0,trail:[],trailBase:0,tieT:0,tied:0,civKills:0,callLine:-9,bodyHost:false,lastSpotter:null,secMsg:"",jamT:0,jamsUsed:0,jamBeep:0,loopHold:0,loops:0,picks:0,picking:false,pickScr:0,bang:null,civWatched:false});
   cams.forEach(c=>{c.dead=false;c.loopT=0;c.civDist=-1;c.cone.visible=true;c.spot.intensity=1.6;c.head.rotation.set(0.24,0,0);c.body.material=M.camBody;});
@@ -7195,7 +7356,7 @@ function resetGame(){
   doors.forEach(d=>{d.open=false;d.byGuard=false;d.t=0;d.leafCols=null;d.leaves.forEach(l=>l.piv.rotation.y=0);if(!colliders.includes(d.col))colliders.push(d.col);d.pickT=0;if(d.pick)d.locked=true;if(LV.day&&d.dayOpen)setDoorOpen(d,1);});
   windows.forEach(resetWindow);
   G.drilling=false;G.pagersUsed=0;P.locked=false;stopVoices();$("subs").hidden=true;
-  gun.visible=false;camera.fov=72;camera.updateProjectionMatrix();
+  gun.visible=false;camera.fov=baseFov();camera.updateProjectionMatrix();
   $("maskEdge").hidden=true;
   drillOff(true);alarmOff();
   VAULT.pivot.rotation.y=0;VAULT.wheel.rotation.z=0;if(!colliders.includes(VAULT.col))colliders.push(VAULT.col);
@@ -7224,49 +7385,57 @@ function resetGame(){
 
 /* ================= input ================= */
 addEventListener("keydown",e=>asLocal(()=>{
-  if(["ArrowUp","ArrowDown","ArrowLeft","ArrowRight","Space"].includes(e.code))e.preventDefault();
-  keys[e.code]=true;
+  // your key bindings: the game's code sees the default key of the action you pressed
+  const code=gameKey(e.code);
+  if(["ArrowUp","ArrowDown","ArrowLeft","ArrowRight","Space"].includes(e.code)||code==="Space")e.preventDefault();
+  if(code===null)return;
+  keys[code]=true;
   if(state!=="playing")return;
   if(G.keypad){
     if(/^(Digit|Numpad)[0-9]$/.test(e.code)){e.preventDefault();if(!e.repeat)keypadDigit(e.code.slice(-1));return;}
     if(e.code==="Backspace"){e.preventDefault();keypadBack();return;}
     if(e.code==="Enter"||e.code==="NumpadEnter"){e.preventDefault();keypadEnter();return;}
-    if(e.code==="KeyE"){if(!e.repeat)closeKeypad();return;}
-    if(["KeyW","KeyA","KeyS","KeyD","Space"].includes(e.code))closeKeypad();
+    if(code==="KeyE"){if(!e.repeat)closeKeypad();return;}
+    if(["KeyW","KeyA","KeyS","KeyD","Space"].includes(code))closeKeypad();
   }
   if(/^(Digit|Numpad)[0-9]$/.test(e.code)&&!e.repeat&&digitPressed(+e.code.slice(-1))){e.preventDefault();return;}
-  if(e.code==="KeyE"&&!e.repeat)pressedE=true;
-  if(e.code==="KeyC"&&!e.repeat&&!DEV.ghost)P.crouch=!P.crouch;
-  if(e.code==="Space"&&!e.repeat)tryJump();
-  if(e.code==="KeyF"&&!e.repeat)pressF();
-  if(e.code==="KeyR"&&!e.repeat)startReload();
-  if(e.code==="KeyQ"&&!e.repeat)dropCarry();
-  if(e.code==="KeyJ"&&!e.repeat)placeJammer();
-  if(e.code==="KeyT"&&!e.repeat)throwCoin();
-  if(e.code==="KeyG"&&!e.repeat&&!P.masked)SFX.mask();
-  if(e.code==="KeyM"&&!e.repeat){setMuted(!A.muted);toast(A.muted?"Sound off":"Sound on","",1200);}
+  if(code==="KeyE"&&!e.repeat)pressedE=true;
+  if(code==="KeyC"&&!e.repeat&&!DEV.ghost&&!SET.crouchHold)P.crouch=!P.crouch;
+  if(code==="Space"&&!e.repeat)tryJump();
+  if(code==="KeyF"&&!e.repeat)pressF();
+  if(code==="KeyR"&&!e.repeat)startReload();
+  if(code==="KeyQ"&&!e.repeat)dropCarry();
+  if(code==="KeyJ"&&!e.repeat)placeJammer();
+  if(code==="KeyT"&&!e.repeat)throwCoin();
+  if(code==="KeyG"&&!e.repeat&&!P.masked)SFX.mask();
+  if(code==="KeyM"&&!e.repeat){setMuted(!A.muted);toast(A.muted?"Sound off":"Sound on","",1200);}
   if(e.code==="KeyV"&&!e.repeat&&DEV.on)toggleGhost();
   if(["ControlLeft","ControlRight"].includes(e.code)&&DEV.ghost)e.preventDefault();
   if(e.code==="Escape"&&!locked)setState("paused");
 }));
-addEventListener("keyup",e=>{keys[e.code]=false;});
+addEventListener("keyup",e=>{const c=gameKey(e.code);if(c)keys[c]=false;});
 document.addEventListener("visibilitychange",()=>{if(document.hidden&&state==="playing")setState("paused");});
 addEventListener("blur",()=>{for(const k in keys)keys[k]=false;if(state==="playing"&&fallback)setState("paused");});
 document.addEventListener("mousemove",e=>{
   if(state!=="playing")return;
   if(!locked&&!fallback)return;
-  const sens=0.0022*(1-0.4*P.aimT);
-  P.yaw-=(e.movementX||0)*sens;P.pitch=clamp(P.pitch-(e.movementY||0)*sens,-1.45,1.45);
+  const sens=lookSens();
+  P.yaw-=(e.movementX||0)*sens;P.pitch=clamp(P.pitch-(e.movementY||0)*sens*(SET.invert?-1:1),-1.45,1.45);
 });
 canvas.addEventListener("mousedown",e=>asLocal(()=>{
   if(state!=="playing")return;
   if(e.button===0)shoot();
-  if(e.button===2)P.aim=!P.aim; // toggle, not hold
+  if(e.button===2)P.aim=SET.aimHold?true:!P.aim; // toggle, or hold (Settings)
 }));
+addEventListener("mouseup",e=>asLocal(()=>{if(e.button===2&&SET.aimHold)P.aim=false;}));
+// the mouse wheel jumps (Settings): scroll as you land to bunny hop
+addEventListener("wheel",e=>{if(state==="playing"&&SET.wheelJump&&(locked||fallback))asLocal(()=>tryJump());},{passive:true});
 canvas.addEventListener("contextmenu",e=>e.preventDefault());
 
 function requestLock(){
-  try{const r=canvas.requestPointerLock();if(r&&typeof r.catch==="function")r.catch(lockFailed);}catch(err){lockFailed();}
+  // raw mouse input (no pointer acceleration), like CS's raw input, where the browser has it
+  const plain=()=>{try{const r=canvas.requestPointerLock();if(r&&typeof r.catch==="function")r.catch(lockFailed);}catch(err){lockFailed();}};
+  try{const r=canvas.requestPointerLock({unadjustedMovement:true});if(r&&typeof r.then==="function")r.catch(plain);}catch(err){plain();}
 }
 function lockFailed(){
   if(!pendingStart)return;
@@ -7351,7 +7520,9 @@ const KEYNAMES={
 function inputSrc(){try{return IN.src;}catch(e){return "kbm";}}
 function keyWords(s){
   const src=inputSrc();
-  const m=KEYNAMES[src];if(!m||!s)return s;
+  // keyboard: your own bindings (a guest's prompts are turned into their keys on their own screen)
+  const m=src==="kbm"?(CTX.cur?null:kbmNames()):KEYNAMES[src];if(!m||!s)return s;
+  if(src==="kbm")return s.replace(/<kbd>(E|F|G|Q|T|J|R|C|SPACE)<\/kbd>/g,(a,k)=>`<kbd>${m[k]}</kbd>`).replace(/\b([Hh]old|[Pp]ress|with|[Uu]se) (E|F|G|Q|T|J|R|C|SPACE)\b/g,(a,v,k)=>v+" "+m[k]).replace(/\bQ drops it\b/g,`${m.Q} drops it`);
   const touch=src==="touch";
   if(touch)s=s.replace(/\b([Pp])ress F to shout\b/g,(a,p)=>(p==="P"?"T":"t")+"ap SHOUT").replace(/\bF to smash\b/g,"SMASH to smash");
   s=s.replace(/<kbd>(E|F|G|Q|T|J|R|C|SPACE)<\/kbd>/g,(a,k)=>`<kbd>${m[k]}</kbd>`)
@@ -7425,11 +7596,11 @@ function startClimb(tr){
 }
 function updatePlayer(dt){
   if(P.struggle){
-    updateStruggle(dt);G.noise=0;P.sprinting=false;
+    updateStruggle(dt);G.noise=0;P.sprinting=false;P.mvx=P.mvz=0;
     camera.position.set(P.x,P.y+P.eye,P.z);camera.rotation.set(P.pitch,P.yaw,0);
     return;
   }
-  if(P.climb){
+  if(P.climb){P.mvx=P.mvz=0;
     // ladder / hatch: no control while climbing
     const c=P.climb;c.t=Math.min(1,c.t+dt/c.dur);const e=c.t*c.t*(3-2*c.t);
     let s=e*c.len,i=0;
@@ -7458,7 +7629,7 @@ function updatePlayer(dt){
     return;
   }
   if(P.ladder){
-    const L=P.ladder.l;let v=0;
+    const L=P.ladder.l;let v=0;P.mvx=P.mvz=0;
     if(!P.locked&&keys.KeyW)v+=1;if(!P.locked&&keys.KeyS)v-=1;if(!P.locked&&Math.abs(IN.fwd)>0.3)v+=Math.sign(IN.fwd);v=clamp(v,-1,1);
     const before=Math.floor(P.ladder.y/0.32);
     P.ladder.y=Math.max(L.lo*ROOF_Y,P.ladder.y+v*2.3*dt);
@@ -7482,15 +7653,33 @@ function updatePlayer(dt){
   if(analog){mx+=fx*IN.fwd+rx*IN.right;mz+=fz*IN.fwd+rz*IN.right;}
   const len=Math.hypot(mx,mz);
   const shift=keys.ShiftLeft||keys.ShiftRight||(analog&&IN.sprint);
-  if(shift&&P.crouch&&len>0)P.crouch=false;
-  P.sprinting=!!(shift&&len>0&&!(P.carry&&P.carry.gold&&!SK.heavy));
+  if(SET.crouchHold&&!DEV.ghost)P.crouch=!!keys.KeyC;            // crouch while the key is held (Settings)
+  if(shift&&P.crouch&&len>0&&!SET.crouchHold)P.crouch=false;
+  P.sprinting=!!(shift&&len>0&&!P.crouch&&!(P.carry&&P.carry.gold&&!SK.heavy));
   let speed=P.crouch?1.7*SK.crouch:(P.sprinting?5.4:3.1);
   if(analog&&!P.sprinting)speed*=0.4+0.6*Math.min(1,IN.mag);   // a light push on the stick walks slowly
   if(P.carry)speed*=P.carry.kind==="body"?SK.body:P.carry.gold?(SK.heavy?0.6:0.45):(SK.heavy?0.75:0.62);
-  if(len>0){
-    mx/=len;mz/=len;
-    const p={x:P.x+mx*speed*dt,z:P.z+mz*speed*dt};
-    if((P.jh>P.gnd+0.05||P.vy>0)&&!P.onStair){
+  const airborne=(P.jh>P.gnd+0.05||P.vy>0)&&!P.onStair;
+  let dx=0,dz=0;
+  if(len>0){mx/=len;mz/=len;}
+  if(moveCS()){
+    // Counter-Strike: friction on the ground, then accelerate toward where you want to go; in the air you can only
+    // steer (a small top speed for adding to where you're heading), which is what air strafing and bunny hops use
+    let vx=P.mvx||0,vz=P.mvz||0;
+    if(!airborne){
+      const sp=Math.hypot(vx,vz);
+      if(sp>1e-4){const drop=Math.max(sp,CS_STOP)*CS_FRIC*dt,k=Math.max(sp-drop,0)/sp;vx*=k;vz*=k;}else{vx=0;vz=0;}
+    }
+    if(len>0){
+      const wish=speed,cap=airborne?Math.min(wish,CS_AIRCAP):wish,cur=vx*mx+vz*mz,add=cap-cur;
+      if(add>0){const a=Math.min((airborne?CS_AIRACC:CS_ACC)*dt*wish,add);vx+=a*mx;vz+=a*mz;}
+    }
+    P.mvx=vx;P.mvz=vz;dx=vx*dt;dz=vz*dt;
+  }else{P.mvx=mx*speed;P.mvz=mz*speed;dx=P.mvx*dt;dz=P.mvz*dt;}
+  const step0=Math.hypot(dx,dz);
+  if(step0>1e-6){
+    const p={x:P.x+dx,z:P.z+dz};
+    if(airborne){
       for(const c of colliders){
         if((c.lvl||0)!==P.level||c.see||c.h>MANTLE_MAX||c.h<=P.jh+0.02||c.h-P.jh>0.6)continue;
         if(p.x+0.37>c.minX&&p.x-0.37<c.maxX&&p.z+0.37>c.minZ&&p.z-0.37<c.maxZ){P.jh=c.h+0.01;P.vy=Math.max(P.vy,0.5);noiseHit({type:"lowpass",freq:500,dur:.08,vol:.12});break;}
@@ -7498,18 +7687,23 @@ function updatePlayer(dt){
     }
     resolve(p,0.35,P.level,P.jh);
     // never walk onto a different level's stair from the side or into a hole: only through the ends (rails handle the sides)
-    for(const g of npcs()){if(P.jh>1.0)break;if(g.down||g.level!==P.level)continue;const r=g.kind==="civ"?0.55:0.65;const dx=p.x-g.x,dz=p.z-g.z,d=Math.hypot(dx,dz);if(d<r&&d>1e-6){p.x=g.x+dx/d*r;p.z=g.z+dz/d*r;}}
+    for(const g of npcs()){if(P.jh>1.0)break;if(g.down||g.level!==P.level)continue;const r=g.kind==="civ"?0.55:0.65;const ox=p.x-g.x,oz=p.z-g.z,d=Math.hypot(ox,oz);if(d<r&&d>1e-6){p.x=g.x+ox/d*r;p.z=g.z+oz/d*r;}}
+    // a wall takes away the speed going into it (you slide along it with the rest)
+    if(moveCS()&&dt>0){const ax=(p.x-P.x)/dt,az=(p.z-P.z)/dt;if(Math.abs(ax)<Math.abs(P.mvx))P.mvx=ax;if(Math.abs(az)<Math.abs(P.mvz))P.mvz=az;}
     P.x=p.x;P.z=p.z;
     const tl=G.trail[G.trail.length-1];
     if(!tl||Math.hypot(P.x-tl.x,P.z-tl.z)>0.35||tl.l!==P.level){G.trail.push({x:P.x,z:P.z,l:P.level});if(G.trail.length>600){G.trail.shift();G.trailBase++;}}
-    const before=Math.floor(P.bobT/Math.PI);
-    if(P.jh<=P.gnd+0.02)P.bobT+=dt*speed*2.1;
+    const before=Math.floor(P.bobT/Math.PI),hs=step0/Math.max(dt,1e-4);
+    if(P.jh<=P.gnd+0.02)P.bobT+=dt*hs*2.1;
     if(Math.floor(P.bobT/Math.PI)!==before){
-      stepSound(P.x,P.z,P.sprinting?0.5:P.crouch?0.08:0.25,0,null,P.level);
+      stepSound(P.x,P.z,P.sprinting||hs>4.4?0.5:P.crouch?0.08:0.25,0,null,P.level);
       if(P.carry)noiseHit({type:"lowpass",freq:700,dur:.12,vol:.12});
     }
   }
-  G.noise=len>0&&P.jh<=P.gnd+0.02?(P.sprinting?7:P.crouch?0:1.8)*SK.step:0;
+  // how loud you are: by how fast you actually go (a bunny hop at running speed is as loud as running)
+  const hsNow=Math.hypot(P.mvx||0,P.mvz||0);P.moving=step0>1e-6&&hsNow>0.25;
+  if(hsNow>4.4&&!P.crouch)P.sprinting=true;
+  G.noise=P.moving&&P.jh<=P.gnd+0.02?(P.sprinting?7:P.crouch?0:1.8)*SK.step:0;
   if(musicCovers())G.noise*=0.35;
   P.fiddle=Math.max(0,P.fiddle-dt);
   // stairs: follow the ramp; otherwise stand on whatever low thing is under you, fall off edges and through holes
@@ -7537,6 +7731,7 @@ function updatePlayer(dt){
     if(P.jh<=sup){
       if(P.vy<-2.5){stepSound(P.x,P.z,0.45,0,null,P.level);G.noise=Math.max(G.noise,P.crouch?1.5:3);}
       P.jh=sup;P.vy=0;
+      if(moveCS()&&G.world-(P.jumpBufT??-9)<0.12){P.jumpBufT=-9;tryJump();}
     }
   }else{P.jh=sup;P.vy=0;}
   P.y=P.level*ROOF_Y+P.jh;
@@ -7544,7 +7739,7 @@ function updatePlayer(dt){
   const targetEye=P.crouch?1.05:1.65;
   P.eye+=(targetEye-P.eye)*Math.min(1,dt*10);
   const reduce=matchMedia("(prefers-reduced-motion: reduce)").matches;
-  const bob=reduce||len===0?0:Math.sin(P.bobT)*0.035;
+  const bob=reduce||!SET.bob||!P.moving?0:Math.sin(P.bobT)*0.035;
   P.kick=Math.max(0,P.kick-dt*4);
   camera.position.set(P.x,P.y+P.eye+bob,P.z);
   camera.rotation.set(P.pitch-P.kick*0.12+P.recoil*0.012,P.yaw,0);
@@ -7609,7 +7804,7 @@ function tryJump(){
   if(P.ladder&&!P.climb){letGoLadder();return;}
   if(LV.def.forceCrouch&&LV.def.forceCrouch(P.x,P.z,P.level))return;
   if(P.locked||P.climb||DEV.ghost||state!=="playing")return;
-  if(P.jh>P.gnd+0.02||P.vy>0)return;
+  if(P.jh>P.gnd+0.02||P.vy>0){P.jumpBufT=G.world;return;}   // a press just before landing jumps on landing (bunny hops)
   if(P.carry&&(P.carry.kind==="body"||(P.carry.gold&&!SK.heavy))){toast("Too heavy to jump with","warn",1200);return;}
   P.crouch=false;P.vy=P.carry?JUMP_V*0.85:JUMP_V;SFX.jump();
 }
@@ -7952,7 +8147,7 @@ function updateWeapon(dt){
   P.raise=clamp(P.raise+(armed?dt*2.2:-dt*4),0,1);
   P.recoil=Math.max(0,P.recoil-dt*9);
   if(CTX.cur)return;
-  const fov=72-24*P.aimT;
+  const fov=aimFov(P.aimT);
   if(Math.abs(camera.fov-fov)>0.01){camera.fov=fov;camera.updateProjectionMatrix();}
   gun.visible=P.raise>0.01;
   gun.position.lerpVectors(HIP,ADS,P.aimT);
@@ -8839,7 +9034,7 @@ function resetRemote(pl,i){
   const sp=LV.def.spawn,a=(sp.yaw||0)+Math.PI/2,off=1.3*i;
   const p={x:sp.x+Math.cos(a)*off*-1,z:sp.z+Math.sin(a)*off};resolve(p,0.35,sp.lvl||0);
   Object.assign(pl.P,{x:p.x,z:p.z,yaw:sp.yaw||0,level:sp.lvl||0,y:(sp.lvl||0)*ROOF_Y,climb:null,ladder:null,onStair:false,jh:0,vy:0,gnd:0,fiddle:0,pitch:0,crouch:false,eye:1.65,bobT:0,carry:null,sprinting:false,kick:0,
-    masked:false,maskT:0,mag:MAG,reserve:MAG*3,reload:0,fireCD:0,aim:false,aimT:0,recoil:0,raise:0,wasRestricted:false,ties:LV.def.zipTies||0,shoutCD:0,jammers:JAMMERS,hasCard:false,locked:false,hp:PLAYER_HP,hurtT:9,struggle:null,hasGun:true,uniform:false,tips:{},fpX:null,fpZ:null});
+    masked:false,maskT:0,mag:MAG,reserve:MAG*3,reload:0,fireCD:0,aim:false,aimT:0,recoil:0,raise:0,wasRestricted:false,ties:LV.def.zipTies||0,shoutCD:0,jammers:JAMMERS,hasCard:false,locked:false,hp:PLAYER_HP,hurtT:9,struggle:null,hasGun:true,uniform:false,tips:{},fpX:null,fpZ:null,mvx:0,mvz:0,moving:false,jumpBufT:-9});
   Object.assign(pl.g,{hurtFlash:0,noise:0,shotNoise:0,loud:0,keypad:false,picking:false,pickScr:0,ladderTip:false,coins:COINS+(SK.coins||0),leaveT:0,tieT:0,loopHold:0,bagT:0,leaveBlock:false,trail:[],trailBase:0,mHoldT:0,mHoldId:"",duffels:0,bodyBags:0,bumps:0,picksLeft:0,locksPicked:0});
   pl.SK=Object.assign({},SK0);pl.CR=CREW&&pl.pid?crewView(CREW,pl.pid):null;
   pl.KP={entry:"",busy:false};pl.out=false;pl.hd=false;pl.hdSeq++;pl.keys={};pl.pressedE=false;pl.hudLast={};pl.msLast=null;pl.dom=hudClone();pl.lx=p.x;pl.lz=p.z;
@@ -8867,7 +9062,7 @@ function hostPlayers(dt){
       else if(pl.hd)pl.hdSeq++;
       pl.hd=hd;
       updateWeapon(dt);
-      camera.position.set(P.x,P.y+P.eye,P.z);camera.rotation.set(P.pitch,P.yaw,0);camera.fov=72-24*P.aimT;camera.updateProjectionMatrix();
+      camera.position.set(P.x,P.y+P.eye,P.z);camera.rotation.set(P.pitch,P.yaw,0);camera.fov=aimFov(P.aimT);camera.updateProjectionMatrix();
     });
   }
 }
@@ -9372,7 +9567,7 @@ function guestSnap(d){
   GS.hdSeq=p[11];
   showCarry();
   GS.pose=d.a;
-  for(const [id,v] of Object.entries(d.h||{})){const e=document.getElementById(id);if(!e)continue;if(v[0]>=0)e.hidden=!!v[0];e.className=v[1];if(v[2]!=null)e.innerHTML=v[2];e.style.cssText=v[3];}
+  for(const [id,v] of Object.entries(d.h||{})){const e=document.getElementById(id);if(!e)continue;if(v[0]>=0)e.hidden=!!v[0];e.className=v[1];if(v[2]!=null)e.innerHTML=id==="prompt"||id==="obj"?keyWords(v[2]):v[2];e.style.cssText=v[3];}
   if(d.m&&LV.def.netApply)LV.def.netApply(d.m);
   for(const e of d.e||[])guestEvent(e);
 }
@@ -9416,7 +9611,7 @@ function guestWeapon(dt){
   P.aimT=clamp(P.aimT+(P.aim&&canAim?dt:-dt)*7,0,1);
   P.raise=clamp(P.raise+(armed?dt*2.2:-dt*4),0,1);
   P.recoil=Math.max(0,P.recoil-dt*9);
-  const fov=72-24*P.aimT;
+  const fov=aimFov(P.aimT);
   if(Math.abs(camera.fov-fov)>0.01){camera.fov=fov;camera.updateProjectionMatrix();}
   gun.visible=P.raise>0.01;
   gun.position.lerpVectors(HIP,ADS,P.aimT);
@@ -9756,13 +9951,13 @@ function frame(now){
   else if(state==="menu")stepMenu(dt);
   if(!NET.guest||state==="menu")animate(dt);
   if(NET.on)netFrame(dt);
-  lmUpdate(dt);aqTick(raw);
+  lmUpdate(dt);aqTick(raw);fpsTick(raw);
   renderer.clear();
   renderer.render(scene,camera);
   sbCheck();
   if(state==="playing"||state==="paused"){renderer.clearDepth();renderer.render(vmScene,vmCam);}
 }
-initInput();initCoopUI();initMenuScreens();
+initInput();initCoopUI();initMenuScreens();applySettings();
 document.querySelectorAll(".diffs button").forEach(b=>b.addEventListener("click",()=>{if(NET.guest)return;setDifficulty(b.dataset.diff);if(state==="menu"){buildMap(selectedMap);resetGame();jobDetail();}if(NET.host&&NET.send)NET.send({t:"diff",d:DIFF_ID});}));
 diffUI();
 buildMap(selectedMap);

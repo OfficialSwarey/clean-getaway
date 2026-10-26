@@ -5,6 +5,13 @@ feature round bumps MINOR, a bug-fix-only update bumps PATCH, and 1.0.0 is
 the first "finished" release. Up to 0.30.0, MINOR is the version number the
 claude.ai artifact had. Releases are tagged `v0.30.0` and so on.
 
+## 0.40.0 — settings: Counter-Strike movement and sensitivity, your own keys, volumes, graphics
+- **Mouse sensitivity, the same number as in Counter-Strike:** a slider and a number box. It uses CS's scale (0.022° per mouse count) and raw mouse input where the browser has it, so your CS sensitivity feels the same here. **Aim sensitivity** works like CS's zoom sensitivity ratio (1.00 keeps the same feel through the sights). **Invert mouse**, and **aim** as toggle or hold.
+- **Counter-Strike movement (new default):** you speed up and slow down the way CS does (its acceleration and friction), you can steer in the air (air strafing), and you can **bunny hop**: press jump just as you land and you keep your speed. *Jump on the mouse wheel* is on, for scroll-hopping. Your keys and speeds stay the same: W walks, Shift sprints, and running fast is as loud as sprinting. The old movement is *Classic* in Settings. The jump is as high as before.
+- **Your own keys:** click any action and press a new key; a key that's already used swaps places. Three layouts to start from: **Classic**, **Counter-Strike** (crouch on Ctrl, held; drop on G) and **Call of Duty** (use on F, melee on V, aim held). Crouch as toggle or hold. The prompts show your keys.
+- **Sound:** a volume slider, plus effects, voices and alarms, and ambience and music each with their own.
+- **Display:** field of view (CS-style degrees: 90 is CS's view), graphics quality (Auto, High, Low), resolution, shadows, head bob, and an FPS counter.
+
 ## 0.39.4 — fix
 - Leaving on foot said "Starting the engine…" while you held E. It says "Slipping away…" now; the boat, helicopter, cable car and snowcat have their own lines too.
 
