@@ -660,7 +660,7 @@ body.coop-guest .diffs{pointer-events:none;opacity:.6}
 // Co-op: the same code runs for every player by swapping who P is. CTX.cur is the player whose turn it is (null = you);
 // HUD writes during another player's turn go to that player's copy of the HUD, which is sent to them.
 const CTX={cur:null,kind:null,pl:null};
-const GAME_VERSION="0.39.3";
+const GAME_VERSION="0.39.4";
 const NET={on:false,host:false,guest:false,send:null,close:null,code:"",busy:false,waiting:false,started:false,acc:0,remote:null,ending:false};
 const $=id=>(CTX.cur&&CTX.cur.dom&&CTX.cur.dom[id])||document.getElementById(id);
 // a timer started during another player's turn runs as that player
@@ -6585,6 +6585,8 @@ function placeDrillBags(n){
 /* Career without a driver: there's no van at all, and you leave on foot the way you came in,
    with the bag in your hands and whatever is in your pockets. */
 const onFoot=()=>!!(FOOT&&FOOT.on);
+// what holding E at the getaway says, by vehicle
+const LEAVING={boat:"Casting off…",helicopter:"The rotors spin up…","cable car":"Releasing the brake…",snowcat:"Starting the snowcat…"};
 // the orange ring at the way out: made (hidden) with every map, so in co-op it exists on both screens and the host only shows and moves it
 function makeFootRing(){const r=new THREE.Mesh(new THREE.RingGeometry(0.9,1.1,40),new THREE.MeshBasicMaterial({color:0xf4ab3d,transparent:true,opacity:.4,depthWrite:false}));r.rotation.x=-Math.PI/2;r.userData.noHit=true;r.visible=false;lvAdd(r);FOOT={on:false,ring:r};}
 function setOnFoot(on){
@@ -8238,7 +8240,7 @@ function updateInteraction(dt){
       const away=partnerAway(gwy);if(away){prompt=away;G.leaveT=0;}
       else if(keys.KeyE&&!G.leaveBlock){
         if(G.leaveT===0&&!onFoot())SFX.engine();
-        G.leaveT+=dt;prompt="Starting the engine…";prog=G.leaveT/LEAVE_TIME;
+        G.leaveT+=dt;prompt=foot?"Slipping away…":LEAVING[gw]||"Starting the engine…";prog=G.leaveT/LEAVE_TIME;
         if(G.leaveT>=LEAVE_TIME){endGame(true);return;}
       }else G.leaveT=0;
     }else G.leaveT=0;
