@@ -5,7 +5,8 @@ feature round bumps MINOR, a bug-fix-only update bumps PATCH, and 1.0.0 is
 the first "finished" release. Up to 0.30.0, MINOR is the version number the
 claude.ai artifact had. Releases are tagged `v0.30.0` and so on.
 
-## 0.40.1 — settings in the pause menu, slow walking fixed
+## 0.40.1 — settings in the pause menu, slow walking fixed, dev money
+- **Dev mode in the safehouse:** with dev mode on (Settings), the career has a strip of buttons: +$10,000, +$100,000, +$1,000,000, +1 level, +5 levels, max level, and back to level 1 with $8,000. For trying out every skill, gear and goal.
 - **Counter-Strike movement:** walking slowly (carrying gold, crouch-walking, a light push on the stick) barely moved you, because friction won over speeding up. You now reach those speeds as quickly as normal walking.
 - Pause a job and press **Settings**: the same settings as in the main menu (sensitivity, keys, movement, sound, display), and they apply as soon as you change them. Back (or Escape) returns to the pause menu. Dev mode stays in the main menu.
 

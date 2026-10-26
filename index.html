@@ -157,6 +157,7 @@ button{font:inherit;cursor:pointer}
 #coopLobby .coop{display:grid;gap:8px;padding:12px 14px;border:1px solid var(--line);background:rgba(255,255,255,.03)}
 #coopLobby{display:grid;gap:10px}
 .crew-list,.crew-claim{display:grid;gap:6px;justify-items:start}
+.cr-dev{display:flex;flex-wrap:wrap;gap:6px;align-items:center;padding:8px 10px;border:1px dashed var(--sodium)}.cr-dev .lbl{color:var(--sodium);margin-right:4px}
 .crew-list .btn{text-align:left;white-space:normal}
 .crew .coop-row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
 .crew-claim .coop-row{width:min(440px,100%);flex-wrap:nowrap}
@@ -481,6 +482,7 @@ body.coop-guest .diffs{pointer-events:none;opacity:.6}
         <div class="cr-stat"><span class="lbl">Cash</span><b id="crCash">$0</b></div>
         <div class="cr-stat"><span class="lbl">Skill points</span><b id="crPts">0</b></div>
       </div>
+      <div class="cr-dev" id="crDev" hidden></div>
       <div class="cr-tabs" role="tablist"><button type="button" role="tab" data-tab="jobs">Jobs</button><button type="button" role="tab" data-tab="shop">Shop</button><button type="button" role="tab" data-tab="skills" id="crTabSkills">Skills</button></div>
       <div id="crJobs"></div><div id="crShop" hidden></div><div id="crSkills" hidden></div>
       <div class="cr-row cr-foot"><label class="cr-name"><span class="lbl">Career</span><input id="crName" maxlength="24" placeholder="Name this career" autocomplete="off" spellcheck="false"></label><span class="lbl" id="crStats"></span><span class="cr-btns"><button type="button" class="btn ghost small" id="crExport">Save code</button><button type="button" class="btn ghost small" id="crImport">Load code</button><button type="button" class="btn ghost small" id="crNew">New career</button></span></div>
@@ -6795,9 +6797,22 @@ function renderCareer(){
     $("crSkills").querySelectorAll("[data-skill]").forEach(b=>b.onclick=()=>crAct("learn",b.dataset.skill));
     $("crRespec").onclick=()=>crAct("respec");
   }
+  devCareer();
   $("crNew").textContent=crConfirmNew?"Click again to wipe your career":"New career";
   {const n=$("crName");if(n&&document.activeElement!==n&&n.value!==(CAREER.name||""))n.value=CAREER.name||"";}
   setStampOnly();
+}
+// dev mode: money and experience on tap in the safehouse, to try everything (single-player career only)
+function devCareer(){
+  const box=$("crDev");if(!box)return;
+  const on=!!DEV.on&&!crewOn();box.hidden=!on;if(!on){box.innerHTML="";return;}
+  box.innerHTML=`<span class="lbl">Dev mode</span><button type="button" class="btn ghost small" data-dev="cash:10000">+$10,000</button><button type="button" class="btn ghost small" data-dev="cash:100000">+$100,000</button><button type="button" class="btn ghost small" data-dev="cash:1000000">+$1,000,000</button><button type="button" class="btn ghost small" data-dev="lvl:1">+1 level</button><button type="button" class="btn ghost small" data-dev="lvl:5">+5 levels</button><button type="button" class="btn ghost small" data-dev="lvl:max">Max level</button><button type="button" class="btn ghost small" data-dev="reset">Level 1, $8,000</button>`;
+  box.querySelectorAll("[data-dev]").forEach(b=>b.onclick=()=>{
+    const [k,v]=b.dataset.dev.split(":");
+    if(k==="cash")CAREER.cash+=+v;
+    else if(k==="lvl"){const n=v==="max"?MAX_LEVEL:+v;for(let i=0;i<n;i++){const li=levelInfo(CAREER.xp);if(!li.need)break;CAREER.xp+=li.need-li.into;}}
+    else if(k==="reset"){CAREER.xp=0;CAREER.cash=8000;CAREER.skills={};}
+    fillBoard();saveCareer();renderCareer();setStampOnly();});
 }
 function takeContract(id){
   const c=CAREER.board.find(x=>x.id===id);if(!c)return;
@@ -7511,7 +7526,7 @@ document.querySelectorAll(".job").forEach(b=>b.addEventListener("click",()=>pick
 $("devToggle").checked=DEV.on;
 showBests();
 initCareerUI();
-$("devToggle").addEventListener("change",e=>{DEV.on=e.target.checked;DEV.ghost=false;try{localStorage.setItem("cg-dev",DEV.on?"1":"0");}catch(err){}});
+$("devToggle").addEventListener("change",e=>{DEV.on=e.target.checked;DEV.ghost=false;try{localStorage.setItem("cg-dev",DEV.on?"1":"0");}catch(err){}if(CAREER)renderCareer();});
 setMuted(A.muted);
 
 function setState(s){
