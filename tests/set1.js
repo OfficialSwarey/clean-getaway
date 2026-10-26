@@ -37,6 +37,9 @@ out.move=await run(`q.setSet("move","cs");q.setMode("free");q.pickMap("harbor");
   // air strafe: in the air, hold right and turn right: you speed up
   go(sp.x,sp.z,0,sp.yaw||0,0);q.P.mvx=-Math.sin(q.P.yaw)*3.1;q.P.mvz=-Math.cos(q.P.yaw)*3.1;q.P.jh=3;q.P.vy=0;
   q.keys.KeyD=true;for(let i=0;i<15;i++){q.P.yaw-=0.05;q.P.vy=0;q.P.jh=3;step(1);}q.keys.KeyD=false;r.strafe=hs();
+  // slow walking: crouched, and carrying gold, reach their speed (friction mustn't win)
+  go(sp.x,sp.z,0,sp.yaw||0,0);q.P.crouch=true;q.keys.KeyW=true;step(30);r.crouch=hs();q.keys.KeyW=false;q.P.crouch=false;step(30);
+  go(sp.x,sp.z,0,sp.yaw||0,0);q.P.carry={kind:"loot",gold:true,value:1};q.keys.KeyW=true;step(30);r.gold=hs();q.keys.KeyW=false;q.P.carry=null;step(30);
   q.setSet("move","classic");go(sp.x,sp.z,0,sp.yaw||0,0);q.keys.KeyW=true;step(2);r.classic2=hs();q.keys.KeyW=false;step(1);r.classicStop=hs();
   return r;`);
 console.log(JSON.stringify(out,null,1));console.log(errs.join("\n")||"no errors");

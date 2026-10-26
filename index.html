@@ -7691,7 +7691,9 @@ function updatePlayer(dt){
     }
     if(len>0){
       const wish=speed,cap=airborne?Math.min(wish,CS_AIRCAP):wish,cur=vx*mx+vz*mz,add=cap-cur;
-      if(add>0){const a=Math.min((airborne?CS_AIRACC:CS_ACC)*dt*wish,add);vx+=a*mx;vz+=a*mz;}
+      // on the ground you pick up speed as briskly as when walking, even when slow (crouched, carrying gold); otherwise
+      // friction would win and you'd barely move
+      if(add>0){const a=Math.min((airborne?CS_AIRACC*wish:CS_ACC*Math.max(wish,3.1))*dt,add);vx+=a*mx;vz+=a*mz;}
     }
     P.mvx=vx;P.mvz=vz;dx=vx*dt;dz=vz*dt;
   }else{P.mvx=mx*speed;P.mvz=mz*speed;dx=P.mvx*dt;dz=P.mvz*dt;}
